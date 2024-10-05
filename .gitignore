@@ -16,3 +16,10 @@ _site/
 # counterproductive to check this file into the repository.
 # Details at https://github.com/github/pages-gem/issues/768
 Gemfile.lock
+.vs/ProjectSettings.json
+.vs/slnx.sqlite
+.vs/VSWorkspaceState.json
+.vs/fuccl/FileContentIndex/63914202-5534-4c28-badc-cb1437ca1274.vsidx
+.vs/fuccl/v17/.wsuo
+.vs/fuccl/v17/DocumentLayout.backup.json
+.vs/fuccl/v17/DocumentLayout.json
