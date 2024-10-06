@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+
+    <title>Points - FUCCL</title>
+    <style>
+        /* Grid layout for button navigation */
+        nav {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px; /* Space between buttons */
+            padding: 0px; /* Padding around the grid */
+        }
+
+        /* Ensure the buttons take up the full width of their grid cells */
+        nav button {
+            width: 100%;
+        }
+
+        /* Container for the pitch SVG */
+        .pitch-container {
+            max-width: 800px; /* Set a max width for desktop */
+            margin: 20px auto; /* Center the container with margin */
+            text-align: center; /* Center align the image */
+        }
+
+        .pitch-container img {
+            width: 100%; /* Full width for the image */
+            height: auto; /* Maintain aspect ratio */
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <!-- Navigation bar -->
+        <nav>
+            <button onclick="window.location.href='points.html'">Points</button>
+            <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
+            <button onclick="window.location.href='transfers.html'" class="secondary">Transfers</button>
+            <button onclick="window.location.href='league.html'" class="secondary">League</button>
+            <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
+        </nav>
+
+        <header>
+            <h1>Points</h1>
+            <p>View your current points and team performance.</p>
+        </header>
+
+        <!-- Add the football pitch SVG here -->
+        <section class="pitch-container">
+            <img src="images/pitch.svg" alt="Football Pitch">
+        </section>
+
+    </main>
+
+    <!-- Load the PlayFab SDK from the CDN -->
+    <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
+    <!-- Link to your custom script -->
+    <script src="script.js"></script>
+</body>
+
+</html>
