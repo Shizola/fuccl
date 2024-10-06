@@ -1,14 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <title>FUCCL</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+
+    <!-- Link to your custom styles (if any) -->
+    <link rel="stylesheet" href="styles.css">
+
+    <title>FUCCL</title>
 </head>
+
 <body>
-  <h1>Welcome to FUCCL</h1>
-  <p>This is the home of Fantasy UCCL!</p>
-  <script src="script.js"></script>
+    <main class="container">
+        <header>
+            <h1>Welcome to FUCCL</h1>
+            <p>This is the home of Fantasy UCCL!</p>
+        </header>
+
+        <section>
+            <h2>Player Access</h2>
+            <p class="grid">
+                <button onclick="window.location.href='login.html'">Log In</button>
+                <button onclick="window.location.href='register.html'" class="secondary">New User</button>
+            </p>
+        </section>
+    </main>
+
+    <!-- Load the PlayFab SDK from the CDN -->
+    <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
+    <!-- Link to your custom script -->
+    <script src="script.js"></script>
 </body>
+
 </html>
