@@ -76,10 +76,21 @@ function handleLoginResponse(result, error) {
     }
 }
 
+// Logout function
+function logOut() {
+    // Clear the session ticket from local storage
+    localStorage.removeItem("sessionTicket");
+
+    console.log("User logged out successfully");
+
+    // Redirect to the login page
+    window.location.href = "index.html";
+}
+
 // Team management functions
 function registerTeam(event) {
     event.preventDefault();
-    
+
     if (!setupPlayFabAuth()) {
         alert("You must be logged in to create a team");
         window.location.href = "login.html";
@@ -127,10 +138,31 @@ function handleUserDataResponse(result, error) {
     }
 }
 
+// Profile data functions
+function loadProfileData() {
+    console.log("Loading profile data...");
+
+    PlayFab.ClientApi.GetUserData({}, handleProfileDataResponse);
+}
+
+function handleProfileDataResponse(result, error) {
+    if (error) {
+        console.error("Error getting profile data:", error);
+    } else {
+        // Assuming your data keys are 'teamName' and 'managerName'
+        const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : "Not set";
+        const managerName = result.data.Data.managerName ? result.data.Data.managerName.Value : "Not set";
+
+        // Update the HTML elements with the correct string values
+        document.getElementById('teamName').innerText = teamName;
+        document.getElementById('managerName').innerText = managerName;
+    }
+}
+
 // Page load handling
-window.onload = function() {
+window.onload = function () {
     setupPlayFabAuth();
-    
+
     const sessionTicket = localStorage.getItem("sessionTicket");
     if (sessionTicket) {
         console.log("User is logged in with session ticket:", sessionTicket);
@@ -138,4 +170,15 @@ window.onload = function() {
     } else {
         console.log("User is not logged in.");
     }
-};
+
+    // Check the current page and load data accordingly
+    if (window.location.pathname.includes("index.html")) {
+        if (sessionTicket) {
+            window.location.href = "points.html";
+        }
+    }
+
+    if (window.location.pathname.includes("profile.html")) {
+        loadProfileData(); // Load the profile data only on the profile page
+    }
+}

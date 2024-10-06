@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+
+    <title>Profile - FUCCL</title>
+    <style>
+        /* Grid layout for button navigation */
+        nav {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px; /* Space between buttons */
+            padding: 0px; /* Padding around the grid */
+            margin-bottom: 20px; /* Add gap between nav and content */
+        }
+
+        /* Ensure the buttons take up the full width of their grid cells */
+        nav button {
+            width: 100%;
+        }
+
+        /* Simple container for profile details */
+        .profile-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .profile-container p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .logout-button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <!-- Navigation bar -->
+        <nav>
+            <button onclick="window.location.href='points.html'" class="secondary">Points</button>
+            <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
+            <button onclick="window.location.href='transfers.html'" class="secondary">Transfers</button>
+            <button onclick="window.location.href='league.html'" class="secondary">League</button>
+            <button onclick="window.location.href='profile.html'" class>Profile</button>
+        </nav>
+
+        <header>
+            <h1>Your Profile</h1>
+            <p>View your manager details and log out.</p>
+        </header>
+
+        <!-- Profile details section -->
+        <section class="profile-container">
+            <p><strong>Manager Name:</strong> <span id="managerName">Loading...</span></p>
+            <p><strong>Team Name:</strong> <span id="teamName">Loading...</span></p>
+
+            <!-- Log Out button -->
+            <button class="button logout-button" onclick="logOut()">Log Out</button>
+        </section>
+    </main>
+
+    <!-- Load the PlayFab SDK from the CDN -->
+    <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
+    <!-- Link to your custom script -->
+    <script src="script.js"></script>
+
+</body>
+</html>
