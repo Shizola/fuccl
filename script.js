@@ -87,6 +87,32 @@ function logOut() {
     window.location.href = "index.html";
 }
 
+function resetPassword(event) {
+    event.preventDefault(); // Prevent form submission from reloading the page
+
+    const email = document.getElementById('email').value;
+
+    if (!email) {
+        alert("Please enter your email address.");
+        return;
+    }
+
+    const request = {
+        TitleId: PlayFab.settings.titleId, // Replace this with your PlayFab Title ID if necessary
+        Email: email
+    };
+
+    PlayFab.ClientApi.SendAccountRecoveryEmail(request, function(result, error) {
+        if (error) {
+            console.error("Error sending recovery email:", error);
+            alert("Password reset failed: " + error.errorMessage);
+        } else {
+            console.log("Password reset email sent successfully:", result);
+            alert("Password reset email sent! Please check your inbox.");
+        }
+    });
+}
+
 // Team management functions
 function registerTeam(event) {
     event.preventDefault();
@@ -122,6 +148,25 @@ function handleTeamUpdateResponse(result, error) {
         alert("Team created successfully!");
         window.location.href = "points.html";
     }
+}
+
+// Function to check if the user's team name is set
+function checkTeamName() {
+    PlayFab.ClientApi.GetUserData({}, function(result, error) {
+        if (error) {
+            console.error("Error retrieving user data:", error);
+        } else {
+            const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : null;
+
+            if (!teamName) {
+                console.log("Team name not set. Redirecting to create team page.");
+                alert("You must create a team first.");
+                window.location.href = "create-team.html";
+            } else {
+                console.log("Team name found:", teamName);
+            }
+        }
+    });
 }
 
 // User data functions
@@ -161,24 +206,66 @@ function handleProfileDataResponse(result, error) {
 
 // Page load handling
 window.onload = function () {
-    setupPlayFabAuth();
-
+    const publicPages = ['index.html', 'login.html', 'register.html', 'reset-password.html'];
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
+    // Setup PlayFab authentication and get session status
+    const isAuthenticated = setupPlayFabAuth();
     const sessionTicket = localStorage.getItem("sessionTicket");
+
+    // Authentication routing logic
     if (sessionTicket) {
         console.log("User is logged in with session ticket:", sessionTicket);
-        testUserDataAccess();
+        
+        // Test user data access to verify session is still valid
+        PlayFab.ClientApi.GetUserData({}, function(result, error) {
+            if (error) {
+                console.error("Session invalid:", error);
+                handleAuthError();
+                return;
+            }
+            
+            // Redirect from public pages if already logged in
+            if (publicPages.includes(currentPage)) {
+                console.log("Already logged in, redirecting to points...");
+                window.location.href = "points.html";
+                return;
+            }
+
+            // Handle page-specific initialization
+            initializePage(currentPage);
+        });
     } else {
         console.log("User is not logged in.");
-    }
-
-    // Check the current page and load data accordingly
-    if (window.location.pathname.includes("index.html")) {
-        if (sessionTicket) {
-            window.location.href = "points.html";
+        
+        // Redirect to index if trying to access protected pages
+        if (!publicPages.includes(currentPage)) {
+            console.log("Unauthorized access attempt. Redirecting to login...");
+            window.location.href = "login.html";
+            return;
         }
     }
+};
 
-    if (window.location.pathname.includes("profile.html")) {
-        loadProfileData(); // Load the profile data only on the profile page
+// Helper function to initialize page-specific content
+function initializePage(currentPage) {
+    switch (currentPage) {
+        case 'profile.html':
+            loadProfileData();
+            break;
+            
+        case 'points.html':
+            checkTeamName();S
+            break;
+            
+        case 'create-team.html':
+            // Verify team status before allowing access
+            PlayFab.ClientApi.GetUserData({}, function(result, error) {
+                if (!error && result.data.Data.teamName) {
+                    console.log("Team already exists, redirecting to points...");
+                    window.location.href = "points.html";
+                }
+            });
+            break;
     }
 }

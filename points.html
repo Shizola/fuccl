@@ -15,9 +15,9 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 10px;
-      /* Space between buttons */
       padding: 0px;
-      /* Padding around the grid */
+      margin-bottom: 20px;
+      /* Add gap between nav and content */
     }
 
     /* Ensure the buttons take up the full width of their grid cells */
@@ -25,22 +25,56 @@
       width: 100%;
     }
 
+    .teamName {
+      text-align: center;
+    }
+
     /* Container for the pitch SVG */
     .pitch-container {
       max-width: 800px;
-      /* Set a max width for desktop */
       margin: 20px auto;
-      /* Center the container with margin */
       text-align: center;
-      /* Center align the image */
     }
 
     .pitch-container img {
       width: 100%;
-      /* Full width for the image */
       height: auto;
-      /* Maintain aspect ratio */
-    }    
+    }
+
+    /* Container for points */
+    .points-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      /* Center the container */
+    }
+
+    /* Adjust gameweek alignment */
+    .gameweek-number {
+      text-align: left;
+      flex: 1;
+    }
+
+    /* Center weekly points */
+    .weekly-points {
+      flex: 1;
+      text-align: center;
+    }
+
+    /* Align total points to the right */
+    .total-points {
+      flex: 1;
+      text-align: right;
+    }
+
+    /* Color the weekly points in red */
+    .red-text {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 
@@ -57,7 +91,18 @@
 
     <header>
       <h1>Points</h1>
-      <p>View your current points and team performance.</p>
+      <h4 id="teamName" class="teamName">Loading Team Name...</h4> <!-- Apply teamName class here -->
+      <div class="points-container">
+        <div class="points-section gameweek-number">
+          Gameweek: <span id="gameweek">Loading...</span>
+        </div>
+        <div class="points-section weekly-points">
+          Weekly Points: <span class="red-text" id="weeklyPoints">Loading...</span>
+        </div>
+        <div class="points-section total-points">
+          Total Points: <span id="totalPoints">Loading...</span>
+        </div>
+      </div>
     </header>
 
     <!-- Add the football pitch SVG here -->
@@ -70,6 +115,7 @@
 
     <!-- Link to your custom script -->
     <script src="script.js"></script>
+  </main>
 </body>
 
 </html>
