@@ -255,7 +255,7 @@ function initializePage(currentPage) {
             break;
             
         case 'points.html':
-            checkTeamName();S
+            checkTeamName();
             break;
             
         case 'create-team.html':
