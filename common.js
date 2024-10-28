@@ -23,17 +23,14 @@ function handleAuthError() {
 // User registration and login functions
 function registerUser(event) {
     event.preventDefault();
-
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-
     const request = {
         TitleId: PlayFab.settings.titleId,
         Email: email,
         Password: password,
         RequireBothUsernameAndEmail: false
     };
-
     PlayFab.ClientApi.RegisterPlayFabUser(request, handleRegistrationResponse);
 }
 
@@ -51,16 +48,13 @@ function handleRegistrationResponse(result, error) {
 
 function loginUser(event) {
     event.preventDefault();
-
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-
     const request = {
         TitleId: PlayFab.settings.titleId,
         Email: email,
         Password: password
     };
-
     PlayFab.ClientApi.LoginWithEmailAddress(request, handleLoginResponse);
 }
 
@@ -78,30 +72,22 @@ function handleLoginResponse(result, error) {
 
 // Logout function
 function logOut() {
-    // Clear the session ticket from local storage
     localStorage.removeItem("sessionTicket");
-
     console.log("User logged out successfully");
-
-    // Redirect to the login page
     window.location.href = "index.html";
 }
 
 function resetPassword(event) {
-    event.preventDefault(); // Prevent form submission from reloading the page
-
+    event.preventDefault();
     const email = document.getElementById('email').value;
-
     if (!email) {
         alert("Please enter your email address.");
         return;
     }
-
     const request = {
         TitleId: PlayFab.settings.titleId,
         Email: email
     };
-
     PlayFab.ClientApi.SendAccountRecoveryEmail(request, function(result, error) {
         if (error) {
             console.error("Error sending recovery email:", error);
@@ -116,22 +102,18 @@ function resetPassword(event) {
 // Team management functions
 function registerTeam(event) {
     event.preventDefault();
-
     if (!setupPlayFabAuth()) {
         alert("You must be logged in to create a team");
         window.location.href = "login.html";
         return;
     }
-
     const teamData = {
         teamName: document.getElementById('teamName').value,
         managerName: document.getElementById('managerName').value
     };
-
     const request = {
         Data: teamData
     };
-
     PlayFab.ClientApi.UpdateUserData(request, handleTeamUpdateResponse);
 }
 
@@ -150,43 +132,9 @@ function handleTeamUpdateResponse(result, error) {
     }
 }
 
-// Function to check if the user's team name is set
-function checkTeamName() {
-    PlayFab.ClientApi.GetUserData({}, function(result, error) {
-        if (error) {
-            console.error("Error retrieving user data:", error);
-        } else {
-            const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : null;
-
-            if (!teamName) {
-                console.log("Team name not set. Redirecting to create team page.");
-                alert("You must create a team first.");
-                window.location.href = "create-team.html";
-            } else {
-                console.log("Team name found:", teamName);
-            }
-        }
-    });
-}
-
-// User data functions
-function testUserDataAccess() {
-    console.log("Testing user data access");
-    PlayFab.ClientApi.GetUserData({}, handleUserDataResponse);
-}
-
-function handleUserDataResponse(result, error) {
-    if (error) {
-        console.error("Error getting user data:", error);
-    } else {
-        console.log("Successfully retrieved user data:", result);
-    }
-}
-
 // Fetch user profile data and return it through a callback
 function fetchUserData(callback) {
     console.log("Fetching user data...");
-    
     PlayFab.ClientApi.GetUserData({}, function(result, error) {
         if (error) {
             console.error("Error getting profile data:", error);
@@ -201,35 +149,11 @@ function fetchUserData(callback) {
     });
 }
 
-// Display profile data (for profile page)
-function loadProfileData() {
-    fetchUserData(function(error, userData) {
-        if (!error && userData) {
-            document.getElementById('teamName').innerText = userData.teamName;
-            document.getElementById('managerName').innerText = userData.managerName;
-        }
-    });
-}
-
-// Display team name only (for points page)
-function loadTeamNameOnly() {
-    fetchUserData(function(error, userData) {
-        if (!error && userData) {
-            document.getElementById('teamName').innerText = userData.teamName;
-        }
-    });
-}
-
 // Helper function to initialize page-specific content
 function initializePage(currentPage) {
     switch (currentPage) {
         case 'profile.html':
             loadProfileData();
-            break;
-            
-        case 'points.html':
-            checkTeamName();
-            loadTeamNameOnly();
             break;
             
         case 'create-team.html':
@@ -245,7 +169,7 @@ function initializePage(currentPage) {
 }
 
 // Page load handling
-window.onload = function () {
+window.addEventListener('load', function() {
     const publicPages = ['index.html', 'login.html', 'register.html', 'reset-password.html'];
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     
@@ -285,4 +209,4 @@ window.onload = function () {
             return;
         }
     }
-};
+});
