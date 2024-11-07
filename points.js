@@ -26,95 +26,108 @@ function loadTeamNameOnly() {
 }
 
 // Function to create a player card
-function createPlayerCard(playerData) {
-    // Create the main player card div
-    const playerCard = document.createElement('div');
-    playerCard.classList.add('player-card');
-
-    // Create player info div
-    const playerInfo = document.createElement('div');
-    playerInfo.classList.add('player-info');
-
-    // Player shirt image
-    const shirtImg = document.createElement('img');
-    shirtImg.classList.add('player-shirt');
-    shirtImg.src = playerData.shirtImage || 'default-shirt.png';  // Fallback image if none provided
-    shirtImg.alt = 'Player shirt';
-    playerInfo.appendChild(shirtImg);
-
-    // Optional captain badge
-    if (playerData.isCaptain) {
-        const captainBadge = document.createElement('div');
-        captainBadge.classList.add('captain-badge');
-        captainBadge.textContent = 'C';
-        playerInfo.appendChild(captainBadge);
-    }
-
-    // Info icon
-    const infoIcon = document.createElement('div');
-    infoIcon.classList.add('info-icon');
-    infoIcon.textContent = 'i';
-    playerInfo.appendChild(infoIcon);
-
-    // Append playerInfo to playerCard
-    playerCard.appendChild(playerInfo);
-
-    // Player name
-    const playerName = document.createElement('div');
-    playerName.classList.add('player-name');
-    playerName.textContent = playerData.name || 'Unknown Player';
-    playerCard.appendChild(playerName);
-
-    // Player points
-    const playerPoints = document.createElement('div');
-    playerPoints.classList.add('player-points');
-    playerPoints.textContent = playerData.points || '0';
-    playerCard.appendChild(playerPoints);
-
-    // Return the created player card
-    return playerCard;
+function createPlayerCard(player) {
+    const card = document.createElement('div');
+    card.className = 'player-card'; // Add appropriate class for styling
+    card.textContent = player.name; // Display player name (or any other info)
+    return card;
 }
 
-// Function to render a list of players on the points page
-function renderPlayers(playerList) {
-    // Select the container where player cards will be inserted
-    const playerContainer = document.querySelector('.player-rows');
 
-    // Clear the container before rendering new players
-    playerContainer.innerHTML = '';
+// Function to render players on the pitch based on their position
+function renderPlayersOnPitch(players) {
+    // Get containers for each row
+    const gkRow = document.getElementById('gk-row');
+    const dfRow = document.getElementById('df-row');
+    const mdRow = document.getElementById('md-row');
+    const atRow = document.getElementById('at-row');
 
-    // Loop through the player list and create player cards
-    playerList.forEach(playerData => {
-        const playerCard = createPlayerCard(playerData);
-        playerContainer.appendChild(playerCard);
+    // Clear rows before rendering
+    gkRow.innerHTML = '';
+    dfRow.innerHTML = '';
+    mdRow.innerHTML = '';
+    atRow.innerHTML = '';
+
+    // Loop through players and append them to the correct row based on their position
+    players.forEach(player => {
+        console.log(`Rendering player: ${player.name}, Position: ${player.position}`);
+
+        const playerCard = createPlayerCard(player);
+        
+        switch(player.position) {
+            case 'gk':
+                gkRow.appendChild(playerCard);
+                break;
+            case 'df':
+                dfRow.appendChild(playerCard);
+                break;
+            case 'md':
+                mdRow.appendChild(playerCard);
+                break;
+            case 'at':
+                atRow.appendChild(playerCard);
+                break;
+            default:
+                console.warn('Unknown position:', player.position);
+        }
     });
 }
-
-
 
 // Page load handling for points page
 window.addEventListener('load', function() {
     checkTeamName();
     loadTeamNameOnly();
 
+    const players = [
+        {
+            name: 'John Doe',
+            points: 12,
+            shirtImage: 'path-to-john-shirt.png',
+            isCaptain: true,
+            position: 'gk' // Goalkeeper
+        },
+        {
+            name: 'Jane Smith',
+            points: 8,
+            shirtImage: 'path-to-jane-shirt.png',
+            isCaptain: false,
+            position: 'df' // Defender
+        },
+        {
+            name: 'Chris Johnson',
+            points: 5,
+            shirtImage: 'path-to-chris-shirt.png',
+            isCaptain: false,
+            position: 'df' // Defender
+        },
+        {
+            name: 'Chris Johnson',
+            points: 5,
+            shirtImage: 'path-to-chris-shirt.png',
+            isCaptain: false,
+            position: 'df' // Defender
+        },
+        {
+            name: 'Anna Lee',
+            points: 7,
+            shirtImage: 'path-to-anna-shirt.png',
+            isCaptain: false,
+            position: 'md' // Midfielder
+        },
+        {
+            name: 'David Brown',
+            points: 10,
+            shirtImage: 'path-to-david-shirt.png',
+            isCaptain: false,
+            position: 'at' // Attacker
+        },
+        // Add additional players as needed with varied positions
+    ];
+    
 
-// Example player data
-const players = [
-    {
-        name: 'John Doe',
-        points: 12,
-        shirtImage: 'path-to-john-shirt.png',
-        isCaptain: true
-    },
-    {
-        name: 'Jane Smith',
-        points: 8,
-        shirtImage: 'path-to-jane-shirt.png',
-        isCaptain: false
-    }
-];
 
 // Render players on the page
-renderPlayers(players);
+renderPlayersOnPitch(players);
 
 });
+

@@ -7,75 +7,9 @@
 
   <!-- Link to Pico.css CDN -->
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <link rel="stylesheet" href="points.css">
 
   <title>Points - FUCCL</title>
-  <style>
-    /* Grid layout for button navigation */
-    nav {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      padding: 0px;
-      margin-bottom: 20px;
-      /* Add gap between nav and content */
-    }
-
-    /* Ensure the buttons take up the full width of their grid cells */
-    nav button {
-      width: 100%;
-    }
-
-    .teamName {
-      text-align: center;
-    }
-
-    /* Container for the pitch SVG */
-    .pitch-container {
-      max-width: 800px;
-      margin: 20px auto;
-      text-align: center;
-    }
-
-    .pitch-container img {
-      width: 100%;
-      height: auto;
-    }
-
-    /* Container for points */
-    .points-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      max-width: 800px;
-      margin: 0 auto;
-      /* Center the container */
-    }
-
-    /* Adjust gameweek alignment */
-    .gameweek-number {
-      text-align: left;
-      flex: 1;
-    }
-
-    /* Center weekly points */
-    .weekly-points {
-      flex: 1;
-      text-align: center;
-    }
-
-    /* Align total points to the right */
-    .total-points {
-      flex: 1;
-      text-align: right;
-    }
-
-    /* Color the weekly points in red */
-    .red-text {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
 </head>
 
 <body>
@@ -106,32 +40,31 @@
     </header>
 
     <!-- Add the football pitch SVG here -->
-    <section class="pitch-container">
-      <img src="images/pitch.svg" alt="Football Pitch">
-      <div class="player-rows">
-        <!-- Goalkeeper Row -->
-        <div class="player-row gk-row">
-        </div>
-        
-        <!-- Defenders Row -->
-        <div class="player-row def-row">
-        </div>
-        
-        <!-- Midfielders Row -->
-        <div class="player-row mid-row">
-        </div>
-        
-        <!-- Forwards Row -->
-        <div class="player-row fwd-row">
-        </div>
-        <div class="bench">
-          <div class="bench-label">Substitutes</div>
-          <div class="bench-players">
-          </div>
-      </div>
-    </div>
+<section class="pitch-container">
+  <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
+  
+  <!-- Player Rows for each position -->
+  <div class="player-rows">
+    <!-- Goalkeeper Row -->
+    <div id="gk-row" class="player-row gk-row"></div>
+    
+    <!-- Defenders Row -->
+    <div id="df-row" class="player-row def-row"></div>
+    
+    <!-- Midfielders Row -->
+    <div id="md-row" class="player-row mid-row"></div>
+    
+    <!-- Forwards Row -->
+    <div id="at-row" class="player-row fwd-row"></div>
+  </div>
+  
+  <!-- Substitute Bench -->
+  <div class="bench">
+    <div class="bench-label">Substitutes</div>
+    <div id="bench-players" class="bench-players"></div>
+  </div>
+</section>
 
-    </section>
 
     <!-- Load the PlayFab SDK from the CDN -->
     <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
@@ -139,9 +72,10 @@
     <!-- Link to your custom script -->
     <script src="common.js"></script>
     <script src="points.js"></script>
-    <!----> comment > 
 
   </main>
 </body>
 
 </html>
+
+

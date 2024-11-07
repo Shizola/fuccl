@@ -1,0 +1,138 @@
+/* Grid layout for button navigation */
+    nav {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      padding: 0px;
+      margin-bottom: 20px;
+      /* Add gap between nav and content */
+    }
+
+    /* Ensure the buttons take up the full width of their grid cells */
+    nav button {
+      width: 100%;
+    }
+
+    .teamName {
+      text-align: center;
+    }
+
+    /* Container for the pitch SVG */
+    .pitch-container {
+      max-width: 900px;
+      margin: 20px auto;
+      text-align: center;
+    }
+
+    .pitch-container img {
+      width: 100%;
+      height: auto;
+    }
+
+    /* Container for points */
+    .points-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      /* Center the container */
+    }
+
+    /* Adjust gameweek alignment */
+    .gameweek-number {
+      text-align: left;
+      flex: 1;
+    }
+
+    /* Center weekly points */
+    .weekly-points {
+      flex: 1;
+      text-align: center;
+    }
+
+    /* Align total points to the right */
+    .total-points {
+      flex: 1;
+      text-align: right;
+    }
+
+    /* Color the weekly points in red */
+    .red-text {
+      color: red;
+      font-weight: bold;
+    }
+
+
+    /* Player positioning */
+    .player-rows {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .player-row {
+      display: flex;
+      justify-content: space-around;
+      position: absolute;
+      width: 100%;
+      padding: 0 5%;
+    }
+
+    /* Position rows across the pitch */
+    .fwd-row {
+      top: 90%;
+      /* Bottom of pitch */
+      transform: translateY(-50%);
+    }
+
+    .mid-row {
+      top: 75%;
+      /* Lower third of pitch */
+      transform: translateY(-50%);
+    }
+
+    .def-row {
+      top: 60%;
+      /* Middle of pitch */
+      transform: translateY(-50%);
+    }
+
+    .gk-row {
+      top: 44%;
+      /* Upper third of pitch */
+      transform: translateY(-50%);
+    }
+
+    /* Player card styles */
+    .player-card {
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 2px solid #333;
+      border-radius: 5px;
+      padding: 5px;
+      text-align: center;
+      min-width: 100px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      color: black;
+    }
+
+    /* Bench styling */
+    .bench {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .bench-label {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .bench-players {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
