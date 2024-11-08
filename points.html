@@ -2,78 +2,80 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Link to Pico.css CDN -->
-  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
-  <link rel="stylesheet" href="points.css">
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="points.css">
 
-  <title>Points - FUCCL</title>
+    <title>Points - FUCCL</title>
 </head>
 
 <body>
-  <main class="container">
-    <!-- Navigation bar -->
-    <nav>
-      <button onclick="window.location.href='points.html'">Points</button>
-      <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
-      <button onclick="window.location.href='transfers.html'" class="secondary">Transfers</button>
-      <button onclick="window.location.href='league.html'" class="secondary">League</button>
-      <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
-    </nav>
+    <main class="container">
+        <!-- Navigation bar -->
+        <nav>
+            <button onclick="window.location.href='points.html'">Points</button>
+            <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
+            <button onclick="window.location.href='transfers.html'" class="secondary">Transfers</button>
+            <button onclick="window.location.href='league.html'" class="secondary">League</button>
+            <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
+        </nav>
 
-    <header>
-      <h1>Points</h1>
-      <h4 id="teamName" class="teamName">Loading Team Name...</h4> <!-- Apply teamName class here -->
-      <div class="points-container">
-        <div class="points-section gameweek-number">
-          Gameweek: <span id="gameweek">Loading...</span>
-        </div>
-        <div class="points-section weekly-points">
-          Weekly Points: <span class="red-text" id="weeklyPoints">Loading...</span>
-        </div>
-        <div class="points-section total-points">
-          Total Points: <span id="totalPoints">Loading...</span>
-        </div>
-      </div>
-    </header>
+        <header>
+            <h1>Points</h1>
+            <h4 id="teamName" class="teamName">Loading Team Name...</h4> <!-- Apply teamName class here -->
+            <div class="points-container">
+                <div class="points-section gameweek-number">
+                    Gameweek: <span id="gameweek">Loading...</span>
+                </div>
+                <div class="points-section weekly-points">
+                    Weekly Points: <span class="red-text" id="weeklyPoints">Loading...</span>
+                </div>
+                <div class="points-section total-points">
+                    Total Points: <span id="totalPoints">Loading...</span>
+                </div>
+            </div>
+        </header>
 
-    <!-- Add the football pitch SVG here -->
-<section class="pitch-container">
-  <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
-  
-  <!-- Player Rows for each position -->
-  <div class="player-rows">
-    <!-- Goalkeeper Row -->
-    <div id="gk-row" class="player-row gk-row"></div>
-    
-    <!-- Defenders Row -->
-    <div id="df-row" class="player-row def-row"></div>
-    
-    <!-- Midfielders Row -->
-    <div id="md-row" class="player-row mid-row"></div>
-    
-    <!-- Forwards Row -->
-    <div id="at-row" class="player-row fwd-row"></div>
-  </div>
-  
-  <!-- Substitute Bench -->
-  <div class="bench">
-    <div class="bench-label">Substitutes</div>
-    <div id="bench-players" class="bench-players"></div>
-  </div>
-</section>
+        <!-- Add the football pitch SVG here -->
+        <section class="pitch-container">
+            <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
+
+            <div class="grid-container">
+                <div class="ui-element top-left">Health: 100</div>
+                <div class="ui-element top-right">Score: 0</div>
+            </div>
 
 
-    <!-- Load the PlayFab SDK from the CDN -->
-    <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+            <!-- Player Rows for each position -->
+            <!--<div class="player-rows">-->
+            <!-- Goalkeeper Row -->
+            <!--<div id="gk-row" class="player-row gk-row"></div>-->
+            <!-- Defenders Row -->
+            <!--<div id="df-row" class="player-row def-row"></div>-->
+            <!-- Midfielders Row -->
+            <!--<div id="md-row" class="player-row mid-row"></div>-->
+            <!-- Forwards Row -->
+            <!--<div id="at-row" class="player-row fwd-row"></div>
+            </div>-->
+            <!-- Substitute Bench -->
+            <!--<div class="bench">
+                <div class="bench-label">Substitutes</div>
+                <div id="bench-players" class="bench-players"></div>
+            </div>-->
+        </section>
 
-    <!-- Link to your custom script -->
-    <script src="common.js"></script>
-    <script src="points.js"></script>
 
-  </main>
+        <!-- Load the PlayFab SDK from the CDN -->
+        <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
+        <!-- Link to your custom script -->
+        <script src="common.js"></script>
+        <script src="points.js"></script>
+
+    </main>
 </body>
 
 </html>
