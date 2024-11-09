@@ -21,7 +21,8 @@
         .grid-container {
             height: 200px;
             display: grid;
-            place-items: center; /* shorthand for align-items and justify-items */
+            place-items: left; /* shorthand for align-items and justify-items */
+            /*right: 100%;*/
         }
 
         /* Method 3: Position Absolute + Transform */
@@ -44,8 +45,8 @@
             background-color: #3498db;
             color: white;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            /*justify-content: center;
+            align-items: center;*/
             text-align: center;
             border-radius: 8px;
         }
@@ -78,6 +79,8 @@
     <div class="container">
         <h3>Method 2: Grid</h3>
         <div class="grid-container">
+            <div class="box">Centered with Grid</div>
+            <div class="box">Centered with Grid</div>
             <div class="box">Centered with Grid</div>
         </div>
     </div>

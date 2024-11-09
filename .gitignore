@@ -27,3 +27,4 @@ Gemfile.lock
 /.vs/fuccl/FileContentIndex/ad03eef2-056e-47e2-bf86-69fabf9e80de.vsidx
 /.vs/fuccl/FileContentIndex/f67bfd93-e707-42ee-aee1-ef0c53409a21.vsidx
 /.vs/fuccl/FileContentIndex/3d59c116-3a53-4425-967c-6edc1433f094.vsidx
+*.vsidx
