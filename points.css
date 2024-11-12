@@ -80,7 +80,7 @@ nav {
 .player-card {
     background-color: #008000; /* Green background */
     border-radius: 10px;
-    width: 90px; /* Default width for larger screens */
+    width: 70px; /* Default width for larger screens */
     text-align: center;
     overflow: hidden; /* Ensures no overflow */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -99,8 +99,8 @@ nav {
 .player-name {
     background-color: #ffffff; /* White background */
     font-weight: bold;
-    padding: 5px;
-    font-size: 14px;
+    padding: 2px;
+    font-size: 10px;
     color: black;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -109,51 +109,9 @@ nav {
 
 /* Points styling */
 .player-points {
-    background-color: #4B0082; /* Dark purple background */
+    background-color: #087cc4; /* blue background */
     color: white;
-    font-size: 14px;
-    padding: 5px;
+    font-size: 10px;
+    padding: 2px;
     font-weight: bold;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .player-card {
-        width: 70px; /* Reduce card size for tablets */
-    }
-
-    .player-name,
-    .player-points {
-        font-size: 12px; /* Adjust font size */
-    }
-
-    .player-cards-container {
-        gap: 10px; /* Reduce spacing between cards */
-    }
-}
-
-@media (max-width: 480px) {
-    .player-card {
-        width: 60px; /* Smaller card size for mobile phones */
-    }
-
-    .player-name,
-    .player-points {
-        font-size: 10px; /* Further reduce font size */
-    }
-
-    .player-cards-container {
-        gap: 5px; /* Tighter gaps on very small screens */
-    }
-}
-
-@media (max-width: 320px) {
-    .player-card {
-        width: 50px; /* Minimum size for very small screens */
-    }
-
-    .player-name,
-    .player-points {
-        font-size: 8px; /* Even smaller text */
-    }
 }
