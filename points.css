@@ -5,13 +5,12 @@ nav {
     gap: 10px;
     padding: 0px;
     margin-bottom: 20px;
-    /* Add gap between nav and content */
 }
 
-    /* Ensure the buttons take up the full width of their grid cells */
-    nav button {
-        width: 100%;
-    }
+/* Ensure the buttons take up the full width of their grid cells */
+nav button {
+    width: 100%;
+}
 
 .teamName {
     text-align: center;
@@ -27,14 +26,14 @@ nav {
 
 .player-cards-container {
     display: flex;
-    flex-wrap: wrap; /* Ensure cards wrap on small screens */
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 20px; /* Space between player cards */
+    gap: 20px;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 90%; /* Give some breathing room on the edges */
+    width: 90%;
 }
 
 .pitch-container img {
@@ -49,7 +48,7 @@ nav {
     align-items: center;
     margin-bottom: 20px;
     max-width: 800px;
-    margin: 0 auto; /* Center the container */
+    margin: 0 auto;
 }
 
 /* Adjust gameweek alignment */
@@ -78,40 +77,62 @@ nav {
 
 /* General styles for the player card */
 .player-card {
-    background-color: #008000; /* Green background */
+    background-color: #008000;
     border-radius: 10px;
-    width: 70px; /* Default width for larger screens */
+    width: 70px;
     text-align: center;
-    overflow: hidden; /* Ensures no overflow */
+    overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: width 0.3s ease; /* Smooth resizing */
+    position: relative;
+    transition: width 0.3s ease;
 }
 
 /* Shirt image styling */
 .player-shirt {
     width: 100%;
-    max-height: 60px; /* Adjust for proper shirt display */
-    object-fit: contain; /* Keep shirt proportions */
+    max-height: 60px;
+    object-fit: contain;
     background: transparent;
 }
 
-/* Player name styling */
 .player-name {
-    background-color: #ffffff; /* White background */
+    background-color: #ffffff;
     font-weight: bold;
-    padding: 2px;
-    font-size: 10px;
+    font-size: 8px;
     color: black;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    position: absolute;
+    bottom: 20%;
+    left: 0;
+    width: 100%;
+    padding: 0;
+    line-height: 1;
+    margin: 0;
+    z-index: 2;
+    height: 12px;
+    display: flex;             /* Enable flexbox */
+    align-items: center;       /* Vertically center the text */
+    justify-content: center;   /* Horizontally center the text (optional) */
 }
 
-/* Points styling */
+
+
+/* Points overlay */
 .player-points {
-    background-color: #087cc4; /* blue background */
+    background-color: #087cc4;
     color: white;
-    font-size: 10px;
-    padding: 2px;
+    font-size: 8px;
+    padding: 2px 0;
     font-weight: bold;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    z-index: 1; /* Ensure it's below the player name */
+     display: flex;             /* Enable flexbox */
+    align-items: center;       /* Vertically center the text */
+    justify-content: center;   /* Horizontally center the text (optional) */
 }
