@@ -18,27 +18,46 @@ nav button {
 
 /* Container for the pitch SVG */
 .pitch-container {
-    max-width: 900px;
+    max-width: 900px; /* Maintain the desired width */
     margin: 20px auto;
     text-align: center;
     position: relative;
+    overflow: hidden; /* Ensure the edges of the image are cut off */
+    border-radius: 20px; /* Optional: Rounded corners */
+    border: 2px solid #ccc; /* Optional: Framed effect */
+    /* aspect-ratio: 16 / 9; Maintain the aspect ratio for the pitch */
 }
 
+/* Separate wrapper for the pitch image */
+.pitch-image-wrapper {
+    position: absolute; /* Ensure the pitch stays in place */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Keep it below the player cards */
+}
+
+pitch-image-wrapper img {
+    width: 100%;
+    height: auto;
+    transform: scale(1) translate(0, 5%); /* Adjust scale and position */
+    transform-origin: center center; /* Scale from the center */
+    object-fit: cover; /* Ensure the image fills the container */
+}
+
+/* Container for the player cards */
 .player-cards-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 20px;
-    position: absolute;
+    position: absolute; /* Keep it on top of the pitch */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90%;
-}
-
-.pitch-container img {
-    width: 100%;
-    height: auto;
+    z-index: 2; /* Ensure it appears above the pitch image */
 }
 
 /* Container for points */
@@ -112,12 +131,10 @@ nav button {
     margin: 0;
     z-index: 2;
     height: 12px;
-    display: flex;             /* Enable flexbox */
-    align-items: center;       /* Vertically center the text */
-    justify-content: center;   /* Horizontally center the text (optional) */
+    display: flex; /* Enable flexbox */
+    align-items: center; /* Vertically center the text */
+    justify-content: center; /* Horizontally center the text */
 }
-
-
 
 /* Points overlay */
 .player-points {
@@ -132,7 +149,28 @@ nav button {
     width: 100%;
     margin: 0;
     z-index: 1; /* Ensure it's below the player name */
-     display: flex;             /* Enable flexbox */
-    align-items: center;       /* Vertically center the text */
-    justify-content: center;   /* Horizontally center the text (optional) */
+    display: flex; /* Enable flexbox */
+    align-items: center; /* Vertically center the text */
+    justify-content: center; /* Horizontally center the text */
+}
+
+/* Smaller screens: Reduce player card size */
+@media (max-width: 610px) {
+    .player-card {
+        width: 50px; /* Reduce width for small screens */
+        /* padding: 5px; Adjust padding */
+    }
+
+    .player-card .player-name {
+        font-size: 8px; /* Smaller text for player names */
+    }
+
+    .player-card .player-points {
+        font-size: 8px; /* Adjust points font size */
+    }
+
+    .player-shirt {
+        width: 60%; /* Scale down the shirt image */
+        height: auto;
+    }
 }
