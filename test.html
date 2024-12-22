@@ -1,96 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <style>
-        .container {
-            margin: 20px;
-            padding: 10px;
-            border: 2px solid #333;
-            background-color: #f0f0f0;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Pitch with Zoom</title>
 
-        /* Method 1: Flexbox */
-        .flex-container {
-            height: 200px;
-            display: flex;
-            justify-content: center; /* horizontal center */
-            align-items: center; /* vertical center */
-        }
-
-        /* Method 2: Grid */
-        .grid-container {
-            height: 200px;
-            display: grid;
-            place-items: left; /* shorthand for align-items and justify-items */
-            /*right: 100%;*/
-        }
-
-        /* Method 3: Position Absolute + Transform */
-        .position-container {
-            height: 200px;
-            position: relative;
-        }
-
-        .position-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        /* Shared styles for the boxes being centered */
-        .box {
-            width: 100px;
-            height: 100px;
-            background-color: #3498db;
-            color: white;
-            display: flex;
-            /*justify-content: center;
-            align-items: center;*/
-            text-align: center;
-            border-radius: 8px;
-        }
-
-        h3 {
-            margin: 10px 0;
-            color: #333;
-        }
-
-        /* For demonstration, highlight container on hover */
-        .container:hover {
-            background-color: #e0e0e0;
-        }
-
-        .box:hover {
-            background-color: #2980b9;
-        }
-    </style>
+    <!-- Link to custom styles -->
+    <link rel="stylesheet" href="test.css">
 </head>
+
 <body>
-    <!-- Method 1: Flexbox -->
-    <div class="container">
-        <h3>Method 1: Flexbox (Most Common)</h3>
-        <div class="flex-container">
-            <div class="box">Centered with Flexbox</div>
-        </div>
-    </div>
-
-    <!-- Method 2: Grid -->
-    <div class="container">
-        <h3>Method 2: Grid</h3>
-        <div class="grid-container">
-            <div class="box">Centered with Grid</div>
-            <div class="box">Centered with Grid</div>
-            <div class="box">Centered with Grid</div>
-        </div>
-    </div>
-
-    <!-- Method 3: Position Absolute + Transform -->
-    <div class="container">
-        <h3>Method 3: Position Absolute + Transform</h3>
-        <div class="position-container">
-            <div class="box position-center">Centered with Position</div>
-        </div>
-    </div>
+    <main>
+        <!-- Football pitch section -->
+        <section class="pitch-container">
+            <div class="pitch-image-wrapper">
+                <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
+            </div>
+        </section>
+    </main>
 </body>
+
 </html>
