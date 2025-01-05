@@ -16,7 +16,6 @@ nav button {
     text-align: center;
 }
 
-/* Container for the pitch SVG */
 .pitch-container {
     max-width: 900px; /* Maintain the desired width */
     margin: 20px auto;
@@ -25,10 +24,30 @@ nav button {
     overflow: hidden; /* Ensure the edges of the image are cut off */
     border-radius: 20px; /* Optional: Rounded corners */
     border: 2px solid #ccc; /* Optional: Framed effect */
-    /* aspect-ratio: 16 / 9; Maintain the aspect ratio for the pitch */
+    height: 600px; /* Default height */
 }
 
-/* Separate wrapper for the pitch image */
+/* Smaller screens */
+@media (max-width: 610px) {
+    .pitch-container {
+        height: 400px; /* Adjust height for smaller screens */
+    }
+}
+
+/* Medium screens */
+@media (min-width: 611px) and (max-width: 900px) {
+    .pitch-container {
+        height: 500px; /* Adjust height for medium screens */
+    }
+}
+
+/* Larger screens */
+@media (min-width: 901px) {
+    .pitch-container {
+        height: 600px; /* Adjust height for larger screens */
+    }
+}
+
 .pitch-image-wrapper {
     position: absolute; /* Ensure the pitch stays in place */
     top: 0;
@@ -38,10 +57,10 @@ nav button {
     z-index: 1; /* Keep it below the player cards */
 }
 
-pitch-image-wrapper img {
+.pitch-image-wrapper img {
     width: 100%;
     height: auto;
-    transform: scale(1) translate(0, 5%); /* Adjust scale and position */
+    transform: scale(1) translate(0, 0%); /* Adjust scale and position */
     transform-origin: center center; /* Scale from the center */
     object-fit: cover; /* Ensure the image fills the container */
 }
@@ -97,13 +116,12 @@ pitch-image-wrapper img {
 /* General styles for the player card */
 .player-card {
     background-color: #008000;
-    border-radius: 10px;
-    width: 70px;
+    border-radius: 10px;   
     text-align: center;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     position: relative;
-    transition: width 0.3s ease;
+    transition: width 0.3s ease, height 0.3s ease;
 }
 
 /* Shirt image styling */
@@ -123,7 +141,7 @@ pitch-image-wrapper img {
     text-overflow: ellipsis;
     white-space: nowrap;
     position: absolute;
-    bottom: 20%;
+    bottom: 18%;
     left: 0;
     width: 100%;
     padding: 0;
@@ -141,13 +159,14 @@ pitch-image-wrapper img {
     background-color: #087cc4;
     color: white;
     font-size: 8px;
-    padding: 2px 0;
+    padding: 0px 0;
     font-weight: bold;
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
     margin: 0;
+    height: 12px;
     z-index: 1; /* Ensure it's below the player name */
     display: flex; /* Enable flexbox */
     align-items: center; /* Vertically center the text */
@@ -156,13 +175,26 @@ pitch-image-wrapper img {
 
 /* Smaller screens: Reduce player card size */
 @media (max-width: 610px) {
+    body::after {
+        content: "Small screen";
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px;
+        font-size: 12px;
+        z-index: 9999;
+    }
+
     .player-card {
-        width: 50px; /* Reduce width for small screens */
-        /* padding: 5px; Adjust padding */
+        width: 35px; /* Width scales down */
+        aspect-ratio: 1 / 1.1; /* Keep the same aspect ratio */
     }
 
     .player-card .player-name {
         font-size: 8px; /* Smaller text for player names */
+        bottom: 30%;
     }
 
     .player-card .player-points {
@@ -170,7 +202,73 @@ pitch-image-wrapper img {
     }
 
     .player-shirt {
-        width: 60%; /* Scale down the shirt image */
+        width: 100%; /* Adjust shirt scaling */
+        height: auto; /* Ensure proper scaling */
+    }
+}
+
+/* Medium screens: Adjust player card size */
+@media (min-width: 611px) and (max-width: 900px) {
+    body::after {
+        content: "Medium screen";
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px;
+        font-size: 12px;
+        z-index: 9999;
+    }
+
+    .player-card {
+        width: 50px;
+        aspect-ratio: 1 / 1;
+    }
+
+    .player-card .player-name {
+        font-size: 10px;
+    }
+
+    .player-card .player-points {
+        font-size: 10px;
+    }
+
+    .player-shirt {
+        width: 100%;
+        height: auto;
+    }
+}
+
+/* Larger screens: Adjust player card size */
+@media (min-width: 901px) {
+    body::after {
+        content: "Large screen";
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px;
+        font-size: 12px;
+        z-index: 9999;
+    }
+
+    .player-card {
+        width: 70px; /* Increase width */
+        aspect-ratio: 1 / 1;
+    }
+
+    .player-card .player-name {
+        font-size: 12px; /* Larger text for player names */
+    }
+
+    .player-card .player-points {
+        font-size: 12px; /* Adjust points font size */
+    }
+
+    .player-shirt {
+        width: 100%;
         height: auto;
     }
 }
