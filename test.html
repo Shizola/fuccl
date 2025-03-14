@@ -4,20 +4,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football Pitch with Zoom</title>
 
-    <!-- Link to custom styles -->
-    <link rel="stylesheet" href="test.css">
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="points.css">
+
+    <title>Points - FUCCL</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .pitch-container {
+            display: flex; 
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding: 1rem 0;
+            background-color: #f0f0f0;
+        }
+
+        .pitch {
+            width: 85%;
+            position: relative;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: top;
+            overflow: hidden;
+        }
+
+        .player {
+            width: calc(6% + 2vw); /* Gradually decrease size */
+            aspect-ratio: 1 / 1;
+            background-color: red;
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%); /* Center the player dots */
+            z-index: 2; /* Keep players above the pitch */
+        }
+
+        @media (max-width: 700px) {
+            .pitch {
+                width: 95%;
+            }
+
+            .player {
+                width: calc(5% + 2vw); /* Gradually decrease size */
+            }
+        }
+
+        @media (max-width: 500px) {
+            .pitch {
+                width: 100%;
+            }
+
+            .player {
+                width: calc(4% + 2vw); /* Gradually decrease size */
+            }
+        }
+
+        /* Updated player positions to work with transform centering */
+        .player-1 { top: 10%; left: 50%; }
+        .player-2 { top: 40%; left: 25%; }
+        .player-3 { top: 40%; left: 75%; }
+        .player-4 { top: 70%; left: 50%; }
+
+        .pitch img {
+            width: 100%;
+            height: auto;
+            object-fit: contain; /* This preserves aspect ratio without cropping */
+            display: block; /* Removes any default spacing */
+            max-height: 100%; /* Ensures image doesn't exceed pitch container */
+        }
+    </style>
 </head>
 
 <body>
-    <main>
-        <!-- Football pitch section -->
+    <main class="container">
+        <!-- Navigation bar -->
+        <nav>
+            <button onclick="window.location.href='points.html'">Points</button>
+            <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
+            <button onclick="window.location.href='transfers.html'" class="secondary">Transfers</button>
+            <button onclick="window.location.href='league.html'" class="secondary">League</button>
+            <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
+        </nav>
+
+        <header>
+            <h1>Points</h1>
+            <h4 id="teamName" class="teamName">Loading Team Name...</h4>
+            <div class="points-container">
+                <div class="points-section gameweek-number">Gameweek: <span id="gameweek">Loading...</span></div>
+                <div class="points-section weekly-points">Weekly Points: <span class="red-text" id="weeklyPoints">Loading...</span></div>
+                <div class="points-section total-points">Total Points: <span id="totalPoints">Loading...</span></div>
+            </div>
+        </header>
+
         <section class="pitch-container">
-            <div class="pitch-image-wrapper">
+            <div class="pitch">
                 <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
+                <div class="player player-1"></div>
+                <div class="player player-2"></div>
+                <div class="player player-3"></div>
+                <div class="player player-4"></div>
             </div>
         </section>
+
+        <!-- Load the PlayFab SDK from the CDN -->
+        <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
+        <!-- Link to your custom script -->
+        <script src="common.js"></script>
+        <script src="points.js"></script>
+
     </main>
 </body>
 
