@@ -8,79 +8,9 @@
     <!-- Link to Pico.css CDN -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
     <link rel="stylesheet" href="points.css">
+    <link rel="stylesheet" href="test.css">
 
     <title>Points - FUCCL</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            overflow-x: hidden;
-        }
-
-        .pitch-container {
-            display: flex; 
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            padding: 1rem 0;
-            background-color: #f0f0f0;
-        }
-
-        .pitch {
-            width: 85%;
-            position: relative;
-            margin: 0 auto;
-            display: flex;
-            justify-content: center;
-            align-items: top;
-            overflow: hidden;
-        }
-
-        .player {
-            width: calc(6% + 2vw); /* Gradually decrease size */
-            aspect-ratio: 1 / 1;
-            background-color: red;
-            border-radius: 50%;
-            position: absolute;
-            transform: translate(-50%, -50%); /* Center the player dots */
-            z-index: 2; /* Keep players above the pitch */
-        }
-
-        @media (max-width: 700px) {
-            .pitch {
-                width: 95%;
-            }
-
-            .player {
-                width: calc(5% + 2vw); /* Gradually decrease size */
-            }
-        }
-
-        @media (max-width: 500px) {
-            .pitch {
-                width: 100%;
-            }
-
-            .player {
-                width: calc(4% + 2vw); /* Gradually decrease size */
-            }
-        }
-
-        /* Updated player positions to work with transform centering */
-        .player-1 { top: 10%; left: 50%; }
-        .player-2 { top: 40%; left: 25%; }
-        .player-3 { top: 40%; left: 75%; }
-        .player-4 { top: 70%; left: 50%; }
-
-        .pitch img {
-            width: 100%;
-            height: auto;
-            object-fit: contain; /* This preserves aspect ratio without cropping */
-            display: block; /* Removes any default spacing */
-            max-height: 100%; /* Ensures image doesn't exceed pitch container */
-        }
-    </style>
 </head>
 
 <body>
@@ -107,10 +37,26 @@
         <section class="pitch-container">
             <div class="pitch">
                 <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
-                <div class="player player-1"></div>
-                <div class="player player-2"></div>
-                <div class="player player-3"></div>
-                <div class="player player-4"></div>
+                <div class="player player-1">
+                    <img src="images/shirts/bethal.svg" alt="Player Shirt" class="player-shirt">
+                    <div class="player-name">Hutchinson</div>
+                    <div class="player-points">15</div>
+                </div>
+                <div class="player player-2">
+                    <img src="images/shirts/highfields.svg" alt="Player Shirt" class="player-shirt">
+                    <div class="player-name">Player 2</div>
+                    <div class="player-points">20</div>
+                </div>
+                <div class="player player-3">
+                    <img src="images/shirts/emmanuel.svg" alt="Player Shirt" class="player-shirt">
+                    <div class="player-name">Player 3</div>
+                    <div class="player-points">10</div>
+                </div>
+                <div class="player player-4">
+                    <img src="images/shirts/dc.svg" alt="Player Shirt" class="player-shirt">
+                    <div class="player-name">Player 4</div>
+                    <div class="player-points">10</div>
+                </div>
             </div>
         </section>
 

@@ -3,40 +3,130 @@ body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #f0f0f0;
+    overflow-x: hidden;
 }
 
 /* Container for the pitch */
 .pitch-container {
-    max-width: 1900px; /* Limit the maximum width of the container */
-    max-height: 1600px; /* Limit the maximum width of the container */
+    display: flex; 
+    justify-content: center;
+    align-items: center;
     width: 100%;
-    margin: 0 auto;
-    border: 2px solid #ccc; /* Optional border for visualization */
-    border-radius: 10px;
-    overflow: hidden; /* Ensure the pitch stays within bounds */
+    padding: 1rem 0;
+}
+
+/* Pitch styles */
+.pitch {
+    width: 85%;
     position: relative;
-    background-color: #006400; /* Fallback color for the pitch container */
-    aspect-ratio: 2 / 2; /* Maintain the pitch's aspect ratio */
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: top;
+    overflow: hidden;
 }
 
-/* Wrapper for the pitch image */
-.pitch-image-wrapper {
-    position: relative; /* Enable transformations for zooming */
+.player {
+    width: 70px; /* Adjust width */
+    aspect-ratio: 1 / 1;
+    background-color: #008000;
+    border-radius: 10px;
+    text-align: center;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: absolute;
+    transform: translate(-50%, -50%); /* Center the player cards */
+    z-index: 2; /* Keep players above the pitch */
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.player img {
     width: 100%;
-    height: 100%;
-    transform: scale(1.3); /* Adjust the zoom level */
-    /* transform-origin: center center; Ensure scaling happens from the center */
-    transform-origin: 50% 0%;
+    max-height: 60px;
+    object-fit: contain;
+    background: transparent;
 }
 
-/* Style for the pitch image */
-.pitch-image {
+.player .player-name {
+    background-color: #ffffff;
+    font-weight: bold;
+    font-size: 12px;
+    color: black;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: absolute;
+    bottom: 18%;
+    left: 0;
+    width: 100%;
+    padding: 0;
+    line-height: 1;
+    margin: 0;
+    z-index: 2;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player .player-points {
+    background-color: #087cc4;
+    color: white;
+    font-size: 12px;
+    padding: 0px 0;
+    font-weight: bold;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    height: 12px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 700px) {
+    .pitch {
+        width: 95%;
+    }
+
+    .player {
+        width: 50px;
+    }
+
+    .player .player-name,
+    .player .player-points {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 500px) {
+    .pitch {
+        width: 100%;
+    }
+
+    .player {
+        width: 35px;
+    }
+
+    .player .player-name,
+    .player .player-points {
+        font-size: 8px;
+    }
+}
+
+/* Updated player positions to work with transform centering */
+.player-1 { top: 10%; left: 50%; }
+.player-2 { top: 40%; left: 25%; }
+.player-3 { top: 40%; left: 75%; }
+.player-4 { top: 70%; left: 50%; }
+
+.pitch img {
     width: 100%;
     height: auto;
-    display: block;
+    object-fit: contain; /* This preserves aspect ratio without cropping */
+    display: block; /* Removes any default spacing */
+    max-height: 100%; /* Ensures image doesn't exceed pitch container */
 }
