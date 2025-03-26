@@ -108,12 +108,16 @@ body {
     }
 
     .player {
-        width: 35px;
+        width: 50px;
     }
 
     .player .player-name,
     .player .player-points {
-        font-size: 8px;
+        font-size: 9px;
+    }
+
+    .player .player-name {
+        bottom: 24%;
     }
 }
 
