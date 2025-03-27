@@ -27,6 +27,19 @@ nav button {
     height: 600px; /* Default height */
 }
 
+/* Pitch styles */
+.pitch {
+    width: 85%; /* Adjust the width of the pitch */
+    position: relative; /* Ensure players are positioned relative to the pitch */
+    margin: 0 auto; /* Center the pitch horizontally */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Prevent overflow */
+    padding: 0; /* Remove any padding */
+    border: none; /* Ensure no border adds extra space */
+}
+
 /* Smaller screens */
 @media (max-width: 610px) {
     .pitch-container {
@@ -115,13 +128,17 @@ nav button {
 
 /* General styles for the player card */
 .player-card {
-    background-color: #008000;
-    border-radius: 10px;   
+    width: 70px; /* Adjust width */
+    aspect-ratio: 1 / 1; /* Maintain a square shape */
+    background-color: #008000; /* Default background color */
+    border-radius: 10px; /* Rounded corners */
     text-align: center;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    position: relative;
-    transition: width 0.3s ease, height 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
+    position: absolute; /* Position relative to the .pitch container */
+    transform: translate(-50%, -50%); /* Center the player cards */
+    z-index: 2; /* Keep players above the pitch */
+    transition: width 0.3s ease, height 0.3s ease; /* Smooth resizing */
 }
 
 /* Shirt image styling */

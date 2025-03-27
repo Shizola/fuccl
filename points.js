@@ -28,48 +28,77 @@ function loadTeamNameOnly() {
 // Function to create a player card
 function createPlayerCard(player) {
     const card = document.createElement('div');
-    card.className = 'player-card'; // Add appropriate class for styling
-    card.textContent = player.name; // Display player name (or any other info)
+    card.className = 'player-card';
+
+    // Add player shirt image
+    const shirtImg = document.createElement('img');
+    shirtImg.src = player.shirtImage;
+    shirtImg.alt = `${player.name}'s Shirt`;
+    shirtImg.className = 'player-shirt';
+    card.appendChild(shirtImg);
+
+    // Add player name
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'player-name';
+    nameDiv.textContent = player.name;
+    card.appendChild(nameDiv);
+
+    // Add player points
+    const pointsDiv = document.createElement('div');
+    pointsDiv.className = 'player-points';
+    pointsDiv.textContent = `${player.points} pts`;
+    card.appendChild(pointsDiv);
+
     return card;
 }
 
 
 // Function to render players on the pitch based on their position
 function renderPlayersOnPitch(players) {
-    // Get containers for each row
-    const gkRow = document.getElementById('gk-row');
-    const dfRow = document.getElementById('df-row');
-    const mdRow = document.getElementById('md-row');
-    const atRow = document.getElementById('at-row');
+    // Get the pitch container
+    const pitch = document.querySelector('.pitch');
 
-    // Clear rows before rendering
-    gkRow.innerHTML = '';
-    dfRow.innerHTML = '';
-    mdRow.innerHTML = '';
-    atRow.innerHTML = '';
+    // Clear existing players
+    pitch.innerHTML = '<img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">';
 
-    // Loop through players and append them to the correct row based on their position
+    // Define vertical positions for each row
+    const positionStyles = {
+        gk: { top: '10%' },
+        df: { top: '30%' },
+        md: { top: '50%' },
+        at: { top: '70%' }
+    };
+
+    // Group players by position
+    const positions = {
+        gk: [],
+        df: [],
+        md: [],
+        at: []
+    };
+
     players.forEach(player => {
-        console.log(`Rendering player: ${player.name}, Position: ${player.position}`);
+        positions[player.position].push(player);
+    });
 
-        const playerCard = createPlayerCard(player);
-        
-        switch(player.position) {
-            case 'gk':
-                gkRow.appendChild(playerCard);
-                break;
-            case 'df':
-                dfRow.appendChild(playerCard);
-                break;
-            case 'md':
-                mdRow.appendChild(playerCard);
-                break;
-            case 'at':
-                atRow.appendChild(playerCard);
-                break;
-            default:
-                console.warn('Unknown position:', player.position);
-        }
+    // Render players for each position
+    Object.keys(positions).forEach(position => {
+        const rowPlayers = positions[position];
+
+        rowPlayers.forEach((player, index) => {
+            const playerCard = createPlayerCard(player);
+
+            // Calculate dynamic left position to avoid overlap
+            const left = `${(index + 1) * (100 / (rowPlayers.length + 1))}%`;
+
+            // Apply inline styles for positioning
+            playerCard.style.position = 'absolute';
+            playerCard.style.top = positionStyles[position].top;
+            playerCard.style.left = left;
+
+            // Append the player card to the pitch
+            pitch.appendChild(playerCard);
+        });
     });
 }
 
@@ -79,51 +108,25 @@ window.addEventListener('load', function() {
     loadTeamNameOnly();
 
     const players = [
-        {
-            name: 'John Doe',
-            points: 12,
-            shirtImage: 'path-to-john-shirt.png',
-            isCaptain: true,
-            position: 'gk' // Goalkeeper
-        },
-        {
-            name: 'Jane Smith',
-            points: 8,
-            shirtImage: 'path-to-jane-shirt.png',
-            isCaptain: false,
-            position: 'df' // Defender
-        },
-        {
-            name: 'Chris Johnson',
-            points: 5,
-            shirtImage: 'path-to-chris-shirt.png',
-            isCaptain: false,
-            position: 'df' // Defender
-        },
-        {
-            name: 'Chris Johnson',
-            points: 5,
-            shirtImage: 'path-to-chris-shirt.png',
-            isCaptain: false,
-            position: 'df' // Defender
-        },
-        {
-            name: 'Anna Lee',
-            points: 7,
-            shirtImage: 'path-to-anna-shirt.png',
-            isCaptain: false,
-            position: 'md' // Midfielder
-        },
-        {
-            name: 'David Brown',
-            points: 10,
-            shirtImage: 'path-to-david-shirt.png',
-            isCaptain: false,
-            position: 'at' // Attacker
-        },
-        // Add additional players as needed with varied positions
-    ];
+        // Goalkeeper
+        { name: 'John Doe', points: 12, shirtImage: 'images/shirts/highfields.svg', position: 'gk' },
     
+        // Defenders (4)
+        { name: 'Jane Smith', points: 8, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
+        { name: 'Chris Johnson', points: 5, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
+        { name: 'Michael Brown', points: 7, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
+        { name: 'Sarah Wilson', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
+    
+        // Midfielders (4)
+        { name: 'Anna Lee', points: 7, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
+        { name: 'James Taylor', points: 9, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
+        { name: 'Laura White', points: 8, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
+        { name: 'Robert King', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
+    
+        // Attackers (2)
+        { name: 'David Brown', points: 10, shirtImage: 'images/shirts/highfields.svg', position: 'at' },
+        { name: 'Emily Davis', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'at' }
+    ];  
 
 
 // Render players on the page
