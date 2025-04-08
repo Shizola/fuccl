@@ -35,6 +35,12 @@ function createPlayerCard(player) {
     shirtImg.src = player.shirtImage;
     shirtImg.alt = `${player.name}'s Shirt`;
     shirtImg.className = 'player-shirt';
+
+    // Fallback to template.svg if the shirt image fails to load
+    shirtImg.onerror = function () {
+        this.src = 'images/shirts/template.svg';
+    };
+
     card.appendChild(shirtImg);
 
     // Add player name
@@ -61,12 +67,13 @@ function renderPlayersOnPitch(players) {
     // Clear existing players
     pitch.innerHTML = '<img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">';
 
-    // Define vertical positions for each row
+    // Define vertical positions for each row, including substitutes
     const positionStyles = {
         gk: { top: '10%' },
         df: { top: '30%' },
         md: { top: '50%' },
-        at: { top: '70%' }
+        at: { top: '70%' },
+        sb: { top: '90%' } // Substitutes row
     };
 
     // Group players by position
@@ -74,11 +81,22 @@ function renderPlayersOnPitch(players) {
         gk: [],
         df: [],
         md: [],
-        at: []
+        at: [],
+        sb: [] // Substitutes
     };
 
-    players.forEach(player => {
+    // Separate substitutes (last 4 players)
+    const substitutes = players.slice(-4);
+    const mainPlayers = players.slice(0, players.length - 4);
+
+    // Assign main players to their positions
+    mainPlayers.forEach(player => {
         positions[player.position].push(player);
+    });
+
+    // Assign substitutes to the 'sb' position
+    substitutes.forEach(player => {
+        positions.sb.push(player);
     });
 
     // Render players for each position
@@ -129,7 +147,7 @@ function getTestPlayerData() {
 // Function to load player data from PlayFab
 function loadPlayersFromPlayFab(callback) {
     // Fetch user data to get the selectedPlayers key
-    PlayFab.ClientApi.GetUserData({}, function(result, error) {
+    PlayFab.ClientApi.GetUserData({}, function (result, error) {
         if (error) {
             console.error("Error retrieving user data from PlayFab:", error);
             callback(error, null);
@@ -155,11 +173,10 @@ function loadPlayersFromPlayFab(callback) {
             }
 
             // Map the IDs to the PlayFab title data keys
-            selectedPlayerIds = selectedPlayerIds.map(id => `player_${id}`);
-            console.log("Parsed selectedPlayerIds:", selectedPlayerIds);
+            const titleDataKeys = selectedPlayerIds.map(id => `player_${id}`);
 
             // Fetch title data for the selected player IDs
-            PlayFab.ClientApi.GetTitleData({ Keys: selectedPlayerIds }, function(titleDataResult, titleDataError) {
+            PlayFab.ClientApi.GetTitleData({ Keys: titleDataKeys }, function (titleDataResult, titleDataError) {
                 if (titleDataError) {
                     console.error("Error retrieving title data from PlayFab:", titleDataError);
                     callback(titleDataError, null);
@@ -171,13 +188,11 @@ function loadPlayersFromPlayFab(callback) {
                     if (titleDataResult.data && titleDataResult.data.Data) {
                         console.log("Title data keys:", Object.keys(titleDataResult.data.Data));
 
-                        // Iterate over each key-value pair in the title data
-                        for (const [key, value] of Object.entries(titleDataResult.data.Data)) {
-                            console.log(`Key: ${key}, Value: ${value}`);
-                        }
-
-                        // Pass the data to the callback
-                        callback(null, titleDataResult.data.Data);
+                        // Pass the data and selectedPlayerIds to the callback
+                        callback(null, {
+                            players: titleDataResult.data.Data,
+                            selectedPlayerIds: selectedPlayerIds
+                        });
                     } else {
                         console.error("No title data returned.");
                         callback("No title data returned", null);
@@ -188,19 +203,78 @@ function loadPlayersFromPlayFab(callback) {
     });
 }
 
+// Function to parse player data from PlayFab
+function parsePlayerData(playerDataString) {
+    const parts = playerDataString.split('|');
+    const name = parts[0]; // Extract the name
+    const teamName = parts[1]; // Extract the team name
+    const position = parts[2]; // Extract the position
+    const totalPoints = parseInt(parts[5]); // Extract total points directly
+
+    // Convert position to match the test player format
+    const positionMap = {
+        Goalkeeper: 'gk',
+        Defender: 'df',
+        Midfielder: 'md',
+        Attacker: 'at'
+    };
+
+    // Map team names to shirt images
+    const shirtImageMap = {
+        'Highfields FC': 'images/shirts/highfields.svg',
+        'Vinyard FC': 'images/shirts/vinyard.svg',
+        'Bethel Town FC': 'images/shirts/bethel.svg',
+        'Lifepoint Church AFC': 'images/shirts/lifepoint.svg',
+        'DC United FC': 'images/shirts/dc.svg',
+        'FC United': 'images/shirts/fc_united.svg',
+        'Emmanuel Baptist Church FC': 'images/shirts/emmanuel.svg',
+        'Parklands AFC': 'images/shirts/parklands.svg',
+        'Bridgend Deanery FC': 'images/shirts/bridgend.svg',
+        'Rhondda Royals FC': 'images/shirts/rhondda.svg',
+        'Libanus Evangelical Church': 'images/shirts/libanus.svg',
+        'Waterfront Community Church FC': 'images/shirts/waterfront.svg',
+    };
+
+    // Determine the shirt image
+    let shirtImage = shirtImageMap[teamName] || 'images/shirts/default.svg';
+    if (positionMap[position] === 'gk') {
+        // Append "_gk" for goalkeepers
+        const teamKey = Object.keys(shirtImageMap).find(key => shirtImageMap[key] === shirtImage);
+        if (teamKey) {
+            shirtImage = shirtImage.replace('.svg', '_gk.svg');
+        }
+    }
+
+    return {
+        name,
+        position: positionMap[position] || 'unknown', // Map position or default to 'unknown'
+        points: totalPoints,
+        shirtImage // Use the determined shirt image
+    };
+}
+
 // Page load handling for points page
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     checkTeamName();
     loadTeamNameOnly();
 
     // Load players from PlayFab
-    loadPlayersFromPlayFab(function(error, players) {
+    loadPlayersFromPlayFab(function (error, data) {
         if (error) {
             console.error("Failed to load player data:", error);
         } else {
-            // For now, just log the players to the console
+            const { players, selectedPlayerIds } = data;
+
             console.log("Selected players:", players);
+
+            // Sort the players based on the order of selectedPlayerIds
+            const sortedPlayers = selectedPlayerIds.map(id => {
+                const key = `player_${id}`;
+                return players[key] ? parsePlayerData(players[key]) : null;
+            }).filter(player => player !== null); // Filter out any null values (in case of missing data)
+
+            // Render the players on the pitch
+            renderPlayersOnPitch(sortedPlayers);
         }
     });
 });
-
