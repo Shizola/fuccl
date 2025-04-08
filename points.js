@@ -102,12 +102,9 @@ function renderPlayersOnPitch(players) {
     });
 }
 
-// Page load handling for points page
-window.addEventListener('load', function() {
-    checkTeamName();
-    loadTeamNameOnly();
-
-    const players = [
+// Function to get test player data
+function getTestPlayerData() {
+    return [
         // Goalkeeper
         { name: 'John Doe', points: 12, shirtImage: 'images/shirts/highfields.svg', position: 'gk' },
     
@@ -126,11 +123,84 @@ window.addEventListener('load', function() {
         // Attackers (2)
         { name: 'David Brown', points: 10, shirtImage: 'images/shirts/highfields.svg', position: 'at' },
         { name: 'Emily Davis', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'at' }
-    ];  
+    ];
+}
 
+// Function to load player data from PlayFab
+function loadPlayersFromPlayFab(callback) {
+    // Fetch user data to get the selectedPlayers key
+    PlayFab.ClientApi.GetUserData({}, function(result, error) {
+        if (error) {
+            console.error("Error retrieving user data from PlayFab:", error);
+            callback(error, null);
+        } else {
+            // Parse the selectedPlayers key
+            const selectedPlayersString = result.data.Data.selectedPlayers ? result.data.Data.selectedPlayers.Value : null;
+            if (!selectedPlayersString) {
+                console.error("No selectedPlayers key found for the user.");
+                callback("No selectedPlayers key found", null);
+                return;
+            }
 
-// Render players on the page
-renderPlayersOnPitch(players);
+            console.log("selectedPlayersString:", selectedPlayersString);
 
+            let selectedPlayerIds;
+            try {
+                // Parse the JSON string into an array
+                selectedPlayerIds = JSON.parse(selectedPlayersString);
+            } catch (e) {
+                console.error("Error parsing selectedPlayersString:", e);
+                callback("Error parsing selectedPlayersString", null);
+                return;
+            }
+
+            // Map the IDs to the PlayFab title data keys
+            selectedPlayerIds = selectedPlayerIds.map(id => `player_${id}`);
+            console.log("Parsed selectedPlayerIds:", selectedPlayerIds);
+
+            // Fetch title data for the selected player IDs
+            PlayFab.ClientApi.GetTitleData({ Keys: selectedPlayerIds }, function(titleDataResult, titleDataError) {
+                if (titleDataError) {
+                    console.error("Error retrieving title data from PlayFab:", titleDataError);
+                    callback(titleDataError, null);
+                } else {
+                    // Log the entire titleDataResult object to verify what data is returned
+                    console.log("Full title data result:", titleDataResult);
+
+                    // Check if titleDataResult.data.Data exists
+                    if (titleDataResult.data && titleDataResult.data.Data) {
+                        console.log("Title data keys:", Object.keys(titleDataResult.data.Data));
+
+                        // Iterate over each key-value pair in the title data
+                        for (const [key, value] of Object.entries(titleDataResult.data.Data)) {
+                            console.log(`Key: ${key}, Value: ${value}`);
+                        }
+
+                        // Pass the data to the callback
+                        callback(null, titleDataResult.data.Data);
+                    } else {
+                        console.error("No title data returned.");
+                        callback("No title data returned", null);
+                    }
+                }
+            });
+        }
+    });
+}
+
+// Page load handling for points page
+window.addEventListener('load', function() {
+    checkTeamName();
+    loadTeamNameOnly();
+
+    // Load players from PlayFab
+    loadPlayersFromPlayFab(function(error, players) {
+        if (error) {
+            console.error("Failed to load player data:", error);
+        } else {
+            // For now, just log the players to the console
+            console.log("Selected players:", players);
+        }
+    });
 });
 
