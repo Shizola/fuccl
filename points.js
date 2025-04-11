@@ -253,6 +253,26 @@ function parsePlayerData(playerDataString) {
     };
 }
 
+// Function to load the current gameweek from PlayFab Title Data
+function loadGameWeek() {
+    PlayFab.ClientApi.GetTitleData({}, function (titleDataResult, titleDataError) {
+        if (titleDataError) {
+            console.error("Error retrieving title data from PlayFab:", titleDataError);
+        } else {
+            // Check if gameWeek exists in the title data
+            if (titleDataResult.data && titleDataResult.data.Data.gameWeek) {
+                const gameWeek = parseInt(titleDataResult.data.Data.gameWeek); // Parse the gameWeek value as an integer
+                console.log("Current Gameweek:", gameWeek);
+
+                // Update the gameweek placeholder in the HTML
+                document.getElementById('gameweek').textContent = gameWeek;
+            } else {
+                console.error("gameWeek not found in title data.");
+            }
+        }
+    });
+}
+
 // Page load handling for points page
 window.addEventListener('load', function () {
     checkTeamName();
@@ -277,4 +297,6 @@ window.addEventListener('load', function () {
             renderPlayersOnPitch(sortedPlayers);
         }
     });
+
+    loadGameWeek();
 });

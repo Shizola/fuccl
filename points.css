@@ -213,7 +213,7 @@ body::after {
     }
 
     .player-card .player-name {
-        font-size: clamp(7px, 2vw, 14px);
+        font-size: 6px; /* Adjust player font size */
         bottom: 20%;
     }
 
@@ -247,7 +247,7 @@ body::after {
     }
 
     .player-card .player-name {
-        font-size: 10px;
+        font-size: 6px;
     }
 
     .player-card .player-points {
