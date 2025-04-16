@@ -49,15 +49,16 @@ function createPlayerCard(player) {
     nameDiv.textContent = player.name;
     card.appendChild(nameDiv);
 
-    // Add player points
+    // Add player points - use weeklyPoints instead of total points
     const pointsDiv = document.createElement('div');
     pointsDiv.className = 'player-points';
-    pointsDiv.textContent = `${player.points} pts`;
+    // Display weekly points if available, otherwise fall back to total points
+    const pointsToShow = player.weeklyPoints !== undefined ? player.weeklyPoints : player.points;
+    pointsDiv.textContent = `${pointsToShow} pts`;
     card.appendChild(pointsDiv);
 
     return card;
 }
-
 
 // Function to render players on the pitch based on their position
 function renderPlayersOnPitch(players) {
@@ -144,7 +145,7 @@ function getTestPlayerData() {
     ];
 }
 
-// Function to load player data from PlayFab
+// Function to load player data and gameweek from PlayFab
 function loadPlayersFromPlayFab(callback) {
     // Fetch user data to get the selectedPlayers key
     PlayFab.ClientApi.GetUserData({}, function (result, error) {
@@ -174,6 +175,7 @@ function loadPlayersFromPlayFab(callback) {
 
             // Map the IDs to the PlayFab title data keys
             const titleDataKeys = selectedPlayerIds.map(id => `player_${id}`);
+            titleDataKeys.push("gameWeek"); // Add gameWeek to the keys to fetch it in the same API call
 
             // Fetch title data for the selected player IDs
             PlayFab.ClientApi.GetTitleData({ Keys: titleDataKeys }, function (titleDataResult, titleDataError) {
@@ -188,11 +190,49 @@ function loadPlayersFromPlayFab(callback) {
                     if (titleDataResult.data && titleDataResult.data.Data) {
                         console.log("Title data keys:", Object.keys(titleDataResult.data.Data));
 
-                        // Pass the data and selectedPlayerIds to the callback
-                        callback(null, {
-                            players: titleDataResult.data.Data,
-                            selectedPlayerIds: selectedPlayerIds
-                        });
+                        // Get the current gameweek
+                        const gameWeek = parseInt(titleDataResult.data.Data.gameWeek);
+                        console.log("Gameweek Value:", gameWeek);
+                        console.log("Current Gameweek:", gameWeek);
+
+                        // Update the gameweek placeholder in the HTML
+                        document.getElementById('gameweek').textContent = gameWeek;
+
+                        // Parse the players and calculate weekly points
+                        let weeklyPointsTotal = 0;
+                        const players = selectedPlayerIds.map(id => {
+                            const key = `player_${id}`;
+                            const playerDataString = titleDataResult.data.Data[key];
+
+                            if (playerDataString) {
+                                const player = parsePlayerData(playerDataString);
+
+                                // Calculate weekly points for the current gameweek
+                                const weeklyPoints = calculateWeeklyPoints(playerDataString, gameWeek);
+                                console.log(`Player ID: ${id}, Weekly Points: ${weeklyPoints}, Gameweek: ${gameWeek}`);
+
+                                player.weeklyPoints = weeklyPoints;
+
+                                // Add to the total weekly points
+                                weeklyPointsTotal += weeklyPoints;
+
+                                return player;
+                            } else {
+                                console.warn(`No data found for player ID: ${id}`);
+                            }
+                            return null;
+                        }).filter(player => player !== null); // Filter out any null values
+
+                        // Update the weekly points in the HTML
+                        const weeklyPointsElement = document.getElementById('weeklyPoints');
+                        if (!weeklyPointsElement) {
+                            console.error("Element with ID 'weeklyPoints' not found in the HTML.");
+                        } else {
+                            weeklyPointsElement.textContent = weeklyPointsTotal;
+                        }
+
+                        // Pass the players, weekly points total, and selectedPlayerIds to the callback
+                        callback(null, { players, weeklyPointsTotal, selectedPlayerIds });
                     } else {
                         console.error("No title data returned.");
                         callback("No title data returned", null);
@@ -201,6 +241,23 @@ function loadPlayersFromPlayFab(callback) {
             });
         }
     });
+}
+
+// Function to calculate weekly points for a player
+function calculateWeeklyPoints(playerDataString, gameWeek) {
+    try {
+        const parts = playerDataString.split('|');
+        const pointsArray = parts[4].split(','); // Weekly points are stored as a comma-separated string
+
+        // Log the points array for debugging
+        console.log(`Points Array for Gameweek ${gameWeek}:`, pointsArray);
+
+        // Return the points for the current gameweek (1-based index)
+        return parseInt(pointsArray[gameWeek - 1] || 0);
+    } catch (error) {
+        console.error("Error calculating weekly points:", error, "Player Data:", playerDataString);
+        return 0; // Return 0 points if there's an error
+    }
 }
 
 // Function to parse player data from PlayFab
@@ -273,30 +330,62 @@ function loadGameWeek() {
     });
 }
 
+// Function to submit weekly points to PlayFab leaderboard
+function submitWeeklyPointsToLeaderboard(weeklyPointsTotal) {
+    PlayFab.ClientApi.UpdatePlayerStatistics({
+        Statistics: [{
+            StatisticName: "PlayerTotalPoints",
+            Value: weeklyPointsTotal
+        }]
+    }, function (result, error) {
+        if (error) {
+            console.error("Error submitting weekly points to leaderboard:", error);
+        } else {
+            console.log("Successfully submitted weekly points to leaderboard:", result);
+        }
+    });
+}
+
+// Test function to call the submission method
+function testLeaderboardSubmission() {
+    // Load players and gameweek from PlayFab to get the weekly points
+    loadPlayersFromPlayFab(function (error, data) {
+        if (error) {
+            console.error("Failed to load player data:", error);
+        } else {
+            const { weeklyPointsTotal } = data;
+            
+            console.log("Submitting weekly points to leaderboard:", weeklyPointsTotal);
+            
+            // Submit the weekly points to the leaderboard
+            submitWeeklyPointsToLeaderboard(weeklyPointsTotal);
+        }
+    });
+}
+
 // Page load handling for points page
 window.addEventListener('load', function () {
     checkTeamName();
     loadTeamNameOnly();
 
-    // Load players from PlayFab
+    // Load players and gameweek from PlayFab
     loadPlayersFromPlayFab(function (error, data) {
         if (error) {
             console.error("Failed to load player data:", error);
         } else {
-            const { players, selectedPlayerIds } = data;
-
+            const { players } = data;
+            
             console.log("Selected players:", players);
-
-            // Sort the players based on the order of selectedPlayerIds
-            const sortedPlayers = selectedPlayerIds.map(id => {
-                const key = `player_${id}`;
-                return players[key] ? parsePlayerData(players[key]) : null;
-            }).filter(player => player !== null); // Filter out any null values (in case of missing data)
-
+            
+            // Players is already an array from loadPlayersFromPlayFab
             // Render the players on the pitch
-            renderPlayersOnPitch(sortedPlayers);
+            renderPlayersOnPitch(players);
         }
     });
-
-    loadGameWeek();
 });
+
+// Add event listener to the test button
+const testButton = document.getElementById('testLeaderboardBtn');
+if (testButton) {
+    testButton.addEventListener('click', testLeaderboardSubmission);
+}
