@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="leaderboard.css">
+
+    <title>Leaderboard - FUCCL</title>
+</head>
+
+<body>
+    <main class="container">
+        <!-- Navigation bar -->
+        <nav>
+            <button onclick="window.location.href='points.html'" class="secondary">Points</button>
+            <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
+            <button onclick="window.location.href='transfers.html'" class="secondary">Transfers</button>
+            <button onclick="window.location.href='leaderboard.html'">Leaderboard</button>
+            <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
+        </nav>
+
+        <header>
+            <h1>Leaderboard</h1>
+            <h4 id="teamName" class="teamName">Loading Team Name...</h4>
+            <div class="points-container">
+                <div class="points-section gameweek-number">
+                    Gameweek: <span id="gameweek">Loading...</span>
+                </div>
+                <div class="points-section weekly-points">
+                    Weekly Points: <span class="red-text" id="weeklyPoints">Loading...</span>
+                </div>
+                <div class="points-section total-points">
+                    Total Points: <span id="totalPoints">Loading...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Leaderboard Section -->
+        <section class="leaderboard-container">
+            <div id="leaderboard-wrapper">
+                <div class="loading-message">Loading leaderboard data...</div>
+                <!-- Leaderboard table will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Load the PlayFab SDK from the CDN -->
+        <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
+        <!-- Link to your custom script -->
+        <script src="common.js"></script>
+        <script src="leaderboard.js"></script>
+    </main>
+</body>
+</html>

@@ -332,14 +332,19 @@ function loadGameWeek() {
 
 // Function to submit weekly points to PlayFab leaderboard
 function submitWeeklyPointsToLeaderboard(weeklyPointsTotal) {
+    // Make sure weeklyPointsTotal is a valid integer
+    const points = parseInt(weeklyPointsTotal) || 0;
+    
     PlayFab.ClientApi.UpdatePlayerStatistics({
         Statistics: [{
             StatisticName: "PlayerTotalPoints",
-            Value: weeklyPointsTotal
+            Value: points
         }]
     }, function (result, error) {
         if (error) {
             console.error("Error submitting weekly points to leaderboard:", error);
+            // Log more details about the error
+            console.error("Error details:", JSON.stringify(error));
         } else {
             console.log("Successfully submitted weekly points to leaderboard:", result);
         }
