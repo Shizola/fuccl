@@ -188,72 +188,83 @@ function renderLeaderboard(leaderboardData, currentPlayerId) {
     
     // Add data rows
     const tbody = table.createTBody();
-    leaderboardData.forEach(entry => {
-        const row = tbody.insertRow();
-        
-        // Highlight current user's row
-        if (entry.PlayFabId === currentPlayerId) {
-            row.className = 'current-user';
-        }
-        
-        // Add rank styling for top 3
-        const rankCell = row.insertCell();
-        const rank = entry.Position + 1; // Position is 0-based
-        rankCell.textContent = rank;
-        
-        if (rank <= 3) {
-            rankCell.className = `rank-${rank}`;
-        }
-        
-        const nameCell = row.insertCell();
-        nameCell.textContent = entry.DisplayName || 'Unknown Team';
-        
-        const pointsCell = row.insertCell();
-        pointsCell.textContent = entry.StatValue;
-    });
     
-    leaderboardElement.appendChild(table);
+    // Track entries to render so we can wait for all team names to load
+    const entriesToRender = [];
+    let entriesProcessed = 0;
     
     // If no data found
     if (leaderboardData.length === 0) {
         leaderboardElement.innerHTML = '<div class="error-message">No leaderboard data available yet.</div>';
+        return;
     }
+    
+    // For each leaderboard entry, get the team name from PlayFab
+    leaderboardData.forEach(entry => {
+        // Get user data for each player to fetch their team name
+        PlayFab.ClientApi.GetUserReadOnlyData({
+            PlayFabId: entry.PlayFabId,
+            Keys: ["teamName"]
+        }, function(result, error) {
+            let teamName = 'Unknown Team';
+            
+            if (!error && result.data && result.data.Data && result.data.Data.teamName) {
+                teamName = result.data.Data.teamName.Value;
+            }
+            
+            // Store entry with team name for rendering
+            entriesToRender.push({
+                position: entry.Position,
+                playFabId: entry.PlayFabId,
+                teamName: teamName,
+                points: entry.StatValue
+            });
+            
+            entriesProcessed++;
+            
+            // When all entries are processed, render the table
+            if (entriesProcessed === leaderboardData.length) {
+                // Sort by position to maintain correct order
+                entriesToRender.sort((a, b) => a.position - b.position);
+                
+                // Render the sorted entries
+                entriesToRender.forEach(item => {
+                    const row = tbody.insertRow();
+                    
+                    // Highlight current user's row
+                    if (item.playFabId === currentPlayerId) {
+                        row.className = 'current-user';
+                    }
+                    
+                    // Add rank styling for top 3
+                    const rankCell = row.insertCell();
+                    const rank = item.position + 1; // Position is 0-based
+                    rankCell.textContent = rank;
+                    
+                    if (rank <= 3) {
+                        rankCell.className = `rank-${rank}`;
+                    }
+                    
+                    const nameCell = row.insertCell();
+                    nameCell.textContent = item.teamName;
+                    
+                    const pointsCell = row.insertCell();
+                    pointsCell.textContent = item.points;
+                });
+                
+                leaderboardElement.appendChild(table);
+            }
+        });
+    });
+    
+    // Show loading message while processing
+    leaderboardElement.innerHTML = '<div class="loading-message">Loading leaderboard data...</div>';
 }
 
 // Page load handling for leaderboard page
 window.addEventListener('load', function () {
-    // Initialize PlayFab if not already initialized (you can move this to common.js)
-    if (!PlayFab.IsClientLoggedIn()) {
-        // If using TitleID from common.js
-        PlayFab.settings.titleId = titleId;
-        
-        // Check for and use auth token from localStorage
-        const authToken = localStorage.getItem('authToken');
-        if (authToken) {
-            PlayFab.ClientApi.LoginWithCustomID({
-                CustomId: authToken,
-                CreateAccount: false
-            }, function (result, error) {
-                if (error) {
-                    console.error("Login failed", error);
-                    window.location.href = "login.html";
-                } else {
-                    console.log("Logged in successfully", result);
-                    initializeLeaderboardPage();
-                }
-            });
-        } else {
-            console.log("No auth token found. Redirecting to login.");
-            window.location.href = "login.html";
-        }
-    } else {
-        initializeLeaderboardPage();
-    }
-});
-
-// Function to initialize the leaderboard page after login
-function initializeLeaderboardPage() {
+    // Use the setupPlayFabAuth from common.js
     checkTeamName();
     loadUserData();
     getLeaderboard();
-}
+});
