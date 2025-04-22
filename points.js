@@ -161,7 +161,7 @@ function loadPlayersFromPlayFab(callback) {
                 return;
             }
 
-            console.log("selectedPlayersString:", selectedPlayersString);
+            //console.log("selectedPlayersString:", selectedPlayersString);
 
             let selectedPlayerIds;
             try {
@@ -188,7 +188,7 @@ function loadPlayersFromPlayFab(callback) {
 
                     // Check if titleDataResult.data.Data exists
                     if (titleDataResult.data && titleDataResult.data.Data) {
-                        console.log("Title data keys:", Object.keys(titleDataResult.data.Data));
+                       // console.log("Title data keys:", Object.keys(titleDataResult.data.Data));
 
                         // Get the current gameweek
                         const gameWeek = parseInt(titleDataResult.data.Data.gameWeek);
@@ -209,7 +209,7 @@ function loadPlayersFromPlayFab(callback) {
 
                                 // Calculate weekly points for the current gameweek
                                 const weeklyPoints = calculateWeeklyPoints(playerDataString, gameWeek);
-                                console.log(`Player ID: ${id}, Weekly Points: ${weeklyPoints}, Gameweek: ${gameWeek}`);
+                                //console.log(`Player ID: ${id}, Weekly Points: ${weeklyPoints}, Gameweek: ${gameWeek}`);
 
                                 player.weeklyPoints = weeklyPoints;
 
@@ -335,19 +335,56 @@ function submitWeeklyPointsToLeaderboard(weeklyPointsTotal) {
     // Make sure weeklyPointsTotal is a valid integer
     const points = parseInt(weeklyPointsTotal) || 0;
     
-    PlayFab.ClientApi.UpdatePlayerStatistics({
-        Statistics: [{
-            StatisticName: "PlayerTotalPoints",
-            Value: points
-        }]
-    }, function (result, error) {
+    // First get the user's data to get team name
+    fetchUserData(function(error, userData) {
         if (error) {
-            console.error("Error submitting weekly points to leaderboard:", error);
-            // Log more details about the error
-            console.error("Error details:", JSON.stringify(error));
-        } else {
-            console.log("Successfully submitted weekly points to leaderboard:", result);
+            console.error("Error fetching user data:", error);
+            return;
         }
+        
+        // 1. Update the player statistics (leaderboard entry)
+        PlayFab.ClientApi.UpdatePlayerStatistics({
+            Statistics: [{
+                StatisticName: "PlayerTotalPoints",
+                Value: points
+            }]
+        }, function (result, error) {
+            if (error) {
+                console.error("Error submitting weekly points to leaderboard:", error);
+                console.error("Error details:", JSON.stringify(error));
+            } else {
+                console.log("Successfully submitted weekly points to leaderboard:", result);
+                
+                // 2. Store the team and manager info in a shared data location for leaderboard use
+                PlayFab.ClientApi.UpdateUserData({
+                    Data: {
+                        "leaderboardInfo": JSON.stringify({
+                            teamName: userData.teamName,
+                            managerName: userData.managerName || "Unknown"
+                        })
+                    },
+                    // Make this data readable by other players
+                    Permission: "Public"
+                }, function(updateResult, updateError) {
+                    if (updateError) {
+                        console.error("Error storing leaderboard metadata:", updateError);
+                    } else {
+                        console.log("Successfully stored leaderboard metadata");
+                    }
+                });
+                
+                // 3. Update DisplayName to show team name
+                PlayFab.ClientApi.UpdateUserTitleDisplayName({
+                    DisplayName: userData.teamName
+                }, function(displayResult, displayError) {
+                    if (displayError) {
+                        console.error("Error updating display name:", displayError);
+                    } else {
+                        console.log("Successfully updated display name to team name");
+                    }
+                });
+            }
+        });
     });
 }
 
