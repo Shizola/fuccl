@@ -161,8 +161,6 @@ function loadPlayersFromPlayFab(callback) {
                 return;
             }
 
-            //console.log("selectedPlayersString:", selectedPlayersString);
-
             let selectedPlayerIds;
             try {
                 // Parse the JSON string into an array
@@ -183,39 +181,38 @@ function loadPlayersFromPlayFab(callback) {
                     console.error("Error retrieving title data from PlayFab:", titleDataError);
                     callback(titleDataError, null);
                 } else {
-                    // Log the entire titleDataResult object to verify what data is returned
-                    console.log("Full title data result:", titleDataResult);
-
                     // Check if titleDataResult.data.Data exists
                     if (titleDataResult.data && titleDataResult.data.Data) {
-                       // console.log("Title data keys:", Object.keys(titleDataResult.data.Data));
-
                         // Get the current gameweek
                         const gameWeek = parseInt(titleDataResult.data.Data.gameWeek);
-                        console.log("Gameweek Value:", gameWeek);
                         console.log("Current Gameweek:", gameWeek);
 
                         // Update the gameweek placeholder in the HTML
                         document.getElementById('gameweek').textContent = gameWeek;
 
-                        // Parse the players and calculate weekly points
-                        let weeklyPointsTotal = 0;
+                        // Parse the players and calculate points
+                        let weeklyPointsTotal = 0;         // For displaying current week's points
+                        let cumulativePointsTotal = 0;     // For the leaderboard (all weeks combined)
+                        
                         const players = selectedPlayerIds.map(id => {
                             const key = `player_${id}`;
                             const playerDataString = titleDataResult.data.Data[key];
 
                             if (playerDataString) {
                                 const player = parsePlayerData(playerDataString);
-
-                                // Calculate weekly points for the current gameweek
+                                
+                                // Calculate points for current week only (for display)
                                 const weeklyPoints = calculateWeeklyPoints(playerDataString, gameWeek);
-                                //console.log(`Player ID: ${id}, Weekly Points: ${weeklyPoints}, Gameweek: ${gameWeek}`);
-
                                 player.weeklyPoints = weeklyPoints;
-
-                                // Add to the total weekly points
                                 weeklyPointsTotal += weeklyPoints;
-
+                                
+                                // Calculate cumulative points for all weeks up to current
+                                const cumulativePoints = calculateTotalPointsUpToCurrentWeek(playerDataString, gameWeek);
+                                player.cumulativePoints = cumulativePoints;
+                                cumulativePointsTotal += cumulativePoints;
+                                
+                                console.log(`Player ${player.name}: Week ${gameWeek} points = ${weeklyPoints}, Cumulative = ${cumulativePoints}`);
+                                
                                 return player;
                             } else {
                                 console.warn(`No data found for player ID: ${id}`);
@@ -225,14 +222,21 @@ function loadPlayersFromPlayFab(callback) {
 
                         // Update the weekly points in the HTML
                         const weeklyPointsElement = document.getElementById('weeklyPoints');
-                        if (!weeklyPointsElement) {
-                            console.error("Element with ID 'weeklyPoints' not found in the HTML.");
-                        } else {
+                        if (weeklyPointsElement) {
                             weeklyPointsElement.textContent = weeklyPointsTotal;
                         }
+                        
+                        // Log the total cumulative points for leaderboard
+                        console.log(`Team total cumulative points: ${cumulativePointsTotal} (across all ${gameWeek} weeks)`);
 
-                        // Pass the players, weekly points total, and selectedPlayerIds to the callback
-                        callback(null, { players, weeklyPointsTotal, selectedPlayerIds });
+                        // Pass all data to the callback
+                        callback(null, {
+                            players,
+                            weeklyPointsTotal,         // Current week points
+                            cumulativePointsTotal,     // Total points across all weeks
+                            gameWeek,                  // Current gameweek
+                            selectedPlayerIds
+                        });
                     } else {
                         console.error("No title data returned.");
                         callback("No title data returned", null);
@@ -256,6 +260,33 @@ function calculateWeeklyPoints(playerDataString, gameWeek) {
         return parseInt(pointsArray[gameWeek - 1] || 0);
     } catch (error) {
         console.error("Error calculating weekly points:", error, "Player Data:", playerDataString);
+        return 0; // Return 0 points if there's an error
+    }
+}
+
+// Function to calculate total points for a player across all gameweeks up to the current one
+function calculateTotalPointsUpToCurrentWeek(playerDataString, currentGameWeek) {
+    try {
+        const parts = playerDataString.split('|');
+        const pointsArray = parts[4].split(','); // Weekly points are stored as a comma-separated string
+        
+        // Log the points array for debugging
+        console.log(`Points Array up to Gameweek ${currentGameWeek}:`, pointsArray);
+        
+        // Sum up points for all weeks up to the current gameweek
+        let totalPoints = 0;
+        for (let week = 0; week < currentGameWeek; week++) {
+            // Add points for each week (using 0 if the week doesn't exist in the array)
+            const weeklyPoints = parseInt(pointsArray[week] || 0);
+            totalPoints += weeklyPoints;
+            
+            console.log(`Week ${week + 1}: ${weeklyPoints} points`);
+        }
+        
+        console.log(`Total accumulated points up to week ${currentGameWeek}: ${totalPoints}`);
+        return totalPoints;
+    } catch (error) {
+        console.error("Error calculating total points:", error, "Player Data:", playerDataString);
         return 0; // Return 0 points if there's an error
     }
 }
@@ -331,9 +362,11 @@ function loadGameWeek() {
 }
 
 // Function to submit weekly points to PlayFab leaderboard
-function submitWeeklyPointsToLeaderboard(weeklyPointsTotal) {
-    // Make sure weeklyPointsTotal is a valid integer
-    const points = parseInt(weeklyPointsTotal) || 0;
+function submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTotal) {
+    // Make sure cumulativePointsTotal is a valid integer
+    const points = parseInt(cumulativePointsTotal) || 0;
+    
+    console.log(`Submitting to leaderboard: Current week points = ${weeklyPointsTotal}, Cumulative total = ${points}`);
     
     // First get the user's data to get team name
     fetchUserData(function(error, userData) {
@@ -342,11 +375,11 @@ function submitWeeklyPointsToLeaderboard(weeklyPointsTotal) {
             return;
         }
         
-        // 1. Update the player statistics (leaderboard entry)
+        // 1. Update the player statistics (leaderboard entry) with CUMULATIVE points
         PlayFab.ClientApi.UpdatePlayerStatistics({
             Statistics: [{
                 StatisticName: "PlayerTotalPoints",
-                Value: points
+                Value: points  // Using cumulative points instead of weekly points
             }]
         }, function (result, error) {
             if (error) {
@@ -390,17 +423,18 @@ function submitWeeklyPointsToLeaderboard(weeklyPointsTotal) {
 
 // Test function to call the submission method
 function testLeaderboardSubmission() {
-    // Load players and gameweek from PlayFab to get the weekly points
+    // Load players and gameweek from PlayFab to get points data
     loadPlayersFromPlayFab(function (error, data) {
         if (error) {
             console.error("Failed to load player data:", error);
         } else {
-            const { weeklyPointsTotal } = data;
+            const { weeklyPointsTotal, cumulativePointsTotal } = data;
             
-            console.log("Submitting weekly points to leaderboard:", weeklyPointsTotal);
+            console.log("Weekly points:", weeklyPointsTotal);
+            console.log("Cumulative points for leaderboard:", cumulativePointsTotal);
             
-            // Submit the weekly points to the leaderboard
-            submitWeeklyPointsToLeaderboard(weeklyPointsTotal);
+            // Submit the cumulative points to the leaderboard
+            submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTotal);
         }
     });
 }
