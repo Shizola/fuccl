@@ -48,8 +48,13 @@
 
 /* Highlight current user's row */
 .leaderboard-table tr.current-user {
-    background-color: #e6f7ff;
+    background-color: #fff8dc !important; /* Light yellow background */
     font-weight: bold;
+    border: 2px solid #ffd700; /* Gold border */
+}
+
+.leaderboard-table tr.current-user:hover {
+    background-color: #ffeb9c !important; /* Slightly darker yellow on hover */
 }
 
 /* Rankings styling */
@@ -75,5 +80,171 @@
     .leaderboard-table td {
         padding: 8px 10px;
         font-size: 0.9rem;
+    }
+}
+
+/* ========================================
+   PAGINATION STYLES
+   ======================================== */
+
+/* Leaderboard Header */
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 10px;
+}
+
+.leaderboard-header h2 {
+    margin: 0;
+    color: #087cc4;
+}
+
+.leaderboard-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 30px 0;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid #087cc4;
+    background-color: #ffffff;
+    color: #087cc4;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(.disabled) {
+    background-color: #087cc4;
+    color: white;
+}
+
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #ccc;
+    color: #ccc;
+}
+
+/* Page Numbers */
+.page-numbers {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.page-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background-color: #ffffff;
+    color: #333;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    min-width: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.page-btn:hover {
+    background-color: #f0f0f0;
+    border-color: #087cc4;
+}
+
+.page-btn.active {
+    background-color: #087cc4;
+    color: white;
+    border-color: #087cc4;
+    font-weight: bold;
+}
+
+.pagination-ellipsis {
+    padding: 8px 4px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* User Location Helper */
+.user-location-helper {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e6f7ff;
+    border: 1px solid #b3e0ff;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.user-location-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.goto-user-btn {
+    padding: 6px 12px;
+    background-color: #087cc4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.goto-user-btn:hover {
+    background-color: #065a8c;
+}
+
+/* Mobile Responsive Pagination */
+@media (max-width: 768px) {
+    .leaderboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .leaderboard-stats {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .pagination-controls {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .page-numbers {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .user-location-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .pagination-btn {
+        width: 100%;
+        max-width: 150px;
     }
 }

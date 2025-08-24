@@ -16,6 +16,7 @@ function setupPlayFabAuth() {
 
 function handleAuthError() {
     localStorage.removeItem("sessionTicket");
+    localStorage.removeItem("playFabId"); // Also remove stored PlayFab ID
     alert("Your session has expired. Please log in again.");
     window.location.href = "login.html";
 }
@@ -57,9 +58,23 @@ function handleRegistrationResponse(result, error) {
         alert("Registration failed: " + error.errorMessage);
     } else {
         console.log("User registered successfully:", result);
-        alert("Registration successful! Redirecting to create team.");
+        
+        // Store session ticket
         localStorage.setItem("sessionTicket", result.data.SessionTicket);
-        window.location.href = "create-team.html";
+        
+        // Immediately get and store PlayFab ID for future use
+        PlayFab.ClientApi.GetAccountInfo({}, function(accountResult, accountError) {
+            if (!accountError && accountResult.data.AccountInfo.PlayFabId) {
+                localStorage.setItem("playFabId", accountResult.data.AccountInfo.PlayFabId);
+                console.log("Stored PlayFab ID:", accountResult.data.AccountInfo.PlayFabId);
+            } else {
+                console.warn("Could not retrieve PlayFab ID during registration:", accountError);
+            }
+            
+            // Continue with redirect regardless
+            alert("Registration successful! Redirecting to create team.");
+            window.location.href = "create-team.html";
+        });
     }
 }
 
@@ -98,15 +113,30 @@ function handleLoginResponse(result, error) {
         alert("Login failed: " + error.errorMessage);
     } else {
         console.log("User logged in successfully:", result);
-        alert("Login successful! Redirecting to points.");
+        
+        // Store session ticket
         localStorage.setItem("sessionTicket", result.data.SessionTicket);
-        window.location.href = "points.html";
+        
+        // Immediately get and store PlayFab ID for future use
+        PlayFab.ClientApi.GetAccountInfo({}, function(accountResult, accountError) {
+            if (!accountError && accountResult.data.AccountInfo.PlayFabId) {
+                localStorage.setItem("playFabId", accountResult.data.AccountInfo.PlayFabId);
+                console.log("Stored PlayFab ID:", accountResult.data.AccountInfo.PlayFabId);
+            } else {
+                console.warn("Could not retrieve PlayFab ID during login:", accountError);
+            }
+            
+            // Continue with redirect regardless
+            alert("Login successful! Redirecting to points.");
+            window.location.href = "points.html";
+        });
     }
 }
 
 // Logout function
 function logOut() {
     localStorage.removeItem("sessionTicket");
+    localStorage.removeItem("playFabId"); // Also remove stored PlayFab ID
     console.log("User logged out successfully");
     window.location.href = "index.html";
 }
@@ -261,6 +291,32 @@ function loadTeamNameOnly() {
     });
 }
 
+// Helper function to get PlayFab ID (cached or from API)
+function getPlayFabId(callback) {
+    // First try to get cached PlayFab ID
+    const cachedPlayFabId = localStorage.getItem("playFabId");
+    if (cachedPlayFabId) {
+        console.log("Using cached PlayFab ID:", cachedPlayFabId);
+        callback(null, cachedPlayFabId);
+        return;
+    }
+    
+    // Fallback to API call if not cached
+    console.log("PlayFab ID not cached, fetching from API...");
+    PlayFab.ClientApi.GetAccountInfo({}, function(accountResult, accountError) {
+        if (accountError) {
+            console.error("Error getting PlayFab ID:", accountError);
+            callback(accountError, null);
+        } else {
+            const playFabId = accountResult.data.AccountInfo.PlayFabId;
+            // Cache it for future use
+            localStorage.setItem("playFabId", playFabId);
+            console.log("Retrieved and cached PlayFab ID:", playFabId);
+            callback(null, playFabId);
+        }
+    });
+}
+
 // Helper function to initialize page-specific content
 function initializePage(currentPage) {
     switch (currentPage) {
@@ -317,6 +373,33 @@ function initializePage(currentPage) {
             // Load leaderboard for league page
             if (typeof getLeaderboard === 'function') {
                 getLeaderboard();
+            }
+            break;
+            
+        case 'pick-team.html':
+            checkTeamName();
+            loadTeamNameOnly();
+            
+            // Load players for pick team page
+            if (typeof loadPlayersFromPlayFab === 'function') {
+                loadPlayersFromPlayFab(function (error, data) {
+                    if (error) {
+                        console.error("Failed to load player data:", error);
+                        
+                        // Show error message to user
+                        const pitch = document.querySelector('.pitch');
+                        if (pitch) {
+                            pitch.innerHTML = '<div class="error-message">Failed to load player data. Please refresh the page.</div>';
+                        }
+                    } else {
+                        const { players } = data;
+                        console.log("Available players for selection:", players);
+                        // Render the players on the pitch
+                        if (typeof renderPlayersOnPitch === 'function') {
+                            renderPlayersOnPitch(players);
+                        }
+                    }
+                });
             }
             break;
             
