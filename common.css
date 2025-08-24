@@ -1,0 +1,86 @@
+/* ========================================
+   FUCCL Common Styles
+   Shared styles used across multiple pages
+   ======================================== */
+
+/* Grid layout for button navigation */
+nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 0px;
+    margin-bottom: 20px;
+}
+
+/* Ensure the buttons take up the full width of their grid cells */
+nav button {
+    width: 100%;
+}
+
+/* Team name styling */
+.teamName {
+    text-align: center;
+}
+
+/* Container for points display */
+.points-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Adjust gameweek alignment */
+.gameweek-number {
+    text-align: left;
+    flex: 1;
+}
+
+/* Center weekly points */
+.weekly-points {
+    flex: 1;
+    text-align: center;
+}
+
+/* Align total points to the right */
+.total-points {
+    flex: 1;
+    text-align: right;
+}
+
+/* Color the weekly points in red */
+.red-text {
+    color: red;
+    font-weight: bold;
+}
+
+/* Error and loading message styles */
+.error-message {
+    color: #d63384;
+    background-color: #f8d7da;
+    border: 1px solid #f5c2c7;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    text-align: center;
+}
+
+.loading-message {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Success message styling */
+.success-message {
+    color: #0f5132;
+    background-color: #d1e7dd;
+    border: 1px solid #badbcc;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    text-align: center;
+}

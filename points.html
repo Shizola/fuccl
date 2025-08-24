@@ -1,10 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://download.playfab.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data:; connect-src 'self' https://*.playfabapi.com https://playfabapi.com;">
 
     <!-- Link to Pico.css CDN -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
-    <link rel="stylesheet" href="points.css"> <!-- Only points.css is needed now -->
+    <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
+    <link rel="stylesheet" href="points.css"> <!-- Page-specific styles -->
 
     <title>Points - FUCCL</title>
 </head>

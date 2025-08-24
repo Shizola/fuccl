@@ -4,27 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://download.playfab.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data:; connect-src 'self' https://*.playfabapi.com https://playfabapi.com;">
 
     <!-- Link to Pico.css CDN -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
 
     <title>Profile - FUCCL</title>
     <style>
-        /* Grid layout for button navigation */
-        nav {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px; /* Space between buttons */
-            padding: 0px; /* Padding around the grid */
-            margin-bottom: 20px; /* Add gap between nav and content */
-        }
-
-        /* Ensure the buttons take up the full width of their grid cells */
-        nav button {
-            width: 100%;
-        }
-
-        /* Simple container for profile details */
+        /* Profile-specific styles */
         .profile-container {
             margin-top: 30px;
             text-align: center;
@@ -71,7 +59,7 @@
     <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
 
     <!-- Link to your custom script -->
-    <script src="script.js"></script>
+    <script src="common.js"></script>
 
 </body>
 </html>

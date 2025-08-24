@@ -22,9 +22,26 @@ function handleAuthError() {
 
 // User registration and login functions
 function registerUser(event) {
-    event.preventDefault();
+    event.preventDefault(); // Prevent form submission
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+
+    // Input validation
+    if (!email || !email.trim()) {
+        alert('Please enter an email address');
+        return;
+    }
+    if (!password || password.length < 6) {
+        alert('Password must be at least 6 characters long');
+        return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+        alert('Please enter a valid email address');
+        return;
+    }
     const request = {
         TitleId: PlayFab.settings.titleId,
         Email: email,
@@ -47,9 +64,26 @@ function handleRegistrationResponse(result, error) {
 }
 
 function loginUser(event) {
-    event.preventDefault();
+    event.preventDefault(); // Prevent form submission
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+
+    // Input validation
+    if (!email || !email.trim()) {
+        alert('Please enter an email address');
+        return;
+    }
+    if (!password || password.length < 1) {
+        alert('Please enter a password');
+        return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+        alert('Please enter a valid email address');
+        return;
+    }
     const request = {
         TitleId: PlayFab.settings.titleId,
         Email: email,
@@ -80,10 +114,20 @@ function logOut() {
 function resetPassword(event) {
     event.preventDefault();
     const email = document.getElementById('email').value;
-    if (!email) {
-        alert("Please enter your email address.");
+
+    // Input validation
+    if (!email || !email.trim()) {
+        alert('Please enter an email address');
         return;
     }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+        alert('Please enter a valid email address');
+        return;
+    }
+
     const request = {
         TitleId: PlayFab.settings.titleId,
         Email: email
@@ -107,9 +151,26 @@ function registerTeam(event) {
         window.location.href = "login.html";
         return;
     }
+    const teamName = document.getElementById('teamName').value;
+    const managerName = document.getElementById('managerName').value;
+
+    // Input validation
+    if (!teamName || !teamName.trim()) {
+        alert('Please enter a team name');
+        return;
+    }
+    if (!managerName || !managerName.trim()) {
+        alert('Please enter a manager name');
+        return;
+    }
+
+    // Sanitize input (remove potentially harmful characters)
+    const sanitizedTeamName = teamName.trim().substring(0, 50); // Limit length
+    const sanitizedManagerName = managerName.trim().substring(0, 50);
+
     const teamData = {
-        teamName: document.getElementById('teamName').value,
-        managerName: document.getElementById('managerName').value
+        teamName: sanitizedTeamName,
+        managerName: sanitizedManagerName
     };
     const request = {
         Data: teamData
@@ -132,6 +193,38 @@ function handleTeamUpdateResponse(result, error) {
     }
 }
 
+// Function to check if the user's team name is set
+function checkTeamName() {
+    PlayFab.ClientApi.GetUserData({}, function(result, error) {
+        if (error) {
+            console.error("Error retrieving user data:", error);
+        } else {
+            const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : null;
+            if (!teamName) {
+                console.log("Team name not set. Redirecting to create team page.");
+                alert("You must create a team first.");
+                window.location.href = "create-team.html";
+            } else {
+                console.log("Team name found:", teamName);
+            }
+        }
+    });
+}
+
+// User data functions
+function testUserDataAccess() {
+    console.log("Testing user data access");
+    PlayFab.ClientApi.GetUserData({}, handleUserDataResponse);
+}
+
+function handleUserDataResponse(result, error) {
+    if (error) {
+        console.error("Error getting user data:", error);
+    } else {
+        console.log("Successfully retrieved user data:", result);
+    }
+}
+
 // Fetch user profile data and return it through a callback
 function fetchUserData(callback) {
     console.log("Fetching user data...");
@@ -149,11 +242,82 @@ function fetchUserData(callback) {
     });
 }
 
+// Display profile data (for profile page)
+function loadProfileData() {
+    fetchUserData(function(error, userData) {
+        if (!error && userData) {
+            document.getElementById('teamName').innerText = userData.teamName;
+            document.getElementById('managerName').innerText = userData.managerName;
+        }
+    });
+}
+
+// Display team name only (for points page)
+function loadTeamNameOnly() {
+    fetchUserData(function(error, userData) {
+        if (!error && userData) {
+            document.getElementById('teamName').innerText = userData.teamName;
+        }
+    });
+}
+
 // Helper function to initialize page-specific content
 function initializePage(currentPage) {
     switch (currentPage) {
         case 'profile.html':
             loadProfileData();
+            break;
+            
+        case 'points.html':
+            checkTeamName();
+            loadTeamNameOnly();
+            
+            // PERFORMANCE OPTIMIZATION: Show loading states and handle errors gracefully
+            const pointsElements = {
+                gameweek: document.getElementById('gameweek'),
+                weeklyPoints: document.getElementById('weeklyPoints'),
+                totalPoints: document.getElementById('totalPoints'),
+                teamName: document.getElementById('teamName')
+            };
+            
+            // Set loading states
+            if (pointsElements.gameweek) pointsElements.gameweek.textContent = 'Loading...';
+            if (pointsElements.weeklyPoints) pointsElements.weeklyPoints.textContent = 'Loading...';
+            if (pointsElements.totalPoints) pointsElements.totalPoints.textContent = 'Loading...';
+            
+            // Load players and render the pitch for points page
+            if (typeof loadPlayersFromPlayFab === 'function') {
+                loadPlayersFromPlayFab(function (error, data) {
+                    if (error) {
+                        console.error("Failed to load player data:", error);
+                        // Show error states
+                        if (pointsElements.gameweek) pointsElements.gameweek.textContent = 'Error';
+                        if (pointsElements.weeklyPoints) pointsElements.weeklyPoints.textContent = 'Error';
+                        if (pointsElements.totalPoints) pointsElements.totalPoints.textContent = 'Error';
+                        
+                        // Show error message to user
+                        const pitch = document.querySelector('.pitch');
+                        if (pitch) {
+                            pitch.innerHTML = '<div class="error-message">Failed to load player data. Please refresh the page.</div>';
+                        }
+                    } else {
+                        const { players } = data;
+                        console.log("Selected players:", players);
+                        // Render the players on the pitch
+                        if (typeof renderPlayersOnPitch === 'function') {
+                            renderPlayersOnPitch(players);
+                        }
+                    }
+                });
+            }
+            break;
+            
+        case 'league.html':
+            checkTeamName();
+            // Load leaderboard for league page
+            if (typeof getLeaderboard === 'function') {
+                getLeaderboard();
+            }
             break;
             
         case 'create-team.html':
@@ -179,7 +343,7 @@ window.addEventListener('load', function() {
 
     // Authentication routing logic
     if (sessionTicket) {
-        console.log("User is logged in with session ticket:", sessionTicket);
+        console.log("User is logged in");
         
         // Test user data access to verify session is still valid
         PlayFab.ClientApi.GetUserData({}, function(result, error) {

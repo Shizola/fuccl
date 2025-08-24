@@ -1,21 +1,3 @@
-// Function to check if the user's team name is set
-function checkTeamName() {
-    PlayFab.ClientApi.GetUserData({}, function(result, error) {
-        if (error) {
-            console.error("Error retrieving user data:", error);
-        } else {
-            const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : null;
-            if (!teamName) {
-                console.log("Team name not set. Redirecting to create team page.");
-                alert("You must create a team first.");
-                window.location.href = "create-team.html";
-            } else {
-                console.log("Team name found:", teamName);
-            }
-        }
-    });
-}
-
 // Function to get leaderboard data from PlayFab
 function getLeaderboard() {
     PlayFab.ClientApi.GetLeaderboard({
@@ -31,15 +13,18 @@ function getLeaderboard() {
             console.log("Leaderboard data:", result.data);
             
             // Get the current player's ID to highlight their row
-            const currentPlayerId = PlayFab.settings.titleId;
-            
-            // Get all the PlayFab IDs from the leaderboard
-            const playerIds = result.data.Leaderboard.map(entry => entry.PlayFabId);
-            
-            // Fetch additional metadata for all players
-            getPlayersAdditionalData(playerIds, function(playerDataMap) {
-                // Process and display the leaderboard data with extra info
-                renderEnhancedLeaderboard(result.data.Leaderboard, currentPlayerId, playerDataMap);
+            // We need to get the actual PlayFab ID, not the title ID
+            PlayFab.ClientApi.GetUserData({}, function(userData, userError) {
+                const currentPlayerId = userData && userData.data ? userData.data.PlayFabId : null;
+                
+                // Get all the PlayFab IDs from the leaderboard
+                const playerIds = result.data.Leaderboard.map(entry => entry.PlayFabId);
+                
+                // Fetch additional metadata for all players
+                getPlayersAdditionalData(playerIds, function(playerDataMap) {
+                    // Process and display the leaderboard data with extra info
+                    renderEnhancedLeaderboard(result.data.Leaderboard, currentPlayerId, playerDataMap);
+                });
             });
         }
     });
@@ -94,9 +79,25 @@ function getPlayersAdditionalData(playerIds, callback) {
 // Modified render function to include additional data
 function renderEnhancedLeaderboard(leaderboardData, currentPlayerId, playerDataMap) {
     const leaderboardElement = document.getElementById('leaderboard-wrapper');
+    if (!leaderboardElement) {
+        console.error("Leaderboard wrapper element not found");
+        return;
+    }
+    
+    // Validate input data
+    if (!leaderboardData || !Array.isArray(leaderboardData)) {
+        leaderboardElement.innerHTML = '<div class="error-message">Invalid leaderboard data received.</div>';
+        return;
+    }
     
     // Clear any existing content
     leaderboardElement.innerHTML = '';
+    
+    // Check if we have data to display
+    if (leaderboardData.length === 0) {
+        leaderboardElement.innerHTML = '<div class="error-message">No leaderboard data available yet.</div>';
+        return;
+    }
     
     // Create table
     const table = document.createElement('table');
@@ -105,7 +106,7 @@ function renderEnhancedLeaderboard(leaderboardData, currentPlayerId, playerDataM
     // Add header
     const header = table.createTHead();
     const headerRow = header.insertRow();
-    const headers = ['Rank', 'Team', 'Manager', 'Points']; // Added 'Manager'
+    const headers = ['Rank', 'Team', 'Manager', 'Points'];
     
     headers.forEach(text => {
         const th = document.createElement('th');
@@ -116,10 +117,16 @@ function renderEnhancedLeaderboard(leaderboardData, currentPlayerId, playerDataM
     // Add data rows
     const tbody = table.createTBody();
     leaderboardData.forEach(entry => {
+        // Validate each entry
+        if (!entry || typeof entry.Position !== 'number') {
+            console.warn("Invalid leaderboard entry:", entry);
+            return; // Skip invalid entries
+        }
+        
         const row = tbody.insertRow();
         
-        // Highlight current user's row
-        if (entry.PlayFabId === currentPlayerId) {
+        // Highlight current user's row (only if we have a valid currentPlayerId)
+        if (currentPlayerId && entry.PlayFabId === currentPlayerId) {
             row.className = 'current-user';
         }
         
@@ -132,30 +139,19 @@ function renderEnhancedLeaderboard(leaderboardData, currentPlayerId, playerDataM
             rankCell.className = `rank-${rank}`;
         }
         
-        // Team name - already from DisplayName
+        // Team name - with validation
         const nameCell = row.insertCell();
         nameCell.textContent = entry.DisplayName || 'Unknown Team';
         
         // Add manager name from our additional data
         const managerCell = row.insertCell();
-        const playerData = playerDataMap[entry.PlayFabId];
-        managerCell.textContent = playerData ? playerData.managerName : 'Unknown';
+        const playerData = playerDataMap && playerDataMap[entry.PlayFabId];
+        managerCell.textContent = playerData ? (playerData.managerName || 'Unknown') : 'Unknown';
         
-        // Points
+        // Points - with validation
         const pointsCell = row.insertCell();
-        pointsCell.textContent = entry.StatValue;
+        pointsCell.textContent = entry.StatValue || 0;
     });
     
     leaderboardElement.appendChild(table);
-    
-    // If no data found
-    if (leaderboardData.length === 0) {
-        leaderboardElement.innerHTML = '<div class="error-message">No leaderboard data available yet.</div>';
-    }
 }
-
-// Page load handling for leaderboard page
-window.addEventListener('load', function () {
-    checkTeamName();
-    getLeaderboard();
-});

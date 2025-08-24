@@ -4,12 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://download.playfab.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data:; connect-src 'self' https://*.playfabapi.com https://playfabapi.com;">
 
     <!-- Link to Pico.css CDN -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
-
-    <!-- Link to your custom styles (if any) -->
-    <link rel="stylesheet" href="styles.css">
 
     <title>FUCCL</title>
 </head>
@@ -34,7 +32,7 @@
     <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
 
     <!-- Link to your custom script -->
-    <script src="script.js"></script>
+    <script src="common.js"></script>
 </body>
 
 </html>

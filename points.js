@@ -1,28 +1,16 @@
-// Function to check if the user's team name is set
-function checkTeamName() {
-    PlayFab.ClientApi.GetUserData({}, function(result, error) {
-        if (error) {
-            console.error("Error retrieving user data:", error);
-        } else {
-            const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : null;
-            if (!teamName) {
-                console.log("Team name not set. Redirecting to create team page.");
-                alert("You must create a team first.");
-                window.location.href = "create-team.html";
-            } else {
-                console.log("Team name found:", teamName);
-            }
-        }
-    });
-}
+// Simple data cache to avoid refetching the same data
+const dataCache = {
+    playerData: null,
+    gameWeek: null,
+    lastFetch: 0,
+    CACHE_DURATION: 5 * 60 * 1000 // 5 minutes in milliseconds
+};
 
-// Display team name only (for points page)
-function loadTeamNameOnly() {
-    fetchUserData(function(error, userData) {
-        if (!error && userData) {
-            document.getElementById('teamName').innerText = userData.teamName;
-        }
-    });
+// Function to check if cached data is still valid
+function isCacheValid() {
+    return dataCache.playerData && 
+           dataCache.gameWeek && 
+           (Date.now() - dataCache.lastFetch) < dataCache.CACHE_DURATION;
 }
 
 // Function to create a player card
@@ -30,11 +18,28 @@ function createPlayerCard(player) {
     const card = document.createElement('div');
     card.className = 'player-card';
 
-    // Add player shirt image
+    // Add player shirt image with lazy loading optimization
     const shirtImg = document.createElement('img');
     shirtImg.src = player.shirtImage;
     shirtImg.alt = `${player.name}'s Shirt`;
     shirtImg.className = 'player-shirt';
+    
+    // PERFORMANCE OPTIMIZATION: Add lazy loading for better performance
+    shirtImg.loading = 'lazy';
+    
+    // Add intersection observer for progressive loading if supported
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.classList.add('loaded');
+                    observer.unobserve(img);
+                }
+            });
+        });
+        imageObserver.observe(shirtImg);
+    }
 
     // Fallback to template.svg if the shirt image fails to load
     shirtImg.onerror = function () {
@@ -60,13 +65,20 @@ function createPlayerCard(player) {
     return card;
 }
 
-// Function to render players on the pitch based on their position
+// Function to render players on the pitch based on their position (optimized)
 function renderPlayersOnPitch(players) {
     // Get the pitch container
     const pitch = document.querySelector('.pitch');
+    if (!pitch) {
+        console.error("Pitch container not found - cannot render players");
+        return;
+    }
 
     // Clear existing players
     pitch.innerHTML = '<img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">';
+
+    // OPTIMIZATION: Use DocumentFragment for batch DOM operations
+    const fragment = document.createDocumentFragment();
 
     // Define vertical positions for each row, including substitutes
     const positionStyles = {
@@ -115,10 +127,13 @@ function renderPlayersOnPitch(players) {
             playerCard.style.top = positionStyles[position].top;
             playerCard.style.left = left;
 
-            // Append the player card to the pitch
-            pitch.appendChild(playerCard);
+            // Add to fragment instead of DOM
+            fragment.appendChild(playerCard);
         });
     });
+
+    // Append all player cards at once to minimize layout thrashing
+    pitch.appendChild(fragment);
 }
 
 // Function to get test player data
@@ -145,8 +160,17 @@ function getTestPlayerData() {
     ];
 }
 
-// Function to load player data and gameweek from PlayFab
+// Function to load player data and gameweek from PlayFab (optimized with caching)
 function loadPlayersFromPlayFab(callback) {
+    // Check cache first
+    if (isCacheValid()) {
+        console.log("Using cached data");
+        callback(null, dataCache.playerData);
+        return;
+    }
+
+    console.log("Cache miss - fetching fresh data");
+    
     // Fetch user data to get the selectedPlayers key
     PlayFab.ClientApi.GetUserData({}, function (result, error) {
         if (error) {
@@ -171,11 +195,13 @@ function loadPlayersFromPlayFab(callback) {
                 return;
             }
 
-            // Map the IDs to the PlayFab title data keys
+            // OPTIMIZATION: Batch all title data requests into a single API call
             const titleDataKeys = selectedPlayerIds.map(id => `player_${id}`);
             titleDataKeys.push("gameWeek"); // Add gameWeek to the keys to fetch it in the same API call
 
-            // Fetch title data for the selected player IDs
+            console.log(`Fetching ${titleDataKeys.length} keys in single API call:`, titleDataKeys);
+
+            // Single API call to fetch all player data + gameweek
             PlayFab.ClientApi.GetTitleData({ Keys: titleDataKeys }, function (titleDataResult, titleDataError) {
                 if (titleDataError) {
                     console.error("Error retrieving title data from PlayFab:", titleDataError);
@@ -188,7 +214,12 @@ function loadPlayersFromPlayFab(callback) {
                         console.log("Current Gameweek:", gameWeek);
 
                         // Update the gameweek placeholder in the HTML
-                        document.getElementById('gameweek').textContent = gameWeek;
+                        const gameweekElement = document.getElementById('gameweek');
+                        if (gameweekElement) {
+                            gameweekElement.textContent = gameWeek;
+                        } else {
+                            console.warn("Gameweek element not found in DOM");
+                        }
 
                         // Parse the players and calculate points
                         let weeklyPointsTotal = 0;         // For displaying current week's points
@@ -200,6 +231,12 @@ function loadPlayersFromPlayFab(callback) {
 
                             if (playerDataString) {
                                 const player = parsePlayerData(playerDataString);
+                                
+                                // Skip invalid players that couldn't be parsed
+                                if (!player) {
+                                    console.warn(`Failed to parse player data for ID: ${id}`);
+                                    return null;
+                                }
                                 
                                 // Calculate points for current week only (for display)
                                 const weeklyPoints = calculateWeeklyPoints(playerDataString, gameWeek);
@@ -216,27 +253,38 @@ function loadPlayersFromPlayFab(callback) {
                                 return player;
                             } else {
                                 console.warn(`No data found for player ID: ${id}`);
+                                return null;
                             }
-                            return null;
                         }).filter(player => player !== null); // Filter out any null values
 
                         // Update the weekly points in the HTML
                         const weeklyPointsElement = document.getElementById('weeklyPoints');
                         if (weeklyPointsElement) {
                             weeklyPointsElement.textContent = weeklyPointsTotal;
+                        } else {
+                            console.warn("Weekly points element not found in DOM");
                         }
                         
                         // Log the total cumulative points for leaderboard
                         console.log(`Team total cumulative points: ${cumulativePointsTotal} (across all ${gameWeek} weeks)`);
 
-                        // Pass all data to the callback
-                        callback(null, {
+                        // Prepare data for response
+                        const responseData = {
                             players,
                             weeklyPointsTotal,         // Current week points
                             cumulativePointsTotal,     // Total points across all weeks
                             gameWeek,                  // Current gameweek
                             selectedPlayerIds
-                        });
+                        };
+
+                        // Cache the successful response
+                        dataCache.playerData = responseData;
+                        dataCache.gameWeek = gameWeek;
+                        dataCache.lastFetch = Date.now();
+                        console.log("Data cached successfully");
+
+                        // Pass all data to the callback
+                        callback(null, responseData);
                     } else {
                         console.error("No title data returned.");
                         callback("No title data returned", null);
@@ -293,11 +341,24 @@ function calculateTotalPointsUpToCurrentWeek(playerDataString, currentGameWeek) 
 
 // Function to parse player data from PlayFab
 function parsePlayerData(playerDataString) {
+    // Validate input
+    if (!playerDataString || typeof playerDataString !== 'string') {
+        console.error("Invalid player data string:", playerDataString);
+        return null;
+    }
+    
     const parts = playerDataString.split('|');
-    const name = parts[0]; // Extract the name
-    const teamName = parts[1]; // Extract the team name
-    const position = parts[2]; // Extract the position
-    const totalPoints = parseInt(parts[5]); // Extract total points directly
+    
+    // Validate data format - should have at least 6 parts
+    if (parts.length < 6) {
+        console.error("Invalid player data format - insufficient parts:", playerDataString);
+        return null;
+    }
+    
+    const name = parts[0] || 'Unknown Player'; // Provide fallback
+    const teamName = parts[1] || 'Unknown Team'; // Provide fallback
+    const position = parts[2] || 'Unknown'; // Provide fallback
+    const totalPoints = parseInt(parts[5]) || 0; // Fallback to 0 if parsing fails
 
     // Convert position to match the test player format
     const positionMap = {
@@ -310,7 +371,7 @@ function parsePlayerData(playerDataString) {
     // Map team names to shirt images
     const shirtImageMap = {
         'Highfields FC': 'images/shirts/highfields.svg',
-        'Vinyard FC': 'images/shirts/vinyard.svg',
+        'Vinyard FC': 'images/shirts/vineyard.svg',
         'Bethel Town FC': 'images/shirts/bethel.svg',
         'Lifepoint Church AFC': 'images/shirts/lifepoint.svg',
         'DC United FC': 'images/shirts/dc.svg',
@@ -324,7 +385,7 @@ function parsePlayerData(playerDataString) {
     };
 
     // Determine the shirt image
-    let shirtImage = shirtImageMap[teamName] || 'images/shirts/default.svg';
+    let shirtImage = shirtImageMap[teamName] || 'images/shirts/template.svg';
     if (positionMap[position] === 'gk') {
         // Append "_gk" for goalkeepers
         const teamKey = Object.keys(shirtImageMap).find(key => shirtImageMap[key] === shirtImage);
@@ -350,6 +411,13 @@ function loadGameWeek() {
             // Check if gameWeek exists in the title data
             if (titleDataResult.data && titleDataResult.data.Data.gameWeek) {
                 const gameWeek = parseInt(titleDataResult.data.Data.gameWeek); // Parse the gameWeek value as an integer
+                
+                // Validate gameWeek is a reasonable number
+                if (isNaN(gameWeek) || gameWeek < 1 || gameWeek > 38) {
+                    console.error("Invalid gameWeek value:", gameWeek);
+                    callback("Invalid game week data", null);
+                    return;
+                }
                 console.log("Current Gameweek:", gameWeek);
 
                 // Update the gameweek placeholder in the HTML
@@ -439,29 +507,48 @@ function testLeaderboardSubmission() {
     });
 }
 
-// Page load handling for points page
-window.addEventListener('load', function () {
-    checkTeamName();
-    loadTeamNameOnly();
-
-    // Load players and gameweek from PlayFab
-    loadPlayersFromPlayFab(function (error, data) {
-        if (error) {
-            console.error("Failed to load player data:", error);
-        } else {
-            const { players } = data;
-            
-            console.log("Selected players:", players);
-            
-            // Players is already an array from loadPlayersFromPlayFab
-            // Render the players on the pitch
-            renderPlayersOnPitch(players);
-        }
-    });
-});
-
 // Add event listener to the test button
 const testButton = document.getElementById('testLeaderboardBtn');
 if (testButton) {
     testButton.addEventListener('click', testLeaderboardSubmission);
 }
+
+// PERFORMANCE OPTIMIZATION: Memory and event management
+let eventListeners = [];
+
+// Optimized event listener management
+function addManagedEventListener(element, event, handler) {
+    element.addEventListener(event, handler);
+    eventListeners.push({ element, event, handler });
+}
+
+// Cleanup function for memory management
+function cleanup() {
+    // Remove all managed event listeners
+    eventListeners.forEach(({ element, event, handler }) => {
+        element.removeEventListener(event, handler);
+    });
+    eventListeners = [];
+    
+    // Clear cached data to free memory
+    dataCache.playerData = null;
+    dataCache.gameWeek = null;
+    dataCache.lastFetch = null;
+    
+    console.log("Memory cleanup completed");
+}
+
+// Add page visibility API to cleanup when tab is hidden
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // Clear expired cache when tab is hidden to save memory
+        if (!isCacheValid()) {
+            dataCache.playerData = null;
+            dataCache.gameWeek = null;
+            dataCache.lastFetch = null;
+        }
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', cleanup);

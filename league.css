@@ -1,54 +1,7 @@
-/* Grid layout for button navigation */
-nav {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    padding: 0px;
-    margin-bottom: 20px;
-}
-
-/* Ensure the buttons take up the full width of their grid cells */
-nav button {
-    width: 100%;
-}
-
-.teamName {
-    text-align: center;
-}
-
-/* Container for points */
-.points-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-/* Adjust gameweek alignment */
-.gameweek-number {
-    text-align: left;
-    flex: 1;
-}
-
-/* Center weekly points */
-.weekly-points {
-    flex: 1;
-    text-align: center;
-}
-
-/* Align total points to the right */
-.total-points {
-    flex: 1;
-    text-align: right;
-}
-
-/* Color the weekly points in red */
-.red-text {
-    color: red;
-    font-weight: bold;
-}
+/* ========================================
+   FUCCL League Page Styles
+   Specific styles for the leaderboard page
+   ======================================== */
 
 /* Leaderboard Container */
 .leaderboard-container {
@@ -97,14 +50,6 @@ nav button {
 .leaderboard-table tr.current-user {
     background-color: #e6f7ff;
     font-weight: bold;
-}
-
-/* Loading message */
-.loading-message {
-    text-align: center;
-    padding: 20px;
-    color: #666;
-    font-style: italic;
 }
 
 /* Rankings styling */
