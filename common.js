@@ -392,11 +392,11 @@ function initializePage(currentPage) {
                             pitch.innerHTML = '<div class="error-message">Failed to load player data. Please refresh the page.</div>';
                         }
                     } else {
-                        const { players } = data;
+                        const { players, selectedPlayerIds } = data;
                         console.log("Available players for selection:", players);
                         // Render the players on the pitch
                         if (typeof renderPlayersOnPitch === 'function') {
-                            renderPlayersOnPitch(players);
+                            renderPlayersOnPitch(players, selectedPlayerIds);
                         }
                     }
                 });

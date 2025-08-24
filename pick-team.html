@@ -9,7 +9,7 @@
     <!-- Link to Pico.css CDN -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
     <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
-    <link rel="stylesheet" href="points.css"> <!-- Page-specific styles -->
+    <link rel="stylesheet" href="pick-team.css"> <!-- Page-specific styles -->
 
     <title>Pick Team - FUCCL</title>
 </head>
@@ -25,20 +25,11 @@
             <button onclick="window.location.href='league.html'" class="secondary">League</button>
             <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
         </nav>
-
         <header>
             <h1>Pick Team</h1>
             <h4 id="teamName" class="teamName">Loading Team Name...</h4> <!-- Apply teamName class here -->
-            <div class="points-container">
-                <div class="points-section gameweek-number">
-                    Gameweek: <span id="gameweek">Loading...</span>
-                </div>
-                <div class="points-section weekly-points">
-                    Weekly Points: <span class="red-text" id="weeklyPoints">Loading...</span>
-                </div>
-                <div class="points-section total-points">
-                    Total Points: <span id="totalPoints">Loading...</span>
-                </div>
+            <div class="save-team-container">
+                <button id="saveTeamBtn" class="save-team-btn">Save Team</button>
             </div>
         </header>
 
@@ -56,7 +47,7 @@
 
         <!-- Link to your custom script -->
         <script src="common.js"></script>
-        <script src="points.js"></script>
+        <script src="pick-team.js"></script>
 
     </main>
 </body>

@@ -54,19 +54,43 @@ function createPlayerCard(player) {
     nameDiv.textContent = player.name;
     card.appendChild(nameDiv);
 
-    // Add player points - use weeklyPoints instead of total points
-    const pointsDiv = document.createElement('div');
-    pointsDiv.className = 'player-points';
-    // Display weekly points if available, otherwise fall back to total points
-    const pointsToShow = player.weeklyPoints !== undefined ? player.weeklyPoints : player.points;
-    pointsDiv.textContent = `${pointsToShow} pts`;
-    card.appendChild(pointsDiv);
+    // Add player position instead of points for pick team page
+    const positionDiv = document.createElement('div');
+    positionDiv.className = 'player-position';
+    // Display the position (convert abbreviations to readable format)
+    // Don't show "SUB" for substitutes, they'll be visually highlighted instead
+    const positionMap = {
+        'gk': 'GK',
+        'df': 'DEF', 
+        'md': 'MID',
+        'at': 'ATT'
+    };
+    
+    // Map position to CSS class for color coding
+    const positionClassMap = {
+        'gk': 'gk',
+        'df': 'def',
+        'md': 'mid',
+        'at': 'att'
+    };
+    
+    const displayPosition = positionMap[player.position] || player.position.toUpperCase();
+    const positionClass = positionClassMap[player.position] || '';
+    
+    positionDiv.textContent = displayPosition;
+    
+    // Add position-specific class for color coding
+    if (positionClass) {
+        positionDiv.classList.add(positionClass);
+    }
+    
+    card.appendChild(positionDiv);
 
     return card;
 }
 
 // Function to render players on the pitch based on their position (optimized)
-function renderPlayersOnPitch(players) {
+function renderPlayersOnPitch(players, selectedPlayerIds = []) {
     // Get the pitch container
     const pitch = document.querySelector('.pitch');
     if (!pitch) {
@@ -102,6 +126,9 @@ function renderPlayersOnPitch(players) {
     const substitutes = players.slice(-4);
     const mainPlayers = players.slice(0, players.length - 4);
 
+    // Identify captain (first player in selectedPlayerIds if available)
+    const captainId = selectedPlayerIds.length > 0 ? selectedPlayerIds[0] : null;
+
     // Assign main players to their positions
     mainPlayers.forEach(player => {
         positions[player.position].push(player);
@@ -127,6 +154,16 @@ function renderPlayersOnPitch(players) {
             playerCard.style.top = positionStyles[position].top;
             playerCard.style.left = left;
 
+            // Add substitute styling if this is a substitute
+            if (position === 'sb') {
+                playerCard.classList.add('substitute-player');
+            }
+
+            // Add captain styling if this is the captain
+            if (captainId && player.id && String(player.id) === String(captainId)) {
+                playerCard.classList.add('captain-player');
+            }
+
             // Add to fragment instead of DOM
             fragment.appendChild(playerCard);
         });
@@ -139,24 +176,24 @@ function renderPlayersOnPitch(players) {
 // Function to get test player data
 function getTestPlayerData() {
     return [
-        // Goalkeeper
-        { name: 'John Doe', points: 12, shirtImage: 'images/shirts/highfields.svg', position: 'gk' },
+        // Goalkeeper (Captain)
+        { name: 'John Doe', points: 12, shirtImage: 'images/shirts/highfields.svg', position: 'gk', id: '1' },
     
         // Defenders (4)
-        { name: 'Jane Smith', points: 8, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
-        { name: 'Chris Johnson', points: 5, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
-        { name: 'Michael Brown', points: 7, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
-        { name: 'Sarah Wilson', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'df' },
+        { name: 'Jane Smith', points: 8, shirtImage: 'images/shirts/highfields.svg', position: 'df', id: '2' },
+        { name: 'Chris Johnson', points: 5, shirtImage: 'images/shirts/highfields.svg', position: 'df', id: '3' },
+        { name: 'Michael Brown', points: 7, shirtImage: 'images/shirts/highfields.svg', position: 'df', id: '4' },
+        { name: 'Sarah Wilson', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'df', id: '5' },
     
         // Midfielders (4)
-        { name: 'Anna Lee', points: 7, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
-        { name: 'James Taylor', points: 9, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
-        { name: 'Laura White', points: 8, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
-        { name: 'Robert King', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'md' },
+        { name: 'Anna Lee', points: 7, shirtImage: 'images/shirts/highfields.svg', position: 'md', id: '6' },
+        { name: 'James Taylor', points: 9, shirtImage: 'images/shirts/highfields.svg', position: 'md', id: '7' },
+        { name: 'Laura White', points: 8, shirtImage: 'images/shirts/highfields.svg', position: 'md', id: '8' },
+        { name: 'Robert King', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'md', id: '9' },
     
         // Attackers (2)
-        { name: 'David Brown', points: 10, shirtImage: 'images/shirts/highfields.svg', position: 'at' },
-        { name: 'Emily Davis', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'at' }
+        { name: 'David Brown', points: 10, shirtImage: 'images/shirts/highfields.svg', position: 'at', id: '10' },
+        { name: 'Emily Davis', points: 6, shirtImage: 'images/shirts/highfields.svg', position: 'at', id: '11' }
     ];
 }
 
@@ -168,7 +205,7 @@ function loadPlayersFromPlayFab(callback) {
         
         // Update the HTML elements with cached data
         const cachedData = dataCache.playerData;
-        updatePointsDisplay(cachedData.gameWeek, cachedData.weeklyPointsTotal, cachedData.cumulativePointsTotal);
+        updatePickTeamDisplay(); // Updated function name
         
         callback(null, cachedData);
         return;
@@ -235,6 +272,9 @@ function loadPlayersFromPlayFab(callback) {
                                     return null;
                                 }
                                 
+                                // Add the player ID to the player object for captain identification
+                                player.id = id;
+                                
                                 // Calculate points for current week only (for display)
                                 const weeklyPoints = calculateWeeklyPoints(playerDataString, gameWeek);
                                 player.weeklyPoints = weeklyPoints;
@@ -255,7 +295,7 @@ function loadPlayersFromPlayFab(callback) {
                         }).filter(player => player !== null); // Filter out any null values
 
                         // Update all the display elements using the helper function
-                        updatePointsDisplay(gameWeek, weeklyPointsTotal, cumulativePointsTotal);
+                        updatePickTeamDisplay(); // Updated for pick team page
                         
                         // Log the total cumulative points for leaderboard
                         console.log(`Team total cumulative points: ${cumulativePointsTotal} (across all ${gameWeek} weeks)`);
@@ -394,33 +434,11 @@ function parsePlayerData(playerDataString) {
     };
 }
 
-// Helper function to update the points display elements
-function updatePointsDisplay(gameWeek, weeklyPointsTotal, cumulativePointsTotal) {
-    // Update the gameweek
-    const gameweekElement = document.getElementById('gameweek');
-    if (gameweekElement) {
-        gameweekElement.textContent = gameWeek;
-    } else {
-        console.warn("Gameweek element not found in DOM");
-    }
-    
-    // Update the weekly points
-    const weeklyPointsElement = document.getElementById('weeklyPoints');
-    if (weeklyPointsElement) {
-        weeklyPointsElement.textContent = weeklyPointsTotal;
-    } else {
-        console.warn("Weekly points element not found in DOM");
-    }
-    
-    // Update the total points
-    const totalPointsElement = document.getElementById('totalPoints');
-    if (totalPointsElement) {
-        totalPointsElement.textContent = cumulativePointsTotal;
-    } else {
-        console.warn("Total points element not found in DOM");
-    }
-    
-    console.log(`Updated display: Week ${gameWeek}, Weekly: ${weeklyPointsTotal}, Total: ${cumulativePointsTotal}`);
+// Helper function to update the pick team display elements
+function updatePickTeamDisplay() {
+    // For pick team page, we don't need to update points displays
+    // This function can be used later for team selection status updates
+    console.log("Pick team display updated");
 }
 
 // Function to load the current gameweek from PlayFab Title Data

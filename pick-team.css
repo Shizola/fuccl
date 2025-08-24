@@ -3,6 +3,44 @@
    Specific styles for the team selection page
    ======================================== */
 
+/* Save Team Button Container */
+.save-team-container {
+    max-width: 900px;
+    margin: 20px auto;
+    text-align: center;
+}
+
+/* Save Team Button Styling */
+.save-team-btn {
+    display: block;
+    margin: 0 auto;
+    background-color: #28a745; /* Green background */
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    min-width: 150px;
+}
+
+.save-team-btn:hover {
+    background-color: #218838; /* Darker green on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+.save-team-btn:active {
+    transform: translateY(0); /* Return to normal on click */
+}
+
+.save-team-btn:disabled {
+    background-color: #6c757d; /* Gray when disabled */
+    cursor: not-allowed;
+    transform: none;
+}
+
 .pitch-container {
     max-width: 900px; /* Maintain the desired width */
     margin: 20px auto;
@@ -181,6 +219,134 @@
     display: flex; /* Enable flexbox */
     align-items: center; /* Vertically center the text */
     justify-content: center; /* Horizontally center the text */
+}
+
+/* Points styling to match points page */
+.player-points {
+    background-color: #087cc4;
+    color: white;
+    font-size: 8px;
+    padding: 0px 0;
+    font-weight: bold;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    height: 12px;
+    z-index: 1; /* Ensure it's below the player name */
+    display: flex; /* Enable flexbox */
+    align-items: center; /* Vertically center the text */
+    justify-content: center; /* Horizontally center the text */
+}
+
+/* Position overlay for pick team page with color coding */
+.player-position {
+    color: white;
+    font-size: 8px;
+    padding: 0px 0;
+    font-weight: bold;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    height: 12px;
+    z-index: 1; /* Ensure it's below the player name */
+    display: flex; /* Enable flexbox */
+    align-items: center; /* Vertically center the text */
+    justify-content: center; /* Horizontally center the text */
+}
+
+/* Position color coding */
+.player-position.gk {
+    background-color: #28a745; /* Green for goalkeepers */
+}
+
+.player-position.def {
+    background-color: #ffc107; /* Yellow for defenders */
+    color: #000; /* Black text for better contrast on yellow */
+}
+
+.player-position.mid {
+    background-color: #fd7e14; /* Orange for midfielders */
+}
+
+.player-position.att {
+    background-color: #dc3545; /* Red for attackers */
+}
+
+/* Substitute player styling - NO border, just SUB badge */
+.substitute-player {
+    border: none !important; /* Remove any border */
+    box-shadow: none !important; /* Remove any glow/shadow effects */
+}
+
+/* Remove hover effects for substitute players */
+.substitute-player:hover {
+    box-shadow: none !important; /* Ensure no hover shadow for substitutes */
+    transform: translate(-50%, -50%) scale(1.05) !important; /* Keep the scale effect but no shadow */
+}
+
+/* Force override any inherited shadows on substitute players */
+.player-card.substitute-player {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.player-card.substitute-player:hover {
+    box-shadow: none !important;
+    transform: translate(-50%, -50%) scale(1.05) !important;
+}
+
+.substitute-player::before {
+    content: "SUB";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #ffc107;
+    color: #000;
+    font-size: 7px;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 3px;
+    z-index: 4;
+    line-height: 1;
+    border: 1px solid #000;
+}
+
+/* Captain badge styling - working version */
+.captain-player::before {
+    content: "C";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background-color: #dc3545; /* Red background for captain */
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 3px;
+    z-index: 4;
+    line-height: 1;
+    border: 1px solid #000;
+}
+
+/* More specific captain badge rule */
+.player-card.captain-player::before {
+    content: "C" !important;
+    position: absolute !important;
+    top: 2px !important;
+    left: 2px !important;
+    background-color: #dc3545 !important; /* Red background for captain */
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding: 2px 8px !important;
+    border-radius: 3px !important;
+    z-index: 4 !important;
+    line-height: 1 !important;
+    border: 1px solid #000 !important;
 }
 
 /* Debug display element (can be enabled for testing) */
