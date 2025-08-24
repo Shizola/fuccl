@@ -173,4 +173,59 @@ npx serve .
 - **PlayFab SDK**: `PlayFabClientApi.js` must be loaded before custom scripts
 - **SVG Assets**: Team shirts are essential for visual functionality
 
+## Leaderboard Scalability Considerations
+
+### Current Limitations
+- **API Constraint**: `MaxResultsCount: 100` in GetLeaderboard API limits real players to 100
+- **Test Data**: Current implementation generates 149 fake teams + 1 real user for pagination demo
+- **Memory Usage**: All 150 entries loaded into memory for client-side pagination
+
+### Performance Considerations for 150+ Real Players
+- **Multiple API Calls**: Would need batching for more than 100 real players
+- **Memory Management**: Larger datasets require more careful memory handling
+- **User Experience**: Longer loading times for initial data fetch
+
+### Implementation Options for Scaling
+
+#### Option 1: Simple API Limit Increase (Quick Fix)
+```javascript
+// Limited to PlayFab's maximum per call
+MaxResultsCount: 1000  // PlayFab's maximum
+```
+
+#### Option 2: Batched Loading (Medium Scale)
+```javascript
+// Fetch leaderboard in chunks for 100-1000 players
+async function getFullLeaderboard() {
+    let allEntries = [];
+    let startPosition = 0;
+    const batchSize = 100;
+    
+    do {
+        const batch = await getLeaderboardBatch(startPosition, batchSize);
+        allEntries = allEntries.concat(batch);
+        startPosition += batchSize;
+    } while (batch.length === batchSize);
+    
+    return allEntries;
+}
+```
+
+#### Option 3: Server-Side Pagination (Best for Scale)
+```javascript
+// Only fetch current page's data - recommended for 1000+ players
+function getLeaderboardPage(pageNumber, itemsPerPage) {
+    const startPosition = (pageNumber - 1) * itemsPerPage;
+    return PlayFab.ClientApi.GetLeaderboard({
+        StartPosition: startPosition,
+        MaxResultsCount: itemsPerPage
+    });
+}
+```
+
+### Decision Framework
+- **Up to 100 players**: Current system works without changes
+- **100-1000 players**: Implement batched loading (Option 2)
+- **1000+ players**: Implement server-side pagination (Option 3)
+
 When making changes, always test authentication flows and ensure PlayFab session management works correctly across page transitions.
