@@ -41,6 +41,23 @@
             </div>
         </section>
 
+        <!-- Player Modal -->
+        <dialog id="playerModal">
+            <article>
+                <header>
+                    <h3 id="modalPlayerName">Player Name</h3>
+                    <button aria-label="Close" rel="prev" id="closeModal"></button>
+                </header>
+                <main>
+                    <p><strong>Club:</strong> <span id="modalPlayerTeam">Team Name</span></p>
+                </main>
+                <footer>
+                    <button class="secondary" id="makeSubstituteBtn">Substitute</button>
+                    <button id="makeCaptainBtn">Make Captain</button>
+                    <button class="secondary" id="cancelBtn">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
 
         <!-- Load the PlayFab SDK from the CDN -->
         <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>

@@ -86,6 +86,32 @@ function createPlayerCard(player) {
     
     card.appendChild(positionDiv);
 
+    // Add click event listener to open modal or handle substitute mode
+    card.addEventListener('click', () => {
+        // Check if we're in substitute mode
+        if (window.substituteMode && window.substituteMode.active) {
+            // Check if this is the selected player (blue highlighted)
+            if (card.classList.contains('substitute-mode-selected')) {
+                // Cancel substitute mode when clicking the highlighted player
+                cancelSubstituteMode();
+                return; // Don't open modal
+            }
+            
+            // Check if this card is greyed out (not available for substitution)
+            if (card.classList.contains('substitute-mode-greyed')) {
+                // Do nothing for greyed out players
+                return;
+            }
+            
+            // This is an available player for substitution - perform the swap
+            performSubstitution(window.substituteMode.selectedPlayerId, player.id);
+            return; // Don't open modal
+        }
+        
+        // Normal behavior - open modal
+        openPlayerModal(player);
+    });
+
     return card;
 }
 
@@ -428,6 +454,7 @@ function parsePlayerData(playerDataString) {
 
     return {
         name,
+        teamName, // Add the team name to the returned object
         position: positionMap[position] || 'unknown', // Map position or default to 'unknown'
         points: totalPoints,
         shirtImage // Use the determined shirt image
@@ -553,6 +580,60 @@ if (testButton) {
     testButton.addEventListener('click', testLeaderboardSubmission);
 }
 
+// Function to save team changes to PlayFab
+function saveTeamToPlayFab() {
+    console.log("Saving team to PlayFab...");
+    
+    // Get the current selected player IDs from the cached data
+    if (!dataCache.playerData || !dataCache.playerData.selectedPlayerIds) {
+        console.error("No player data available to save");
+        alert("Error: No team data to save");
+        return;
+    }
+    
+    const selectedPlayerIds = dataCache.playerData.selectedPlayerIds;
+    
+    // Show saving state to user
+    const saveBtn = document.getElementById('saveTeamBtn');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Saving...';
+    saveBtn.disabled = true;
+    
+    // Save the selectedPlayers array to PlayFab user data
+    PlayFab.ClientApi.UpdateUserData({
+        Data: {
+            "selectedPlayers": JSON.stringify(selectedPlayerIds)
+        }
+    }, function(result, error) {
+        // Reset button state
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+        
+        if (error) {
+            console.error("Error saving team to PlayFab:", error);
+            alert("Error saving team. Please try again.");
+        } else {
+            console.log("Team saved successfully to PlayFab:", result);
+            alert("Team saved successfully!");
+            
+            // Optionally update the leaderboard with current points
+            if (dataCache.playerData.weeklyPointsTotal !== undefined && 
+                dataCache.playerData.cumulativePointsTotal !== undefined) {
+                submitWeeklyPointsToLeaderboard(
+                    dataCache.playerData.weeklyPointsTotal, 
+                    dataCache.playerData.cumulativePointsTotal
+                );
+            }
+        }
+    });
+}
+
+// Add event listener to the save team button
+const saveTeamBtn = document.getElementById('saveTeamBtn');
+if (saveTeamBtn) {
+    saveTeamBtn.addEventListener('click', saveTeamToPlayFab);
+}
+
 // PERFORMANCE OPTIMIZATION: Memory and event management
 let eventListeners = [];
 
@@ -592,3 +673,379 @@ document.addEventListener('visibilitychange', function() {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', cleanup);
+
+/* ========================================
+   PLAYER MODAL FUNCTIONALITY
+   Functions to handle the player modal popup
+   ======================================== */
+
+// Function to open the player modal
+function openPlayerModal(player) {
+    const modal = document.getElementById('playerModal');
+    const playerNameElement = document.getElementById('modalPlayerName');
+    const playerTeamElement = document.getElementById('modalPlayerTeam');
+    const makeCaptainBtn = document.getElementById('makeCaptainBtn');
+    
+    // Populate modal with player data
+    playerNameElement.textContent = player.name || 'Unknown Player';
+    playerTeamElement.textContent = player.teamName || 'Unknown Team';
+    
+    // Store the current player data in the modal for later use
+    modal.dataset.playerId = player.id;
+    
+    // Check if this player is a substitute (last 4 players in the team)
+    let isSubstitute = false;
+    if (dataCache.playerData && dataCache.playerData.players) {
+        const players = dataCache.playerData.players;
+        const substitutes = players.slice(-4);
+        isSubstitute = substitutes.some(sub => String(sub.id) === String(player.id));
+    }
+    
+    // Grey out and disable the "Make Captain" button if this is a substitute
+    if (makeCaptainBtn) {
+        if (isSubstitute) {
+            makeCaptainBtn.disabled = true;
+            makeCaptainBtn.classList.add('secondary'); // Pico.css secondary style for disabled look
+            makeCaptainBtn.textContent = 'Cannot Captain Sub';
+            console.log(`Player ${player.name} is a substitute - captain button disabled`);
+        } else {
+            makeCaptainBtn.disabled = false;
+            makeCaptainBtn.classList.remove('secondary');
+            makeCaptainBtn.textContent = 'Make Captain';
+            console.log(`Player ${player.name} is not a substitute - captain button enabled`);
+        }
+    }
+    
+    // Show the modal (Pico.css way)
+    modal.showModal();
+}
+
+// Function to close the player modal
+function closePlayerModal() {
+    const modal = document.getElementById('playerModal');
+    modal.close();
+}
+
+// Function to make a player captain
+function makePlayerCaptain(playerId) {
+    // Get the current selected player IDs from the cached data
+    if (!dataCache.playerData || !dataCache.playerData.selectedPlayerIds) {
+        console.error("No player data available to update captain");
+        return;
+    }
+    
+    const selectedPlayerIds = dataCache.playerData.selectedPlayerIds;
+    
+    // Check if the player is in the selected team
+    const playerIndex = selectedPlayerIds.findIndex(id => String(id) === String(playerId));
+    if (playerIndex === -1) {
+        console.error("Player not found in selected team");
+        return;
+    }
+    
+    // If player is already captain (first position), do nothing
+    if (playerIndex === 0) {
+        console.log("Player is already captain");
+        return;
+    }
+    
+    // Remove the player from their current position
+    const playerIdToMove = selectedPlayerIds.splice(playerIndex, 1)[0];
+    
+    // Add them to the first position (captain position)
+    selectedPlayerIds.unshift(playerIdToMove);
+    
+    console.log(`Player ${playerId} is now captain. Updated selectedPlayerIds:`, selectedPlayerIds);
+    
+    // Reorder the players array to match the new selectedPlayerIds order
+    const reorderedPlayers = selectedPlayerIds.map(id => {
+        return dataCache.playerData.players.find(player => String(player.id) === String(id));
+    }).filter(player => player !== undefined);
+    
+    // Update the cached data with both new order and new players array
+    dataCache.playerData.selectedPlayerIds = selectedPlayerIds;
+    dataCache.playerData.players = reorderedPlayers;
+    
+    // Re-render the pitch to update the captain badge
+    renderPlayersOnPitch(reorderedPlayers, selectedPlayerIds);
+    
+    console.log("Captain updated and pitch re-rendered");
+}
+
+// Function to start substitute mode for a player
+function startSubstituteMode(playerId) {
+    console.log(`Starting substitute mode for player ${playerId}`);
+    
+    // Store the player ID in substitute mode
+    if (!window.substituteMode) {
+        window.substituteMode = {};
+    }
+    window.substituteMode.selectedPlayerId = playerId;
+    window.substituteMode.active = true;
+    
+    // Find the selected player to determine if they're a substitute or outfield player
+    let selectedPlayer = null;
+    let isSelectedPlayerSub = false;
+    let selectedPlayerPosition = null;
+    
+    if (dataCache.playerData && dataCache.playerData.players) {
+        selectedPlayer = dataCache.playerData.players.find(p => 
+            String(p.id) === String(playerId)
+        );
+        
+        if (selectedPlayer) {
+            selectedPlayerPosition = selectedPlayer.position;
+            // Check if this player is in the substitutes (last 4 players)
+            const players = dataCache.playerData.players;
+            const substitutes = players.slice(-4);
+            isSelectedPlayerSub = substitutes.some(sub => String(sub.id) === String(playerId));
+        }
+    }
+    
+    console.log(`Selected player is ${isSelectedPlayerSub ? 'substitute' : 'outfield player'} with position: ${selectedPlayerPosition}`);
+    
+    // Find and highlight/grey out players appropriately
+    const playerCards = document.querySelectorAll('.player-card');
+    playerCards.forEach(card => {
+        // Remove any existing substitute highlighting and greying
+        card.classList.remove('substitute-mode-selected', 'substitute-mode-greyed');
+        
+        // Get the player name to find the corresponding player data
+        const playerName = card.querySelector('.player-name')?.textContent;
+        
+        if (dataCache.playerData && dataCache.playerData.players) {
+            const player = dataCache.playerData.players.find(p => p.name === playerName);
+            
+            if (player) {
+                // Check if this card's player is a substitute
+                const players = dataCache.playerData.players;
+                const substitutes = players.slice(-4);
+                const isCardPlayerSub = substitutes.some(sub => String(sub.id) === String(player.id));
+                
+                if (String(player.id) === String(playerId)) {
+                    // This is the selected player - highlight with blue outline
+                    card.classList.add('substitute-mode-selected');
+                    console.log(`Highlighted player ${player.name} for substitution`);
+                } else {
+                    // This is not the selected player - check if we should grey it out
+                    let shouldGreyOut = false;
+                    
+                    // Rule 1: Players in the same category (outfield vs outfield, sub vs sub) are greyed out
+                    if (isSelectedPlayerSub && isCardPlayerSub) {
+                        shouldGreyOut = true; // Both are subs
+                    } else if (!isSelectedPlayerSub && !isCardPlayerSub) {
+                        shouldGreyOut = true; // Both are outfield
+                    }
+                    
+                    // Rule 2: Position compatibility - GK can only be subbed with GK
+                    if (!shouldGreyOut) {
+                        const isSelectedGK = selectedPlayerPosition === 'gk';
+                        const isCardGK = player.position === 'gk';
+                        
+                        // If selected is GK but card is not GK, or vice versa, grey out
+                        if (isSelectedGK !== isCardGK) {
+                            shouldGreyOut = true;
+                            console.log(`Position incompatible: ${selectedPlayerPosition} cannot be subbed with ${player.position}`);
+                        }
+                    }
+                    
+                    if (shouldGreyOut) {
+                        card.classList.add('substitute-mode-greyed');
+                        console.log(`Greyed out ${player.name} (${player.position})`);
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Function to cancel substitute mode
+function cancelSubstituteMode() {
+    console.log("Cancelling substitute mode");
+    
+    // Clear substitute mode state
+    if (window.substituteMode) {
+        window.substituteMode.active = false;
+        window.substituteMode.selectedPlayerId = null;
+    }
+    
+    // Remove all substitute mode styling from all player cards
+    const playerCards = document.querySelectorAll('.player-card');
+    playerCards.forEach(card => {
+        card.classList.remove('substitute-mode-selected', 'substitute-mode-greyed');
+    });
+    
+    console.log("Substitute mode cancelled - all players returned to normal");
+}
+
+// Function to perform player substitution
+function performSubstitution(selectedPlayerId, targetPlayerId) {
+    console.log(`Performing substitution: ${selectedPlayerId} ↔ ${targetPlayerId}`);
+    
+    // Get the current selected player IDs from the cached data
+    if (!dataCache.playerData || !dataCache.playerData.selectedPlayerIds) {
+        console.error("No player data available to perform substitution");
+        return;
+    }
+    
+    const selectedPlayerIds = dataCache.playerData.selectedPlayerIds;
+    const originalCaptainId = selectedPlayerIds[0]; // Store the original captain
+    
+    // Find the indices of both players
+    const selectedPlayerIndex = selectedPlayerIds.findIndex(id => String(id) === String(selectedPlayerId));
+    const targetPlayerIndex = selectedPlayerIds.findIndex(id => String(id) === String(targetPlayerId));
+    
+    if (selectedPlayerIndex === -1 || targetPlayerIndex === -1) {
+        console.error("One or both players not found in selected team");
+        return;
+    }
+    
+    // Perform the swap
+    const temp = selectedPlayerIds[selectedPlayerIndex];
+    selectedPlayerIds[selectedPlayerIndex] = selectedPlayerIds[targetPlayerIndex];
+    selectedPlayerIds[targetPlayerIndex] = temp;
+    
+    // After the swap, ensure the captain is whoever is now in the starting XI (positions 0-10)
+    // Find where the original captain ended up
+    const captainNewIndex = selectedPlayerIds.findIndex(id => String(id) === String(originalCaptainId));
+    
+    // If the captain is now in the substitutes (positions 11-14), we need a new captain
+    if (captainNewIndex >= 11) {
+        // The captain was substituted out, so whoever took their place becomes the new captain
+        console.log(`Captain ${originalCaptainId} was substituted out. Player ${selectedPlayerIds[0]} is now captain.`);
+    } else if (captainNewIndex !== 0) {
+        // The captain is still in the starting XI but not in position 0
+        // Move them to position 0 to maintain captaincy
+        const captainIdToMove = selectedPlayerIds.splice(captainNewIndex, 1)[0];
+        selectedPlayerIds.unshift(captainIdToMove);
+        console.log(`Captain ${originalCaptainId} maintained captaincy and moved to position 0`);
+    }
+    
+    console.log(`Substitution completed. Updated selectedPlayerIds:`, selectedPlayerIds);
+    
+    // Reorder the players array to match the new selectedPlayerIds order
+    const reorderedPlayers = selectedPlayerIds.map(id => {
+        return dataCache.playerData.players.find(player => String(player.id) === String(id));
+    }).filter(player => player !== undefined); // Filter out any undefined players
+    
+    // Update the cached data with both new order and new players array
+    dataCache.playerData.selectedPlayerIds = selectedPlayerIds;
+    dataCache.playerData.players = reorderedPlayers;
+    
+    console.log(`Players reordered to match new selectedPlayerIds order`);
+    
+    // Cancel substitute mode first
+    cancelSubstituteMode();
+    
+    // Re-render the pitch to show the new positions
+    renderPlayersOnPitch(reorderedPlayers, selectedPlayerIds);
+    
+    console.log("Pitch re-rendered with new player positions");
+}
+
+// Setup modal event listeners when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('playerModal');
+    const closeBtn = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const makeSubstituteBtn = document.getElementById('makeSubstituteBtn');
+    const makeCaptainBtn = document.getElementById('makeCaptainBtn');
+    
+    // Close button functionality
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closePlayerModal);
+    }
+    
+    // Cancel button functionality
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closePlayerModal);
+    }
+    
+    // Close modal when clicking outside (Pico.css handles this by default, but we can add custom logic)
+    if (modal) {
+        modal.addEventListener('click', function(event) {
+            // Close if clicking on the modal backdrop (outside the article element)
+            if (event.target === modal) {
+                closePlayerModal();
+            }
+        });
+    }
+    
+    // Placeholder functionality for the action buttons
+    if (makeSubstituteBtn) {
+        makeSubstituteBtn.addEventListener('click', function() {
+            const modal = document.getElementById('playerModal');
+            const playerId = modal.dataset.playerId;
+            
+            if (playerId) {
+                closePlayerModal(); // Close modal first
+                startSubstituteMode(playerId); // Then start substitute mode
+            } else {
+                console.error("No player ID found for substitute assignment");
+            }
+        });
+    }
+    
+    if (makeCaptainBtn) {
+        makeCaptainBtn.addEventListener('click', function() {
+            // Check if the button is disabled
+            if (makeCaptainBtn.disabled) {
+                console.log("Make captain button is disabled - cannot make substitute captain");
+                return;
+            }
+            
+            const modal = document.getElementById('playerModal');
+            const playerId = modal.dataset.playerId;
+            
+            if (playerId) {
+                makePlayerCaptain(playerId);
+                closePlayerModal();
+            } else {
+                console.error("No player ID found for captain assignment");
+            }
+        });
+    }
+    
+    // Load team name from PlayFab
+    loadTeamName();
+    
+    // Load and render players
+    loadPlayersFromPlayFab(function(error, data) {
+        if (error) {
+            console.error("Failed to load player data:", error);
+            // You could show a user-friendly error message here
+        } else {
+            console.log("Players loaded successfully");
+            renderPlayersOnPitch(data.players, data.selectedPlayerIds);
+        }
+    });
+});
+
+// Function to load team name from PlayFab user data
+function loadTeamName() {
+    // Use the common.js fetchUserData function if available, otherwise use direct PlayFab call
+    if (typeof fetchUserData === 'function') {
+        fetchUserData(function(error, userData) {
+            if (error) {
+                console.error("Error loading team name:", error);
+                document.getElementById('teamName').textContent = 'Unknown Team';
+            } else {
+                const teamName = userData.teamName || 'Unknown Team';
+                document.getElementById('teamName').textContent = teamName;
+                console.log("Team name loaded:", teamName);
+            }
+        });
+    } else {
+        // Fallback to direct PlayFab call if common.js function is not available
+        PlayFab.ClientApi.GetUserData({}, function(result, error) {
+            if (error) {
+                console.error("Error loading team name:", error);
+                document.getElementById('teamName').textContent = 'Unknown Team';
+            } else {
+                const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : 'Unknown Team';
+                document.getElementById('teamName').textContent = teamName;
+                console.log("Team name loaded:", teamName);
+            }
+        });
+    }
+}
