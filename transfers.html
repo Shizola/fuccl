@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://download.playfab.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data:; connect-src 'self' https://*.playfabapi.com https://playfabapi.com;">
+
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
+    <link rel="stylesheet" href="transfers.css"> <!-- Page-specific styles -->
+
+    <title>Transfers - FUCCL</title>
+</head>
+
+
+<body>
+    <main class="container">
+        <!-- Navigation bar -->
+        <nav>
+            <button onclick="window.location.href='points.html'" class="secondary">Points</button>
+            <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
+            <button onclick="window.location.href='transfers.html'">Transfers</button>
+            <button onclick="window.location.href='league.html'" class="secondary">League</button>
+            <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
+        </nav>
+        <header>
+            <h1>Transfers</h1>
+            <h4 id="teamName" class="teamName">Loading Team Name...</h4>
+        </header>
+
+        <!-- Team Budget Info -->
+        <section class="team-info">
+            <div class="budget-info">
+                <p><strong>Remaining Budget:</strong> £<span id="teamBudget">100.0</span>m</p>
+                <p><strong>Transfers Made:</strong> <span id="transfersMade">0</span>/5</p>
+                <p><strong>Free Transfers:</strong> <span id="freeTransfers">1</span></p>
+            </div>
+        </section>
+
+        <!-- Team Display -->
+        <section class="pitch-container">
+            <div class="pitch">
+                <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
+                <!-- Players will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Transfer Actions -->
+        <section class="transfer-actions">
+            <div class="action-buttons">
+                <button id="confirmTransfersBtn" class="success" disabled>Confirm Transfers</button>
+                <button id="resetTransfersBtn" class="outline">Reset All</button>
+            </div>
+        </section>
+
+        <!-- Player Modal -->
+        <dialog id="playerModal">
+            <article>
+                <header>
+                    <h3 id="modalPlayerName">Player Name</h3>
+                    <button aria-label="Close" rel="prev" id="closeModal"></button>
+                </header>
+                <main>
+                    <p><strong>Club:</strong> <span id="modalPlayerTeam">Team Name</span></p>
+                    <p><strong>Position:</strong> <span id="modalPlayerPosition">Position</span></p>
+                    <p><strong>Current Price:</strong> £<span id="modalPlayerPrice">0.0</span>m</p>
+                </main>
+                <footer>
+                    <button class="secondary" id="sellPlayerBtn">Sell Player</button>
+                    <button class="secondary" id="cancelBtn">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
+
+    </main>
+
+    <!-- PlayFab SDK -->
+    <script src="https://download.playfab.com/PlayFabClientApi.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="common.js"></script>
+    <script src="transfers.js"></script>
+</body>
+</html>

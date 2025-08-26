@@ -157,6 +157,63 @@
     justify-content: center; /* Horizontally center the text */
 }
 
+/* Substitute player styling with yellow background */
+.substitute-player .player-points {
+    background-color: #ffc107; /* Yellow background for substitute points */
+    color: #000; /* Black text for better contrast on yellow */
+}
+
+/* Substitute badge styling */
+.substitute-player::before {
+    content: "SUB";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #ffc107; /* Yellow background */
+    color: #000; /* Black text */
+    font-size: 7px;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 3px;
+    z-index: 4;
+    line-height: 1;
+    border: 1px solid #000;
+}
+
+/* Captain badge styling */
+.captain-player::before {
+    content: "C";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background-color: #dc3545; /* Red background for captain */
+    color: #fff; /* White text */
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 3px;
+    z-index: 4;
+    line-height: 1;
+    border: 1px solid #000;
+}
+
+/* More specific captain badge rule to ensure it works */
+.player-card.captain-player::before {
+    content: "C" !important;
+    position: absolute !important;
+    top: 2px !important;
+    left: 2px !important;
+    background-color: #dc3545 !important; /* Red background for captain */
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding: 2px 8px !important;
+    border-radius: 3px !important;
+    z-index: 4 !important;
+    line-height: 1 !important;
+    border: 1px solid #000 !important;
+}
+
 /* Debug display element (can be enabled for testing) */
 body::after {
     content: "Default size: 70px";
@@ -200,6 +257,22 @@ body::after {
         height: auto;
     }
 
+    /* Smaller badges for mobile */
+    .substitute-player::before {
+        font-size: 5px;
+        padding: 0px 2px;
+        top: 1px;
+        right: 1px;
+    }
+
+    .captain-player::before,
+    .player-card.captain-player::before {
+        font-size: 10px !important;
+        padding: 1px 5px !important;
+        top: 1px !important;
+        left: 1px !important;
+    }
+
     /* Debug displays (can be enabled for testing) */
     .player-card::after {
         content: "35px";
@@ -232,6 +305,22 @@ body::after {
     .player-shirt {
         width: 100%;
         height: auto;
+    }
+
+    /* Medium badges for tablet */
+    .substitute-player::before {
+        font-size: 6px;
+        padding: 1px 3px;
+        top: 1px;
+        right: 1px;
+    }
+
+    .captain-player::before,
+    .player-card.captain-player::before {
+        font-size: 12px !important;
+        padding: 1px 6px !important;
+        top: 1px !important;
+        left: 1px !important;
     }
 
     /* Debug displays (can be enabled for testing) */

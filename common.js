@@ -2,6 +2,304 @@
 PlayFab.settings.titleId = "E210B";
 console.log("PlayFab Title ID set to:", PlayFab.settings.titleId);
 
+/* ========================================
+   SHARED DATA CACHE AND UTILITIES
+   Common data loading and caching functionality
+   ======================================== */
+
+// Simple data cache to avoid refetching the same data
+const sharedDataCache = {
+    playerData: null,
+    gameWeek: null,
+    lastFetch: 0,
+    CACHE_DURATION: 5 * 60 * 1000 // 5 minutes in milliseconds
+};
+
+// Function to check if cached data is still valid
+function isSharedCacheValid() {
+    return sharedDataCache.playerData && 
+           sharedDataCache.gameWeek && 
+           (Date.now() - sharedDataCache.lastFetch) < sharedDataCache.CACHE_DURATION;
+}
+
+// Function to calculate weekly points for a player
+function calculateWeeklyPoints(playerDataString, gameWeek) {
+    try {
+        const parts = playerDataString.split('|');
+        const pointsArray = parts[4].split(','); // Weekly points are stored as a comma-separated string
+
+        // Log the points array for debugging
+        console.log(`Points Array for Gameweek ${gameWeek}:`, pointsArray);
+
+        // Return the points for the current gameweek (1-based index)
+        return parseInt(pointsArray[gameWeek - 1] || 0);
+    } catch (error) {
+        console.error("Error calculating weekly points:", error, "Player Data:", playerDataString);
+        return 0; // Return 0 points if there's an error
+    }
+}
+
+// Function to calculate total points for a player across all gameweeks up to the current one
+function calculateTotalPointsUpToCurrentWeek(playerDataString, currentGameWeek) {
+    try {
+        const parts = playerDataString.split('|');
+        const pointsArray = parts[4].split(','); // Weekly points are stored as a comma-separated string
+        
+        // Log the points array for debugging
+        console.log(`Points Array up to Gameweek ${currentGameWeek}:`, pointsArray);
+        
+        // Sum up points for all weeks up to the current gameweek
+        let totalPoints = 0;
+        for (let week = 0; week < currentGameWeek; week++) {
+            // Add points for each week (using 0 if the week doesn't exist in the array)
+            const weeklyPoints = parseInt(pointsArray[week] || 0);
+            totalPoints += weeklyPoints;
+            
+            console.log(`Week ${week + 1}: ${weeklyPoints} points`);
+        }
+        
+        console.log(`Total accumulated points up to week ${currentGameWeek}: ${totalPoints}`);
+        return totalPoints;
+    } catch (error) {
+        console.error("Error calculating total points:", error, "Player Data:", playerDataString);
+        return 0; // Return 0 points if there's an error
+    }
+}
+
+// Function to parse player data from PlayFab
+function parsePlayerData(playerDataString) {
+    // Validate input
+    if (!playerDataString || typeof playerDataString !== 'string') {
+        console.error("Invalid player data string:", playerDataString);
+        return null;
+    }
+    
+    const parts = playerDataString.split('|');
+    
+    // Validate data format - should have exactly 6 parts: name|team|position|price|weeklyPoints|totalPoints
+    if (parts.length !== 6) {
+        console.error(`Invalid player data format - expected 6 parts, got ${parts.length}:`, playerDataString);
+        return null;
+    }
+    
+    const name = parts[0] || 'Unknown Player'; // Provide fallback
+    const teamName = parts[1] || 'Unknown Team'; // Provide fallback
+    const position = parts[2] || 'Unknown'; // Provide fallback
+    const price = parseFloat(parts[3]) || 4.0; // Player price in millions
+    const weeklyPointsArray = parts[4] || ''; // Weekly points array as string
+    const totalPoints = parseInt(parts[5]) || 0; // Fallback to 0 if parsing fails
+
+    // Convert position to match the test player format
+    const positionMap = {
+        Goalkeeper: 'gk',
+        Defender: 'df',
+        Midfielder: 'md',
+        Attacker: 'at'
+    };
+
+    // Map team names to shirt images
+    const shirtImageMap = {
+        'Highfields FC': 'images/shirts/highfields.svg',
+        'Vinyard FC': 'images/shirts/vineyard.svg',
+        'Bethel Town FC': 'images/shirts/bethel.svg',
+        'Lifepoint Church AFC': 'images/shirts/lifepoint.svg',
+        'DC United FC': 'images/shirts/dc.svg',
+        'FC United': 'images/shirts/fc_united.svg',
+        'Emmanuel Baptist Church FC': 'images/shirts/emmanuel.svg',
+        'Parklands AFC': 'images/shirts/parklands.svg',
+        'Bridgend Deanery FC': 'images/shirts/bridgend.svg',
+        'Rhondda Royals FC': 'images/shirts/rhondda.svg',
+        'Libanus Evangelical Church': 'images/shirts/libanus.svg',
+        'Waterfront Community Church FC': 'images/shirts/waterfront.svg',
+    };
+
+    // Determine the shirt image
+    let shirtImage = shirtImageMap[teamName] || 'images/shirts/template.svg';
+    if (positionMap[position] === 'gk') {
+        // Append "_gk" for goalkeepers
+        const teamKey = Object.keys(shirtImageMap).find(key => shirtImageMap[key] === shirtImage);
+        if (teamKey) {
+            shirtImage = shirtImage.replace('.svg', '_gk.svg');
+        }
+    }
+
+    return {
+        name,
+        teamName, // Add the team name to the returned object
+        position: positionMap[position] || 'unknown', // Map position or default to 'unknown'
+        price, // Player price in millions
+        points: totalPoints,
+        weeklyPointsArray, // Add weekly points array for future use
+        shirtImage // Use the determined shirt image
+    };
+}
+
+// Shared function to load player data and gameweek from PlayFab (optimized with caching)
+function loadSharedPlayersFromPlayFab(callback) {
+    // Check cache first
+    if (isSharedCacheValid()) {
+        console.log("Using shared cached data");
+        
+        // Return cached data
+        const cachedData = sharedDataCache.playerData;
+        callback(null, cachedData);
+        return;
+    }
+
+    console.log("Shared cache miss - fetching fresh data");
+    
+    // Fetch user data to get the selectedPlayers key
+    PlayFab.ClientApi.GetUserData({}, function (result, error) {
+        if (error) {
+            console.error("Error retrieving user data from PlayFab:", error);
+            callback(error, null);
+        } else {
+            // Parse the selectedPlayers key
+            const selectedPlayersString = result.data.Data.selectedPlayers ? result.data.Data.selectedPlayers.Value : null;
+            if (!selectedPlayersString) {
+                console.error("No selectedPlayers key found for the user.");
+                callback("No selectedPlayers key found", null);
+                return;
+            }
+
+            let selectedPlayerIds;
+            try {
+                // Parse the JSON string into an array
+                selectedPlayerIds = JSON.parse(selectedPlayersString);
+                console.log("Parsed selectedPlayerIds:", selectedPlayerIds);
+            } catch (e) {
+                console.error("Error parsing selectedPlayersString:", e);
+                callback("Error parsing selectedPlayersString", null);
+                return;
+            }
+
+            // OPTIMIZATION: Batch all title data requests into a single API call
+            const titleDataKeys = selectedPlayerIds.map(id => `player_${id}`);
+            titleDataKeys.push("gameWeek"); // Add gameWeek to the keys to fetch it in the same API call
+
+            console.log(`Fetching ${titleDataKeys.length} keys in single API call:`, titleDataKeys);
+
+            // Single API call to fetch all player data + gameweek
+            PlayFab.ClientApi.GetTitleData({ Keys: titleDataKeys }, function (titleDataResult, titleDataError) {
+                if (titleDataError) {
+                    console.error("Error retrieving title data from PlayFab:", titleDataError);
+                    callback(titleDataError, null);
+                } else {
+                    // Check if titleDataResult.data.Data exists
+                    if (titleDataResult.data && titleDataResult.data.Data) {
+                        // Get the current gameweek
+                        const gameWeek = parseInt(titleDataResult.data.Data.gameWeek);
+                        console.log("Current Gameweek:", gameWeek);
+
+                        // Parse the players and calculate points
+                        let weeklyPointsTotal = 0;         // For displaying current week's points
+                        let cumulativePointsTotal = 0;     // For the leaderboard (all weeks combined)
+                        
+                        const players = selectedPlayerIds.map(id => {
+                            const key = `player_${id}`;
+                            const playerDataString = titleDataResult.data.Data[key];
+
+                            if (playerDataString) {
+                                const player = parsePlayerData(playerDataString);
+                                
+                                // Skip invalid players that couldn't be parsed
+                                if (!player) {
+                                    console.warn(`Failed to parse player data for ID: ${id}`);
+                                    return null;
+                                }
+                                
+                                // Add the player ID to the player object for captain identification
+                                player.id = id;
+                                
+                                // Calculate points for current week only (for display)
+                                const weeklyPoints = calculateWeeklyPoints(playerDataString, gameWeek);
+                                player.weeklyPoints = weeklyPoints;
+                                weeklyPointsTotal += weeklyPoints;
+                                
+                                // Calculate cumulative points for all weeks up to current
+                                const cumulativePoints = calculateTotalPointsUpToCurrentWeek(playerDataString, gameWeek);
+                                player.cumulativePoints = cumulativePoints;
+                                cumulativePointsTotal += cumulativePoints;
+                                
+                                console.log(`Player ${player.name}: Week ${gameWeek} points = ${weeklyPoints}, Cumulative = ${cumulativePoints}`);
+                                
+                                return player;
+                            } else {
+                                console.warn(`No data found for player ID: ${id}`);
+                                return null;
+                            }
+                        }).filter(player => player !== null); // Filter out any null values
+
+                        // Log the total cumulative points for leaderboard
+                        console.log(`Team total cumulative points: ${cumulativePointsTotal} (across all ${gameWeek} weeks)`);
+
+                        // Prepare data for response
+                        const responseData = {
+                            players,
+                            weeklyPointsTotal,         // Current week points
+                            cumulativePointsTotal,     // Total points across all weeks
+                            gameWeek,                  // Current gameweek
+                            selectedPlayerIds
+                        };
+
+                        // Cache the successful response
+                        sharedDataCache.playerData = responseData;
+                        sharedDataCache.gameWeek = gameWeek;
+                        sharedDataCache.lastFetch = Date.now();
+                        console.log("Shared data cached successfully");
+
+                        // Pass all data to the callback
+                        callback(null, responseData);
+                    } else {
+                        console.error("No title data returned.");
+                        callback("No title data returned", null);
+                    }
+                }
+            });
+        }
+    });
+}
+
+// Shared memory management functions
+let sharedEventListeners = [];
+
+// Optimized event listener management
+function addManagedEventListener(element, event, handler) {
+    element.addEventListener(event, handler);
+    sharedEventListeners.push({ element, event, handler });
+}
+
+// Cleanup function for memory management
+function cleanupSharedResources() {
+    // Remove all managed event listeners
+    sharedEventListeners.forEach(({ element, event, handler }) => {
+        element.removeEventListener(event, handler);
+    });
+    sharedEventListeners = [];
+    
+    // Clear cached data to free memory
+    sharedDataCache.playerData = null;
+    sharedDataCache.gameWeek = null;
+    sharedDataCache.lastFetch = null;
+    
+    console.log("Shared memory cleanup completed");
+}
+
+// Add page visibility API to cleanup when tab is hidden
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // Clear expired cache when tab is hidden to save memory
+        if (!isSharedCacheValid()) {
+            sharedDataCache.playerData = null;
+            sharedDataCache.gameWeek = null;
+            sharedDataCache.lastFetch = null;
+        }
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', cleanupSharedResources);
+
 // Authentication functions
 function setupPlayFabAuth() {
     const sessionTicket = localStorage.getItem("sessionTicket");
@@ -282,11 +580,24 @@ function loadProfileData() {
     });
 }
 
-// Display team name only (for points page)
+// Display team name with proper error handling
 function loadTeamNameOnly() {
     fetchUserData(function(error, userData) {
-        if (!error && userData) {
-            document.getElementById('teamName').innerText = userData.teamName;
+        const teamNameElement = document.getElementById('teamName');
+        if (!teamNameElement) {
+            console.error("Team name element not found");
+            return;
+        }
+        
+        if (error) {
+            console.error("Error loading team name:", error);
+            teamNameElement.textContent = 'Unknown Team';
+        } else if (userData && userData.teamName) {
+            teamNameElement.textContent = userData.teamName;
+            console.log("Team name loaded:", userData.teamName);
+        } else {
+            teamNameElement.textContent = 'Unknown Team';
+            console.log("No team name found, using default");
         }
     });
 }
@@ -357,11 +668,11 @@ function initializePage(currentPage) {
                             pitch.innerHTML = '<div class="error-message">Failed to load player data. Please refresh the page.</div>';
                         }
                     } else {
-                        const { players } = data;
+                        const { players, selectedPlayerIds } = data;
                         console.log("Selected players:", players);
                         // Render the players on the pitch
                         if (typeof renderPlayersOnPitch === 'function') {
-                            renderPlayersOnPitch(players);
+                            renderPlayersOnPitch(players, selectedPlayerIds);
                         }
                     }
                 });
