@@ -202,11 +202,8 @@
     color: white;
 }
 
-/* Special styling for substitute players' price (yellow like pick-team) */
-.substitute-player .player-price {
-    background-color: #ffc107; /* Yellow background for substitute prices */
-    color: #000; /* Black text for better contrast on yellow */
-}
+/* Note: No special styling for substitute players on transfers page
+   All players show uniform blue price background for consistency */
 
 /* Position-based styling - not used in transfers but keeping for consistency */
 .player-card.gk { border-left: 4px solid #FFD700; }
@@ -629,4 +626,160 @@
 
 #playerModal main p strong {
     margin-right: var(--pico-spacing);
+}
+
+/* ========================================
+   TEAM SELECTION MODAL STYLES
+   ======================================== */
+
+/* Team selection modal */
+#teamSelectionModal {
+    z-index: 9999;
+}
+
+/* Team list grid */
+.team-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--pico-spacing);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Individual team option */
+.team-option {
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-card-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: var(--pico-spacing);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.team-option:hover {
+    background: var(--pico-primary-background);
+    border-color: var(--pico-primary);
+    transform: translateY(-2px);
+}
+
+.team-option.selected {
+    background: var(--pico-primary);
+    color: var(--pico-primary-inverse);
+    border-color: var(--pico-primary);
+}
+
+.team-option img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+
+.team-option h4 {
+    margin: 0 0 4px 0;
+    font-size: 0.9rem;
+}
+
+.team-option p {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* ========================================
+   PLAYER SELECTION MODAL STYLES
+   ======================================== */
+
+/* Player selection modal */
+#playerSelectionModal {
+    z-index: 9999;
+}
+
+/* Player selection list */
+.player-selection-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pico-spacing);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Individual player option */
+.player-selection-option {
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-card-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: var(--pico-spacing);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--pico-spacing);
+}
+
+.player-selection-option:hover {
+    background: var(--pico-primary-background);
+    border-color: var(--pico-primary);
+    transform: translateY(-1px);
+}
+
+.player-selection-option.selected {
+    background: var(--pico-primary);
+    color: var(--pico-primary-inverse);
+    border-color: var(--pico-primary);
+}
+
+.player-selection-option img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.player-selection-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-selection-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-selection-name {
+    font-weight: bold;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.player-selection-stats {
+    margin: 0;
+    font-size: 0.875rem;
+    opacity: 0.8;
+    display: flex;
+    gap: var(--pico-spacing);
+}
+
+.player-selection-price {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--pico-primary);
+    flex-shrink: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .player-selection-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .player-selection-stats {
+        flex-direction: column;
+        gap: 4px;
+    }
 }

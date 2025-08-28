@@ -65,11 +65,50 @@
                 <main>
                     <p><strong>Club:</strong> <span id="modalPlayerTeam">Team Name</span></p>
                     <p><strong>Position:</strong> <span id="modalPlayerPosition">Position</span></p>
+                    <p><strong>Total Points:</strong> <span id="modalPlayerPoints">0</span></p>
                     <p><strong>Current Price:</strong> £<span id="modalPlayerPrice">0.0</span>m</p>
                 </main>
                 <footer>
                     <button class="secondary" id="sellPlayerBtn">Sell Player</button>
                     <button class="secondary" id="cancelBtn">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
+
+        <!-- Team Selection Modal for Empty Slots -->
+        <dialog id="teamSelectionModal">
+            <article>
+                <header>
+                    <h3 id="teamModalTitle">Select Team</h3>
+                    <button aria-label="Close" rel="prev" id="closeTeamModal"></button>
+                </header>
+                <main>
+                    <p>Choose a team to see available <span id="teamModalPosition">players</span>:</p>
+                    <div id="teamList" class="team-list">
+                        <!-- Teams will be dynamically added here -->
+                    </div>
+                </main>
+                <footer>
+                    <button class="secondary" id="cancelTeamSelection">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
+
+        <!-- Player Selection Modal for Team -->
+        <dialog id="playerSelectionModal">
+            <article>
+                <header>
+                    <h3 id="playerModalTitle">Select Player</h3>
+                    <button aria-label="Close" rel="prev" id="closePlayerSelectionModal"></button>
+                </header>
+                <main>
+                    <p>Choose a <span id="playerModalPosition">player</span> from <span id="playerModalTeam">Team</span>:</p>
+                    <div id="playerSelectionList" class="player-selection-list">
+                        <!-- Players will be dynamically added here -->
+                    </div>
+                </main>
+                <footer>
+                    <button class="secondary" id="cancelPlayerSelection">Cancel</button>
                 </footer>
             </article>
         </dialog>
