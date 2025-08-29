@@ -413,10 +413,10 @@ function handleLoginResponse(result, error) {
         alert("Login failed: " + error.errorMessage);
     } else {
         console.log("User logged in successfully:", result);
-        
+
         // Store session ticket
         localStorage.setItem("sessionTicket", result.data.SessionTicket);
-        
+
         // Immediately get and store PlayFab ID for future use
         PlayFab.ClientApi.GetAccountInfo({}, function(accountResult, accountError) {
             if (!accountError && accountResult.data.AccountInfo.PlayFabId) {
@@ -425,10 +425,9 @@ function handleLoginResponse(result, error) {
             } else {
                 console.warn("Could not retrieve PlayFab ID during login:", accountError);
             }
-            
-            // Continue with redirect regardless
-            alert("Login successful! Redirecting to points.");
-            window.location.href = "points.html";
+
+            // Check user status and redirect accordingly
+            checkUserStatusAndRedirect();
         });
     }
 }
@@ -528,27 +527,41 @@ function handleTeamUpdateResponse(result, error) {
     }
 }
 
-function checkSelectedPlayersAndRedirect() {
-    console.log("Checking if user has selected players...");
-    
+function checkUserStatusAndRedirect() {
+    console.log("Checking user status for redirection...");
+
     PlayFab.ClientApi.GetUserData({}, function(result, error) {
         if (error) {
             console.error("Error checking user data:", error);
-            // On error, default to transfers page to be safe
-            window.location.href = "transfers.html";
+            // On error, default to draft team page to be safe
+            window.location.href = "draft-team.html";
             return;
         }
-        
+
+        const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : null;
         const selectedPlayersString = result.data.Data.selectedPlayers ? result.data.Data.selectedPlayers.Value : null;
-        
-        if (selectedPlayersString) {
-            // User has selected players, go to points page
-            console.log("User has selected players, redirecting to points page");
-            window.location.href = "points.html";
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
+        if (!teamName) {
+            // New user - no team created yet
+            if (currentPage !== 'draft-team.html') {
+                console.log("New user - redirecting to draft team page");
+                window.location.href = "draft-team.html";
+            } else {
+                console.log("New user already on draft team page - staying here");
+            }
+        } else if (!selectedPlayersString) {
+            // User has team but no selected players - redirect to draft team
+            if (currentPage !== 'draft-team.html') {
+                console.log("User has team but no players - redirecting to draft team page");
+                window.location.href = "draft-team.html";
+            } else {
+                console.log("User has team but no players - already on draft team page");
+            }
         } else {
-            // User doesn't have selected players, go to transfers page
-            console.log("User doesn't have selected players, redirecting to transfers page");
-            window.location.href = "transfers.html";
+            // User has both team and selected players - redirect to points
+            console.log("User has complete team - redirecting to points page");
+            window.location.href = "points.html";
         }
     });
 }
@@ -895,12 +908,14 @@ function initializePage(currentPage) {
             }
             break;
             
-        case 'create-team.html':
-            // Verify team status before allowing access
+        case 'draft-team.html':
+            // Check if user already has a complete team
             PlayFab.ClientApi.GetUserData({}, function(result, error) {
-                if (!error && result.data.Data.teamName) {
-                    console.log("Team already exists, redirecting to points...");
+                if (!error && result.data.Data.teamName && result.data.Data.selectedPlayers) {
+                    console.log("User already has complete team, redirecting to points...");
                     window.location.href = "points.html";
+                } else {
+                    console.log("User needs to draft team - staying on draft page");
                 }
             });
             break;
@@ -909,7 +924,7 @@ function initializePage(currentPage) {
 
 // Page load handling
 window.addEventListener('load', function() {
-    const publicPages = ['index.html', 'login.html', 'register.html', 'reset-password.html'];
+    const publicPages = ['index.html', 'login.html', 'register.html', 'reset-password.html', 'draft-team.html'];
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     
     // Setup PlayFab authentication and get session status
@@ -930,9 +945,9 @@ window.addEventListener('load', function() {
             
             // Redirect from public pages if already logged in
             if (publicPages.includes(currentPage)) {
-                console.log("Already logged in, redirecting to points...");
-                window.location.href = "points.html";
-                return;
+                console.log("Already logged in, checking user status for redirect...");
+                checkUserStatusAndRedirect();
+                return; // Don't continue with initializePage since we're redirecting
             }
 
             // Handle page-specific initialization

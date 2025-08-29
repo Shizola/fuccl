@@ -1,0 +1,236 @@
+/* Draft Team Page Styles */
+
+.subtitle {
+    color: #666;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+/* Team Creation Form Styles */
+.team-creation {
+    margin-bottom: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-field input {
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-field input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.character-counter {
+    font-size: 0.875rem;
+    text-align: right;
+    margin-top: 0.25rem;
+    color: #666;
+}
+
+/* Budget Section Styles */
+.budget-section {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.budget-display h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.budget-amount {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.budget-note {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+}
+
+/* Draft Actions Styles */
+.draft-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.draft-actions .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.draft-note {
+    color: #666;
+    font-style: italic;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .budget-amount {
+        font-size: 2rem;
+    }
+
+    .draft-actions .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .draft-actions .action-buttons button {
+        width: 100%;
+        max-width: 200px;
+    }
+}
+
+/* Enhanced Player Selection Modal Styles */
+.player-selection-option {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.player-selection-option:hover {
+    border-color: #4CAF50;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    transform: translateY(-1px);
+}
+
+.player-selection-option img {
+    width: 50px;
+    height: 50px;
+    margin-right: 1rem;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.player-selection-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-selection-details h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.player-selection-stats {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.player-selection-price {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+/* Team Selection Modal Styles */
+.team-option {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.team-option:hover {
+    border-color: #4CAF50;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    transform: translateY(-1px);
+}
+
+.team-option img {
+    width: 50px;
+    height: 50px;
+    margin-right: 1rem;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.team-option h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Loading and Error States */
+.team-list:empty::before,
+.player-selection-list:empty::before {
+    content: "Loading...";
+    display: block;
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+/* Success States */
+.form-field input:valid {
+    border-color: #4CAF50;
+}
+
+.form-field input:invalid:not(:placeholder-shown) {
+    border-color: #f44336;
+}
+
+/* Button States */
+#saveDraftBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#saveDraftBtn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}

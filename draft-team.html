@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://download.playfab.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data:; connect-src 'self' https://*.playfabapi.com https://playfabapi.com;">
+
+    <!-- Link to Pico.css CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
+    <link rel="stylesheet" href="transfers.css"> <!-- Page-specific styles -->
+    <link rel="stylesheet" href="draft-team.css"> <!-- Draft team specific styles -->
+
+    <title>Draft Team - FUCCL</title>
+</head>
+
+<body>
+    <main class="container">
+        <header>
+            <h1>Draft Your Team</h1>
+            <p class="subtitle">Create your team name and select your starting 11 players</p>
+        </header>
+
+        <!-- Team Creation Form -->
+        <section class="team-creation">
+            <form id="draft-team-form" onsubmit="handleDraftTeamSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="teamName">
+                            Team Name:
+                            <small style="color: #666; display: block; margin-top: 0.25rem;">Maximum 30 characters. Letters, numbers, spaces, hyphens, and apostrophes only.</small>
+                        </label>
+                        <input type="text" id="teamName" required maxlength="30" placeholder="Enter your team name">
+                        <small id="teamNameCounter" class="character-counter">0/30</small>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="managerName">
+                            Manager Name:
+                            <small style="color: #666; display: block; margin-top: 0.25rem;">Maximum 20 characters. Letters, spaces, hyphens, and apostrophes only.</small>
+                        </label>
+                        <input type="text" id="managerName" required maxlength="20" placeholder="Enter your manager name">
+                        <small id="managerNameCounter" class="character-counter">0/20</small>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- Budget Display - Centralized -->
+        <section class="budget-section">
+            <div class="budget-display">
+                <h3>Remaining Budget</h3>
+                <div class="budget-amount">£<span id="teamBudget">100.0</span>m</div>
+                <p class="budget-note">You have £100m to spend on your starting 11 players</p>
+            </div>
+        </section>
+
+        <!-- Team Display -->
+        <section class="pitch-container">
+            <div class="pitch">
+                <img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">
+                <!-- Players will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Draft Actions -->
+        <section class="draft-actions">
+            <div class="action-buttons">
+                <button id="saveDraftBtn" class="success" disabled>Save Team</button>
+                <button id="resetDraftBtn" class="outline">Reset All</button>
+            </div>
+            <p class="draft-note">Select 11 players to complete your team</p>
+        </section>
+
+        <!-- Player Modal -->
+        <dialog id="playerModal">
+            <article>
+                <header>
+                    <h3 id="modalPlayerName">Player Name</h3>
+                    <button aria-label="Close" rel="prev" id="closeModal"></button>
+                </header>
+                <main>
+                    <p><strong>Club:</strong> <span id="modalPlayerTeam">Team Name</span></p>
+                    <p><strong>Position:</strong> <span id="modalPlayerPosition">Position</span></p>
+                    <p><strong>Total Points:</strong> <span id="modalPlayerPoints">0</span></p>
+                    <p><strong>Current Price:</strong> £<span id="modalPlayerPrice">0.0</span>m</p>
+                </main>
+                <footer>
+                    <button class="secondary" id="selectPlayerBtn">Select Player</button>
+                    <button class="secondary" id="cancelBtn">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
+
+        <!-- Team Selection Modal for Empty Slots -->
+        <dialog id="teamSelectionModal">
+            <article>
+                <header>
+                    <h3 id="teamModalTitle">Select Team</h3>
+                    <button aria-label="Close" rel="prev" id="closeTeamModal"></button>
+                </header>
+                <main>
+                    <p>Choose a team to see available <span id="teamModalPosition">players</span>:</p>
+                    <div id="teamList" class="team-list">
+                        <!-- Teams will be dynamically added here -->
+                    </div>
+                </main>
+                <footer>
+                    <button class="secondary" id="cancelTeamSelection">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
+
+        <!-- Player Selection Modal for Team -->
+        <dialog id="playerSelectionModal">
+            <article>
+                <header>
+                    <h3 id="playerModalTitle">Select Player</h3>
+                    <button aria-label="Close" rel="prev" id="closePlayerSelectionModal"></button>
+                </header>
+                <main>
+                    <p>Choose a <span id="playerModalPosition">player</span> from <span id="playerModalTeam">Team</span>:</p>
+                    <div id="playerSelectionList" class="player-selection-list">
+                        <!-- Players will be dynamically added here -->
+                    </div>
+                </main>
+                <footer>
+                    <button class="secondary" id="cancelPlayerSelection">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
+
+    </main>
+
+    <!-- PlayFab SDK -->
+    <script src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="common.js"></script>
+    <script src="draft-team.js"></script>
+</body>
+</html>

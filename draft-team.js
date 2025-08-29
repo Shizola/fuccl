@@ -1,22 +1,18 @@
-// Use shared data cache from common.js
-const dataCache = sharedDataCache;
-
-// Transfers-specific state
+// Draft Team specific state
 let teamBudget = 100.0; // Starting budget in millions
-let freeTransfers = 1;
-let transfersMade = 0;
-let maxTransfers = 5;
+let selectedPlayerCount = 0;
+const requiredPlayers = 11;
 
-// Temporary array to track team during transfers
-let pendingSelectedPlayers = [];
+// Temporary array to track team during drafting
+let draftSelectedPlayers = [];
 
 // Store original selectedPlayers for debugging
 window.selectedPlayers = [];
 
 // Function to check if cached data is still valid
 function isCacheValid() {
-    return dataCache.playerData && 
-           dataCache.gameWeek && 
+    return dataCache.playerData &&
+           dataCache.gameWeek &&
            (Date.now() - dataCache.lastFetch) < dataCache.CACHE_DURATION;
 }
 
@@ -30,10 +26,10 @@ function createPlayerCard(player) {
     shirtImg.src = player.shirtImage;
     shirtImg.alt = `${player.name}'s Shirt`;
     shirtImg.className = 'player-shirt';
-    
+
     // PERFORMANCE OPTIMIZATION: Add lazy loading for better performance
     shirtImg.loading = 'lazy';
-    
+
     // Add intersection observer for progressive loading if supported
     if ('IntersectionObserver' in window) {
         const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -61,14 +57,14 @@ function createPlayerCard(player) {
     nameDiv.textContent = player.name;
     card.appendChild(nameDiv);
 
-    // Add player price instead of position for transfers page
+    // Add player price
     const priceDiv = document.createElement('div');
     priceDiv.className = 'player-price';
-    
+
     // Use actual player price from data
     const playerPrice = player.price || '5.0'; // Default if no price available
     priceDiv.textContent = `£${playerPrice}m`;
-    
+
     card.appendChild(priceDiv);
 
     // Add click event listener to open modal
@@ -90,83 +86,13 @@ function loadPlayersFromPlayFab(callback) {
     loadSharedPlayersFromPlayFab(callback);
 }
 
-// Function to load current team for transfers (without points data)
-function loadCurrentTeamForTransfers() {
-    console.log("Loading current team for transfers...");
-    
-    // Get user's selected players
-    PlayFab.ClientApi.GetUserData({}, function (result, error) {
-        if (error) {
-            console.error("Error retrieving user data:", error);
-            alert("Failed to load your team. Please try again.");
-            return;
-        }
+// Function to display empty team slots for initial selection
+function displayEmptyTeamForDraft() {
+    console.log("Displaying empty team for initial draft...");
 
-        // Parse the selectedPlayers
-        const selectedPlayersString = result.data.Data.selectedPlayers ? result.data.Data.selectedPlayers.Value : null;
-        if (!selectedPlayersString) {
-            // Check if user has a team name - if they do, they should select players on transfers page
-            const teamName = result.data.Data.teamName ? result.data.Data.teamName.Value : null;
-            if (teamName) {
-                console.log("No selected players but team exists, staying on transfers to select initial team");
-                // User has team but no players selected - show empty slots for initial team selection
-                displayEmptyTeamForSelection();
-                return;
-            } else {
-                console.log("No team found, user should not be on transfers page - redirecting to draft team");
-                window.location.href = 'draft-team.html';
-                return;
-            }
-        }
+    // Update budget display (starting budget)
+    updateDraftDisplay();
 
-        let selectedPlayerIds;
-        try {
-            selectedPlayerIds = JSON.parse(selectedPlayersString);
-            console.log("Current team player IDs:", selectedPlayerIds);
-        } catch (e) {
-            console.error("Error parsing selected players:", e);
-            alert("Error loading your team data. Please try again.");
-            return;
-        }
-
-        // Store original for debugging
-        window.selectedPlayers = [...selectedPlayerIds];
-
-        // Copy to pending array for transfer workflow
-        pendingSelectedPlayers = [...selectedPlayerIds];
-
-        // Get basic player data for current team (we use cached data if available)
-        if (isCacheValid()) {
-            // Use cached data
-            const currentTeamPlayers = allPlayersCache.filter(player => 
-                selectedPlayerIds.includes(player.id)
-            );
-            displayCurrentTeam(currentTeamPlayers, selectedPlayerIds);
-        } else {
-            // Load all players first, then filter for current team
-            loadAllPlayers(function(error, allPlayers) {
-                if (error) {
-                    console.error("Error loading players:", error);
-                    alert("Failed to load player data. Please try again.");
-                    return;
-                }
-                
-                const currentTeamPlayers = allPlayers.filter(player => 
-                    selectedPlayerIds.includes(player.id)
-                );
-                displayCurrentTeam(currentTeamPlayers, selectedPlayerIds);
-            });
-        }
-    });
-}
-
-// Function to display empty team slots for initial team selection
-function displayEmptyTeamForSelection() {
-    console.log("Displaying empty team for initial player selection...");
-    
-    // Update budget display (starting budget with no players)
-    updateTransfersDisplay(null, 0, 0, []);
-    
     // Create empty slots for initial team selection
     renderEmptyTeamSlots();
 }
@@ -231,7 +157,124 @@ function renderEmptyTeamSlots() {
         }
     });
 
-    console.log("Rendered empty team slots for initial selection");
+    console.log("Rendered empty team slots for draft");
+}
+
+// Function to update the draft display elements
+function updateDraftDisplay() {
+    // Update budget display
+    const budgetElement = document.getElementById('teamBudget');
+    if (budgetElement) {
+        budgetElement.textContent = teamBudget.toFixed(1);
+    }
+
+    // Update save button state
+    const saveBtn = document.getElementById('saveDraftBtn');
+    if (saveBtn) {
+        const isFormValid = validateDraftForm();
+        const hasEnoughPlayers = selectedPlayerCount >= requiredPlayers;
+        saveBtn.disabled = !(isFormValid && hasEnoughPlayers);
+
+        if (hasEnoughPlayers && isFormValid) {
+            saveBtn.textContent = 'Save Team';
+        } else if (!hasEnoughPlayers) {
+            saveBtn.textContent = `Select ${requiredPlayers - selectedPlayerCount} More Players`;
+        } else {
+            saveBtn.textContent = 'Complete Team Info';
+        }
+    }
+
+    console.log(`Updated draft display - Budget: £${teamBudget.toFixed(1)}m, Players: ${selectedPlayerCount}/${requiredPlayers}`);
+}
+
+// Function to validate the draft form
+function validateDraftForm() {
+    const teamName = document.getElementById('teamName').value.trim();
+    const managerName = document.getElementById('managerName').value.trim();
+
+    return teamName.length >= 2 && teamName.length <= 30 &&
+           managerName.length >= 2 && managerName.length <= 20;
+}
+
+// Function to handle draft team submission
+function handleDraftTeamSubmit(event) {
+    event.preventDefault();
+
+    if (!validateDraftForm()) {
+        alert('Please fill in your team name and manager name correctly.');
+        return;
+    }
+
+    if (selectedPlayerCount < requiredPlayers) {
+        alert(`Please select ${requiredPlayers - selectedPlayerCount} more players to complete your team.`);
+        return;
+    }
+
+    saveDraftTeam();
+}
+
+// Function to save the draft team
+function saveDraftTeam() {
+    const teamName = document.getElementById('teamName').value.trim();
+    const managerName = document.getElementById('managerName').value.trim();
+
+    console.log('Saving draft team:', { teamName, managerName, selectedPlayers: draftSelectedPlayers });
+
+    // First save team info
+    const teamData = {
+        teamName: teamName,
+        managerName: managerName
+    };
+
+    PlayFab.ClientApi.UpdateUserData({
+        Data: teamData
+    }, function(result, error) {
+        if (error) {
+            console.error("Error saving team data:", error);
+            alert("Failed to save team information. Please try again.");
+            return;
+        }
+
+        console.log("Team data saved successfully");
+
+        // Then save selected players
+        const selectedPlayersData = {
+            selectedPlayers: JSON.stringify(draftSelectedPlayers)
+        };
+
+        PlayFab.ClientApi.UpdateUserData({
+            Data: selectedPlayersData
+        }, function(result, error) {
+            if (error) {
+                console.error("Error saving selected players:", error);
+                alert("Failed to save selected players. Please try again.");
+                return;
+            }
+
+            console.log("Selected players saved successfully");
+            alert("Team created successfully! Redirecting to your dashboard.");
+            window.location.href = "points.html";
+        });
+    });
+}
+
+// Function to reset the draft
+function resetDraft() {
+    if (confirm('Are you sure you want to reset your draft? This will clear all selected players.')) {
+        // Reset form
+        document.getElementById('teamName').value = '';
+        document.getElementById('managerName').value = '';
+
+        // Reset budget and player count
+        teamBudget = 100.0;
+        selectedPlayerCount = 0;
+        draftSelectedPlayers = [];
+
+        // Re-render empty slots
+        displayEmptyTeamForDraft();
+
+        console.log('Draft reset successfully');
+    }
 }
 
 // Cache for all players data
@@ -244,7 +287,7 @@ let currentTransferSlot = null; // Will store reference to the card element bein
 
 // Function to check if cache is valid
 function isCacheValid() {
-    return allPlayersCache && cacheTimestamp && 
+    return allPlayersCache && cacheTimestamp &&
            (Date.now() - cacheTimestamp) < CACHE_DURATION;
 }
 
@@ -258,7 +301,7 @@ function loadAllPlayers(callback) {
     }
 
     console.log("Loading all players from PlayFab...");
-    
+
     PlayFab.ClientApi.GetTitleData({}, function(result, error) {
         if (error) {
             console.error("Error loading title data:", error);
@@ -275,12 +318,12 @@ function loadAllPlayers(callback) {
         // Parse all players
         const allPlayers = [];
         const playerKeys = Object.keys(result.data.Data).filter(key => key.startsWith('player_'));
-        
+
         console.log(`Found ${playerKeys.length} players in PlayFab`);
-        
+
         playerKeys.forEach(key => {
             const playerDataString = result.data.Data[key];
-            
+
             if (playerDataString) {
                 const player = parsePlayerData(playerDataString);
                 if (player) {
@@ -300,37 +343,6 @@ function loadAllPlayers(callback) {
     });
 }
 
-// Function to update the transfers display elements
-function updateTransfersDisplay(gameWeek, weeklyPointsTotal, cumulativePointsTotal, players = []) {
-    // Calculate total cost of current team
-    const totalTeamCost = players.reduce((total, player) => {
-        return total + (player.price || 0);
-    }, 0);
-    
-    // Calculate remaining budget (100m - team cost)
-    const remainingBudget = 100.0 - totalTeamCost;
-    
-    // Update budget display to show remaining budget
-    const budgetElement = document.getElementById('teamBudget');
-    if (budgetElement) {
-        budgetElement.textContent = remainingBudget.toFixed(1);
-    }
-
-    // Update transfers made
-    const transfersMadeElement = document.getElementById('transfersMade');
-    if (transfersMadeElement) {
-        transfersMadeElement.textContent = transfersMade;
-    }
-
-    // Update free transfers
-    const freeTransfersElement = document.getElementById('freeTransfers');
-    if (freeTransfersElement) {
-        freeTransfersElement.textContent = freeTransfers;
-    }
-
-    console.log(`Updated transfers display - Team Cost: £${totalTeamCost.toFixed(1)}m, Remaining Budget: £${remainingBudget.toFixed(1)}m, Transfers: ${transfersMade}/${maxTransfers}, Free: ${freeTransfers}`);
-}
-
 // Function to render players on the pitch
 function renderPlayersOnPitch(players, selectedPlayerIds = []) {
     // Get the pitch container
@@ -346,7 +358,7 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
     // OPTIMIZATION: Use DocumentFragment for batch DOM operations
     const fragment = document.createDocumentFragment();
 
-    // Define vertical positions for each row (no separate substitute row on transfers page)
+    // Define vertical positions for each row
     const positionStyles = {
         gk: { top: '10%' },
         df: { top: '30%' },
@@ -354,7 +366,7 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
         at: { top: '70%' }
     };
 
-    // Group players by position (no substitute separation on transfers page)
+    // Group players by position
     const positions = {
         gk: [],
         df: [],
@@ -362,7 +374,7 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
         at: []
     };
 
-    // Assign ALL players to their actual positions (no main vs substitute distinction)
+    // Assign players to their positions
     players.forEach(player => {
         if (positions[player.position]) {
             positions[player.position].push(player);
@@ -392,13 +404,6 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
             playerCard.style.top = positionStyles[position].top;
             playerCard.style.left = left;
 
-            // Note: Substitute styling not shown on transfers page  
-            // This is for transfer management, not team status display
-            // Substitute positions will be maintained in team data structure
-
-            // Note: Captain styling is not shown on transfers page
-            // Captain will be reassigned to first player in selectedPlayerIds when transfers are confirmed
-
             // Add to fragment instead of DOM
             fragment.appendChild(playerCard);
         });
@@ -422,7 +427,7 @@ function resetAllTransfers() {
 
 // Event listeners setup
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Transfers page loaded");
+    console.log("Draft Team page loaded");
 
     // Set up PlayFab authentication
     if (!setupPlayFabAuth()) {
@@ -431,11 +436,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Load team name using shared function
-    loadTeamNameOnly();
+    // Set up form validation and character counters
+    setupFormValidation();
 
-    // Preload all players for transfers (cache for performance)
-    console.log("Preloading all players for transfers...");
+    // Preload all players for draft (cache for performance)
+    console.log("Preloading all players for draft...");
     loadAllPlayers(function(error, allPlayers) {
         if (error) {
             console.error("Error preloading players:", error);
@@ -444,26 +449,60 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Load the current team composition (just for transfers, no points needed)
-    loadCurrentTeamForTransfers();
+    // Display empty team for drafting
+    displayEmptyTeamForDraft();
 
     // Set up action buttons
-    const confirmBtn = document.getElementById('confirmTransfersBtn');
-    const resetBtn = document.getElementById('resetTransfersBtn');
+    const saveBtn = document.getElementById('saveDraftBtn');
+    const resetBtn = document.getElementById('resetDraftBtn');
 
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', confirmAllTransfers);
+    if (saveBtn) {
+        saveBtn.addEventListener('click', handleDraftTeamSubmit);
     }
 
     if (resetBtn) {
-        resetBtn.addEventListener('click', resetAllTransfers);
+        resetBtn.addEventListener('click', resetDraft);
     }
 });
+
+// Function to set up form validation and character counters
+function setupFormValidation() {
+    const teamNameInput = document.getElementById('teamName');
+    const managerNameInput = document.getElementById('managerName');
+    const teamCounter = document.getElementById('teamNameCounter');
+    const managerCounter = document.getElementById('managerNameCounter');
+
+    function updateCounters() {
+        const teamLength = teamNameInput.value.length;
+        const managerLength = managerNameInput.value.length;
+
+        if (teamCounter) teamCounter.textContent = `${teamLength}/30`;
+        if (managerCounter) managerCounter.textContent = `${managerLength}/20`;
+
+        // Change color based on length
+        if (teamCounter) {
+            teamCounter.style.color = teamLength > 30 ? '#d73a49' : teamLength > 25 ? '#f9c513' : '#666';
+        }
+        if (managerCounter) {
+            managerCounter.style.color = managerLength > 20 ? '#d73a49' : managerLength > 15 ? '#f9c513' : '#666';
+        }
+
+        // Update save button state
+        updateDraftDisplay();
+    }
+
+    // Update counters on input
+    if (teamNameInput) teamNameInput.addEventListener('input', updateCounters);
+    if (managerNameInput) managerNameInput.addEventListener('input', updateCounters);
+
+    // Initial update
+    updateCounters();
+}
 
 // Clean up when leaving the page
 window.addEventListener('beforeunload', function() {
     // Clean up any event listeners or timers
-    console.log("Cleaning up transfers page");
+    console.log("Cleaning up draft team page");
 });
 
 /* ========================================
@@ -484,11 +523,11 @@ function openPlayerModal(player) {
         // Set player information in modal
         modalPlayerName.textContent = player.name;
         modalPlayerTeam.textContent = player.teamName;
-        
+
         // Convert position back to readable format
         const positionMap = {
             'gk': 'Goalkeeper',
-            'df': 'Defender', 
+            'df': 'Defender',
             'md': 'Midfielder',
             'at': 'Attacker'
         };
@@ -496,9 +535,9 @@ function openPlayerModal(player) {
         modalPlayerPoints.textContent = player.points || 0;
         modalPlayerPrice.textContent = (player.price || 0).toFixed(1);
 
-        // Store current player for sell action
+        // Store current player for selection action
         modal.dataset.playerId = player.id;
-        
+
         // Show the modal
         modal.showModal();
     }
@@ -512,38 +551,63 @@ function closePlayerModal() {
     }
 }
 
-// Function to sell a player
-function sellPlayer(playerId) {
-    console.log('Selling player with ID:', playerId);
-    
-    // Find the player card in the DOM using stored player ID
-    const playerCards = document.querySelectorAll('.player-card');
-    let targetCard = null;
-    let soldPlayerPrice = 0;
-    
-    playerCards.forEach(card => {
-        if (card.dataset.playerId === playerId) {
-            targetCard = card;
-            // Get the player's price from the price div
-            const priceDiv = card.querySelector('.player-price');
-            if (priceDiv) {
-                // Extract price from text like "£4.9m"
-                const priceText = priceDiv.textContent.replace('£', '').replace('m', '');
-                soldPlayerPrice = parseFloat(priceText) || 0;
-            }
+// Function to select a player
+function selectPlayer(playerId) {
+    console.log('Selecting player with ID:', playerId);
+
+    // Find the player in cache
+    if (!allPlayersCache) {
+        console.error('Player cache not available');
+        return;
+    }
+
+    const player = allPlayersCache.find(p => p.id === playerId);
+    if (!player) {
+        console.error('Player not found:', playerId);
+        return;
+    }
+
+    // Check if player can be afforded
+    if (player.price > teamBudget) {
+        alert(`Cannot afford ${player.name} (£${player.price}m). You only have £${teamBudget}m remaining.`);
+        return;
+    }
+
+    // Check if position is already filled (simplified - just count by position)
+    const positionCounts = {
+        gk: 0, df: 0, md: 0, at: 0
+    };
+
+    draftSelectedPlayers.forEach(id => {
+        const p = allPlayersCache.find(player => player.id === id);
+        if (p && positionCounts[p.position] !== undefined) {
+            positionCounts[p.position]++;
         }
     });
-    
-    if (targetCard) {
-        // Replace the player card with an empty slot
-        createEmptySlot(targetCard, playerId);
-        
-        // Update the remaining budget by adding the sold player's price
-        updateBudgetAfterSale(soldPlayerPrice);
-    } else {
-        console.error('Could not find player card for ID:', playerId);
+
+    // Check position limits
+    const positionLimits = { gk: 1, df: 4, md: 4, at: 2 };
+    if (positionCounts[player.position] >= positionLimits[player.position]) {
+        alert(`You already have the maximum number of ${player.position.toUpperCase()} players.`);
+        return;
     }
-    
+
+    // Add player to draft
+    if (!draftSelectedPlayers.includes(playerId)) {
+        draftSelectedPlayers.push(playerId);
+        selectedPlayerCount++;
+        teamBudget -= player.price;
+
+        console.log(`Added ${player.name} to draft for £${player.price}m`);
+
+        // Update the slot visually
+        if (currentTransferSlot) {
+            addPlayerToSlot(currentTransferSlot, player);
+        }
+
+        updateDraftDisplay();
+    }
+
     closePlayerModal();
 }
 
@@ -563,19 +627,19 @@ function openTeamSelectionModal(position) {
         const positionNames = {
             'GK': 'Goalkeepers',
             'DF': 'Defenders',
-            'MD': 'Midfielders', 
+            'MD': 'Midfielders',
             'AT': 'Attackers'
         };
-        
+
         modalTitle.textContent = `Select Team - ${positionNames[position] || position}`;
         modalPosition.textContent = positionNames[position] || position;
-        
+
         // Store position for later use
         modal.dataset.selectedPosition = position;
-        
+
         // Populate teams
         populateTeamList(teamList);
-        
+
         // Show the modal
         modal.showModal();
     }
@@ -585,7 +649,7 @@ function openTeamSelectionModal(position) {
 function populateTeamList(teamListContainer) {
     // Clear existing content
     teamListContainer.innerHTML = '';
-    
+
     // List of teams (matching the shirt images we have)
     const teams = [
         { name: 'Highfields FC', shirt: 'images/shirts/highfields.svg' },
@@ -600,13 +664,13 @@ function populateTeamList(teamListContainer) {
         { name: 'Libanus Evangelical Church', shirt: 'images/shirts/libanus.svg' },
         { name: 'Waterfront Community Church FC', shirt: 'images/shirts/waterfront.svg' }
     ];
-    
+
     // Create team options
     teams.forEach(team => {
         const teamOption = document.createElement('div');
         teamOption.className = 'team-option';
         teamOption.dataset.teamName = team.name;
-        
+
         // Add team shirt image
         const shirtImg = document.createElement('img');
         shirtImg.src = team.shirt;
@@ -614,16 +678,16 @@ function populateTeamList(teamListContainer) {
         shirtImg.onerror = function() {
             this.src = 'images/shirts/template.svg';
         };
-        
+
         // Add team name
         const teamName = document.createElement('h4');
         teamName.textContent = team.name;
-        
+
         // Add click handler
         teamOption.addEventListener('click', () => {
             selectTeam(team.name);
         });
-        
+
         teamOption.appendChild(shirtImg);
         teamOption.appendChild(teamName);
         teamListContainer.appendChild(teamOption);
@@ -635,10 +699,10 @@ function selectTeam(teamName) {
     console.log('Selected team:', teamName);
     const modal = document.getElementById('teamSelectionModal');
     const position = modal.dataset.selectedPosition;
-    
+
     // Close team selection modal
     closeTeamSelectionModal();
-    
+
     // Open player selection modal for this team and position
     openPlayerSelectionModal(teamName, position);
 }
@@ -668,49 +732,31 @@ function openPlayerSelectionModal(teamName, position) {
         const positionNames = {
             'GK': 'Goalkeeper',
             'DF': 'Defender',
-            'MD': 'Midfielder', 
+            'MD': 'Midfielder',
             'AT': 'Attacker'
         };
-        
+
         modalTitle.textContent = `Select ${positionNames[position] || position}`;
         modalPosition.textContent = positionNames[position] || position;
         modalTeam.textContent = teamName;
-        
+
         // Store selection info for later use
         modal.dataset.selectedTeam = teamName;
         modal.dataset.selectedPosition = position;
-        
+
         // Load and display players
         loadPlayersFromTeam(teamName, position, playerList);
-        
+
         // Show the modal
         modal.showModal();
     }
-}
-
-// Function to get current team's player IDs
-function getCurrentTeamPlayerIds() {
-    const playerIds = [];
-    
-    // Get all player cards currently on the pitch
-    const playerCards = document.querySelectorAll('.player-card[data-player-id]');
-    
-    playerCards.forEach(card => {
-        const playerId = card.dataset.playerId;
-        if (playerId) {
-            playerIds.push(playerId);
-        }
-    });
-    
-    console.log('Current team player IDs:', playerIds);
-    return playerIds;
 }
 
 // Function to load players from a specific team and position
 function loadPlayersFromTeam(teamName, position, playerListContainer) {
     // Show loading state
     playerListContainer.innerHTML = '<p>Loading players...</p>';
-    
+
     // Use cached data if available, otherwise load all players
     if (isCacheValid()) {
         filterAndDisplayPlayers(allPlayersCache, teamName, position, playerListContainer);
@@ -721,7 +767,7 @@ function loadPlayersFromTeam(teamName, position, playerListContainer) {
                 playerListContainer.innerHTML = '<p>Error loading players. Please try again.</p>';
                 return;
             }
-            
+
             filterAndDisplayPlayers(allPlayers, teamName, position, playerListContainer);
         });
     }
@@ -729,9 +775,6 @@ function loadPlayersFromTeam(teamName, position, playerListContainer) {
 
 // Helper function to filter and display players
 function filterAndDisplayPlayers(allPlayers, teamName, position, playerListContainer) {
-    // Get current team's player IDs to exclude them from purchase options
-    const currentTeamPlayerIds = getCurrentTeamPlayerIds();
-    
     // Filter players by team and position
     const positionMap = {
         'GK': 'gk',
@@ -739,21 +782,21 @@ function filterAndDisplayPlayers(allPlayers, teamName, position, playerListConta
         'MD': 'md',
         'AT': 'at'
     };
-    
+
     const targetPosition = positionMap[position];
     console.log(`Filtering for team: ${teamName}, position: ${targetPosition}`);
-    
+
     const filteredPlayers = allPlayers.filter(player => {
         // Filter by team and position
         const matchesTeamAndPosition = player.teamName === teamName && player.position === targetPosition;
-        
-        // Exclude players already in the current team
-        const notInCurrentTeam = !currentTeamPlayerIds.includes(player.id);
-        
-        return matchesTeamAndPosition && notInCurrentTeam;
+
+        // Exclude players already in the draft
+        const notInDraft = !draftSelectedPlayers.includes(player.id);
+
+        return matchesTeamAndPosition && notInDraft;
     });
 
-    console.log(`Found ${filteredPlayers.length} available players for ${teamName} ${position} (excluding current team)`);
+    console.log(`Found ${filteredPlayers.length} available players for ${teamName} ${position} (excluding drafted players)`);
 
     // Sort by price (highest first) - most expensive/popular players at top
     filteredPlayers.sort((a, b) => (b.price || 0) - (a.price || 0));
@@ -809,7 +852,7 @@ function displayPlayerSelection(players, container) {
         // Assemble the option
         playerDetails.appendChild(playerName);
         playerDetails.appendChild(playerStats);
-        
+
         playerInfo.appendChild(playerDetails);
         playerInfo.appendChild(playerPrice);
 
@@ -828,34 +871,26 @@ function displayPlayerSelection(players, container) {
 // Function to handle player selection
 function selectPlayerFromTeam(player) {
     console.log('Selected player:', player.name, 'Price:', player.price, 'Points:', player.points);
-    if (!currentTransferSlot) {
-        console.error('No transfer slot selected');
-        alert('Error: No slot selected for transfer');
+
+    // Check if player can be afforded
+    if (player.price > teamBudget) {
+        alert(`Cannot afford ${player.name} (£${player.price}m). You only have £${teamBudget}m remaining.`);
         return;
     }
-    const budgetElement = document.getElementById('teamBudget');
-    const remainingBudget = budgetElement ? parseFloat(budgetElement.textContent) || 0 : 0;
-    if (player.price > remainingBudget) {
-        alert(`Cannot afford ${player.name} (£${player.price}m). You only have £${remainingBudget}m remaining.`);
-        return;
-    }
-    // Always recalculate slot index
-    const slotIndex = getSlotIndex(currentTransferSlot);
-    if (typeof slotIndex !== 'number' || slotIndex === -1) {
-        alert('Error: Could not determine slot index');
-        return;
-    }
-    // Replace the player in pendingSelectedPlayers
-    pendingSelectedPlayers[slotIndex] = player.id;
-    // Update the card element visually (do not replace the element)
-    addPlayerToSlot(currentTransferSlot, player);
-    updateBudgetAfterPurchase(player.price);
+
+    // Select the player
+    selectPlayer(player.id);
+
+    // Close player selection modal
     closePlayerSelectionModal();
-    currentTransferSlot = null;
-    console.log(`Successfully added ${player.name} to team for £${player.price}m (pending)`);
-    // Debug log arrays
-    console.log('selectedPlayers (original):', window.selectedPlayers);
-    console.log('pendingSelectedPlayers (current):', pendingSelectedPlayers);
+}
+
+// Function to close player selection modal
+function closePlayerSelectionModal() {
+    const modal = document.getElementById('playerSelectionModal');
+    if (modal) {
+        modal.close();
+    }
 }
 
 // Function to add a player to a specific slot
@@ -863,13 +898,13 @@ function addPlayerToSlot(cardElement, player) {
     // Clear empty slot styling
     cardElement.classList.remove('empty-slot');
     cardElement.innerHTML = '';
-    
+
     // Remove old click handler
     if (cardElement.clickHandler) {
         cardElement.removeEventListener('click', cardElement.clickHandler);
         cardElement.clickHandler = null;
     }
-    
+
     // Use the same structure as createPlayerCard but add it to existing element
     cardElement.className = 'player-card';
 
@@ -878,10 +913,10 @@ function addPlayerToSlot(cardElement, player) {
     shirtImg.src = player.shirtImage;
     shirtImg.alt = `${player.name}'s Shirt`;
     shirtImg.className = 'player-shirt';
-    
+
     // PERFORMANCE OPTIMIZATION: Add lazy loading for better performance
     shirtImg.loading = 'lazy';
-    
+
     // Add intersection observer for progressive loading if supported
     if ('IntersectionObserver' in window) {
         const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -925,112 +960,9 @@ function addPlayerToSlot(cardElement, player) {
     // Store player data on the card for later reference
     cardElement.dataset.playerId = player.id;
     cardElement.dataset.playerName = player.name;
-    
+
     // Preserve the slot index from the existing card element
     // (it should already be set from when the card was created)
-    
-    // Increment transfers made
-    transfersMade++;
-    updateTransfersCounter();
-}
-
-// Function to close player selection modal
-function closePlayerSelectionModal() {
-    const modal = document.getElementById('playerSelectionModal');
-    if (modal) {
-        modal.close();
-    }
-}
-
-// Function to update budget after selling a player
-function updateBudgetAfterSale(soldPlayerPrice) {
-    const budgetElement = document.getElementById('teamBudget');
-    if (budgetElement) {
-        const currentBudget = parseFloat(budgetElement.textContent) || 0;
-        const newBudget = currentBudget + soldPlayerPrice;
-        budgetElement.textContent = newBudget.toFixed(1);
-        
-        console.log(`Player sold for £${soldPlayerPrice}m. Budget updated from £${currentBudget}m to £${newBudget}m`);
-    }
-}
-
-// Function to update budget after buying a player
-function updateBudgetAfterPurchase(playerPrice) {
-    const budgetElement = document.getElementById('teamBudget');
-    if (budgetElement) {
-        const currentBudget = parseFloat(budgetElement.textContent) || 0;
-        const newBudget = currentBudget - playerPrice;
-        budgetElement.textContent = newBudget.toFixed(1);
-        
-        console.log(`Player bought for £${playerPrice}m. Budget updated from £${currentBudget}m to £${newBudget}m`);
-    }
-}
-
-// Function to update transfers made counter
-function updateTransfersCounter() {
-    const transfersMadeElement = document.getElementById('transfersMade');
-    if (transfersMadeElement) {
-        transfersMadeElement.textContent = transfersMade;
-    }
-}
-
-// Function to create an empty slot (grey square with + and position)
-function createEmptySlot(cardElement, originalPlayerId) {
-    // Clear the existing content
-    cardElement.innerHTML = '';
-    cardElement.classList.add('empty-slot');
-    // Create + symbol
-    const plusSymbol = document.createElement('div');
-    plusSymbol.className = 'plus-symbol';
-    plusSymbol.textContent = '+';
-    cardElement.appendChild(plusSymbol);
-    // Determine position based on card location
-    let position = 'DF';
-    const cardTop = cardElement.style.top;
-    if (cardTop === '10%') position = 'GK';
-    else if (cardTop === '30%') position = 'DF';
-    else if (cardTop === '50%') position = 'MD';
-    else if (cardTop === '70%') position = 'AT';
-    // Add position text
-    const positionDiv = document.createElement('div');
-    positionDiv.className = 'empty-slot-position';
-    positionDiv.textContent = position;
-    cardElement.appendChild(positionDiv);
-    // Update click handler for empty slot
-    if (cardElement.clickHandler) {
-        cardElement.removeEventListener('click', cardElement.clickHandler);
-    }
-    // Assign slot index for tracking
-    cardElement.dataset.slotIndex = cardElement.dataset.slotIndex || getSlotIndex(cardElement);
-    cardElement.clickHandler = () => {
-        console.log('Empty slot clicked - show team selection for position:', position);
-        currentTransferSlot = cardElement;
-        openTeamSelectionModal(position);
-    };
-    cardElement.addEventListener('click', cardElement.clickHandler);
-    // Remove from pendingSelectedPlayers
-    const slotIndex = parseInt(cardElement.dataset.slotIndex);
-    if (!isNaN(slotIndex) && slotIndex !== -1) {
-        pendingSelectedPlayers[slotIndex] = null;
-    }
-    // Debug log arrays
-    console.log('selectedPlayers (original):', window.selectedPlayers);
-    console.log('pendingSelectedPlayers (current):', pendingSelectedPlayers);
-}
-
-// Utility: get slot index from card element
-function getSlotIndex(cardElement) {
-    // Use the stored slot index from the dataset instead of calculating from DOM position
-    const storedIndex = parseInt(cardElement.dataset.slotIndex);
-    if (!isNaN(storedIndex) && storedIndex >= 0) {
-        return storedIndex;
-    }
-
-    // Fallback: Find all pitch slots (excluding the pitch image)
-    const pitch = document.querySelector('.pitch');
-    if (!pitch) return -1;
-    const slots = Array.from(pitch.children).filter(child => child.classList.contains('player-card') || child.classList.contains('empty-slot'));
-    return slots.indexOf(cardElement);
 }
 
 // Setup modal event listeners when the page loads
@@ -1047,14 +979,14 @@ document.addEventListener('DOMContentLoaded', function() {
         cancelBtn.addEventListener('click', closePlayerModal);
     }
 
-    // Sell player button
-    const sellBtn = document.getElementById('sellPlayerBtn');
-    if (sellBtn) {
-        sellBtn.addEventListener('click', function() {
+    // Select player button
+    const selectBtn = document.getElementById('selectPlayerBtn');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', function() {
             const modal = document.getElementById('playerModal');
             const playerId = modal.dataset.playerId;
             if (playerId) {
-                sellPlayer(playerId);
+                selectPlayer(playerId);
             }
         });
     }
