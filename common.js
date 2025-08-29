@@ -111,6 +111,8 @@ function parsePlayerData(playerDataString) {
         'Rhondda Royals FC': 'images/shirts/rhondda.svg',
         'Libanus Evangelical Church': 'images/shirts/libanus.svg',
         'Waterfront Community Church FC': 'images/shirts/waterfront.svg',
+        'Mumbles Baptist FC': 'images/shirts/mumbles.svg',
+        'Oasis FC': 'images/shirts/oasis.svg'
     };
 
     // Determine the shirt image
@@ -482,19 +484,22 @@ function registerTeam(event) {
     const teamName = document.getElementById('teamName').value;
     const managerName = document.getElementById('managerName').value;
 
-    // Input validation
-    if (!teamName || !teamName.trim()) {
-        alert('Please enter a team name');
+    // Enhanced input validation
+    const teamValidation = validateTeamName(teamName);
+    if (!teamValidation.isValid) {
+        alert(teamValidation.message);
         return;
     }
-    if (!managerName || !managerName.trim()) {
-        alert('Please enter a manager name');
+
+    const managerValidation = validateManagerName(managerName);
+    if (!managerValidation.isValid) {
+        alert(managerValidation.message);
         return;
     }
 
     // Sanitize input (remove potentially harmful characters)
-    const sanitizedTeamName = teamName.trim().substring(0, 50); // Limit length
-    const sanitizedManagerName = managerName.trim().substring(0, 50);
+    const sanitizedTeamName = teamName.trim().substring(0, 30); // Limit team name to 30 chars
+    const sanitizedManagerName = managerName.trim().substring(0, 20); // Limit manager name to 20 chars
 
     const teamData = {
         teamName: sanitizedTeamName,
@@ -517,8 +522,184 @@ function handleTeamUpdateResponse(result, error) {
     } else {
         console.log("Team created successfully:", result);
         alert("Team created successfully!");
-        window.location.href = "points.html";
+        
+        // Check if user has selectedPlayers data to determine next page
+        checkSelectedPlayersAndRedirect();
     }
+}
+
+function checkSelectedPlayersAndRedirect() {
+    console.log("Checking if user has selected players...");
+    
+    PlayFab.ClientApi.GetUserData({}, function(result, error) {
+        if (error) {
+            console.error("Error checking user data:", error);
+            // On error, default to transfers page to be safe
+            window.location.href = "transfers.html";
+            return;
+        }
+        
+        const selectedPlayersString = result.data.Data.selectedPlayers ? result.data.Data.selectedPlayers.Value : null;
+        
+        if (selectedPlayersString) {
+            // User has selected players, go to points page
+            console.log("User has selected players, redirecting to points page");
+            window.location.href = "points.html";
+        } else {
+            // User doesn't have selected players, go to transfers page
+            console.log("User doesn't have selected players, redirecting to transfers page");
+            window.location.href = "transfers.html";
+        }
+    });
+}
+
+// Validation functions for team and manager names
+function validateTeamName(teamName) {
+    // Check if empty
+    if (!teamName || !teamName.trim()) {
+        return { isValid: false, message: 'Please enter a team name' };
+    }
+
+    const trimmedName = teamName.trim();
+
+    // Check character limit (30 characters)
+    if (trimmedName.length > 30) {
+        return { isValid: false, message: 'Team name must be 30 characters or less' };
+    }
+
+    // Check minimum length
+    if (trimmedName.length < 2) {
+        return { isValid: false, message: 'Team name must be at least 2 characters long' };
+    }
+
+    // Check for inappropriate content
+    const inappropriateContent = checkForInappropriateContent(trimmedName);
+    if (inappropriateContent) {
+        return { isValid: false, message: 'Team name contains inappropriate content. Please choose a different name.' };
+    }
+
+    // Check for valid characters (letters, numbers, spaces, hyphens, apostrophes)
+    const validPattern = /^[a-zA-Z0-9\s\-']+$/;
+    if (!validPattern.test(trimmedName)) {
+        return { isValid: false, message: 'Team name can only contain letters, numbers, spaces, hyphens, and apostrophes' };
+    }
+
+    // Check for excessive repeated characters
+    if (/(.)\1{3,}/.test(trimmedName)) {
+        return { isValid: false, message: 'Team name cannot contain excessive repeated characters' };
+    }
+
+    return { isValid: true };
+}
+
+function validateManagerName(managerName) {
+    // Check if empty
+    if (!managerName || !managerName.trim()) {
+        return { isValid: false, message: 'Please enter a manager name' };
+    }
+
+    const trimmedName = managerName.trim();
+
+    // Check character limit (20 characters)
+    if (trimmedName.length > 20) {
+        return { isValid: false, message: 'Manager name must be 20 characters or less' };
+    }
+
+    // Check minimum length
+    if (trimmedName.length < 2) {
+        return { isValid: false, message: 'Manager name must be at least 2 characters long' };
+    }
+
+    // Check for inappropriate content
+    const inappropriateContent = checkForInappropriateContent(trimmedName);
+    if (inappropriateContent) {
+        return { isValid: false, message: 'Manager name contains inappropriate content. Please choose a different name.' };
+    }
+
+    // Check for valid characters (letters, spaces, hyphens, apostrophes)
+    const validPattern = /^[a-zA-Z\s\-']+$/;
+    if (!validPattern.test(trimmedName)) {
+        return { isValid: false, message: 'Manager name can only contain letters, spaces, hyphens, and apostrophes' };
+    }
+
+    // Check for excessive repeated characters
+    if (/(.)\1{3,}/.test(trimmedName)) {
+        return { isValid: false, message: 'Manager name cannot contain excessive repeated characters' };
+    }
+
+    return { isValid: true };
+}
+
+function checkForInappropriateContent(text) {
+    // List of inappropriate words and patterns to block
+    const blockedWords = [
+    // Profanity and offensive terms
+    'fuck', 'shit', 'damn', 'bitch', 'bastard', 'asshole', 'cunt', 'pussy', 'dick', 'cock',
+    'fag', 'faggot', 'nigger', 'nigga', 'chink', 'gook', 'spic', 'wetback', 'kike', 'heeb',
+    'slut', 'whore', 'cocksucker', 'motherfucker', 'bullshit', 'piss', 'tits', 'boobs',
+
+    // Ableist / derogatory terms
+    'retard', 'retarded', 'spaz', 'spastic', 'mong', 'moron', 'idiot', 'imbecile', 'simpleton',
+
+    // British / Irish / Aussie slang insults
+    'twat', 'knob', 'nob', 'wanker', 'tosser', 'bellend', 'prick', 'git', 'pillock', 
+    'slag', 'sket', 'minge', 'nonce', 'muppet', 'bugger', 'arse', 'arsehole', 'bollocks',
+    'numpty', 'gormless', 'div', 'plonker', 'scrubber',
+
+    // Hate speech / discriminatory terms
+    'racist', 'sexist', 'homophobe', 'transphobe', 'bigot', 'supremacist', 'nazi', 'kkk',
+    'hitler', 'stalin', 'mao', 'genocide', 'holocaust', 'slave', 'terrorism', 'terrorist',
+
+    // Sexual content
+    'sex', 'porn', 'xxx', 'nsfw', 'adult', 'erotic', 'nude', 'naked', 'orgy', 'gangbang',
+    'milf', 'hentai', 'fetish', 'bdsm', 'kinky', 'anal', 'blowjob', 'handjob', 'rimjob',
+
+    // Drug references
+    'cocaine', 'heroin', 'meth', 'weed', 'marijuana', 'crack', 'ecstasy', 'lsd', 'shrooms',
+    'ketamine', 'opioid', 'opium', 'adderall', 'xanax', 'valium',
+
+    // Violence and harm
+    'kill', 'murder', 'rape', 'abuse', 'torture', 'suicide', 'bomb', 'gun', 'knife', 'death',
+    'hang', 'lynch', 'stab', 'shoot', 'execute', 'massacre',
+
+    // Religious offense (mild)
+    'satan', 'devil', 'hell', 'damnation', 'antichrist',
+
+    // Spam patterns
+    'spam', 'scam', 'fake', 'test', 'admin', 'moderator', 'bot', 'system'
+];
+
+
+    const lowerText = text.toLowerCase();
+
+    // Check for exact blocked words using word boundaries to prevent false positives
+    for (const word of blockedWords) {
+        // Use regex with word boundaries to match complete words only
+        const regex = new RegExp(`\\b${word}\\b`, 'i'); // 'i' flag for case-insensitive matching
+        if (regex.test(lowerText)) {
+            return true;
+        }
+    }
+
+    // Check for common leetspeak variations
+    const leetspeakPatterns = [
+        /f+u+c+k+/i, /sh+i+t+/i, /b+i+t+c+h+/i, /c+u+n+t+/i, /d+i+c+k+/i,
+        /n+i+g+g+e+r+/i, /f+a+g+/i, /s+l+u+t+/i, /wh+o+r+e+/i, /s+e+x+/i
+    ];
+
+    for (const pattern of leetspeakPatterns) {
+        if (pattern.test(lowerText)) {
+            return true;
+        }
+    }
+
+    // Check for excessive symbols or numbers
+    const symbolCount = (text.match(/[^a-zA-Z\s\-']/g) || []).length;
+    if (symbolCount > text.length * 0.3) { // More than 30% symbols
+        return true;
+    }
+
+    return false;
 }
 
 // Function to check if the user's team name is set
