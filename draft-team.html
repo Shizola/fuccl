@@ -10,16 +10,16 @@
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
     <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
     <link rel="stylesheet" href="transfers.css"> <!-- Page-specific styles -->
-    <link rel="stylesheet" href="draft-team.css"> <!-- Draft team specific styles -->
+    <link rel="stylesheet" href="draft-team.css"> <!-- Create team specific styles -->
 
-    <title>Draft Team - FUCCL</title>
+    <title>Create Team - FUCCL</title>
 </head>
 
 <body>
     <main class="container">
         <header>
-            <h1>Draft Your Team</h1>
-            <p class="subtitle">Create your team name and select your starting 11 players</p>
+            <h1>Create Your Team</h1>
+            <p class="subtitle">Name your team and select your squad.</p>
         </header>
 
         <!-- Team Creation Form -->
@@ -52,7 +52,7 @@
             <div class="budget-display">
                 <h3>Remaining Budget</h3>
                 <div class="budget-amount">£<span id="teamBudget">100.0</span>m</div>
-                <p class="budget-note">You have £100m to spend on your starting 11 players</p>
+                <p class="budget-note">You have £100m to spend on your squad</p>
             </div>
         </section>
 
@@ -64,13 +64,14 @@
             </div>
         </section>
 
-        <!-- Draft Actions -->
+        <!-- Create Team Actions -->
         <section class="draft-actions">
             <div class="action-buttons">
                 <button id="saveDraftBtn" class="success" disabled>Save Team</button>
+                <button id="autoCompleteBtn" class="secondary">Auto Complete</button>
                 <button id="resetDraftBtn" class="outline">Reset All</button>
             </div>
-            <p class="draft-note">Select 11 players to complete your team</p>
+            <p class="draft-note">Select 15 players to complete your squad</p>
         </section>
 
         <!-- Player Modal -->
@@ -138,6 +139,7 @@
 
     <!-- Custom JavaScript -->
     <script src="common.js"></script>
+    <script src="player-selection.js"></script>
     <script src="draft-team.js"></script>
 </body>
 </html>

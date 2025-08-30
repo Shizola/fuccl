@@ -100,7 +100,7 @@ function parsePlayerData(playerDataString) {
     // Map team names to shirt images
     const shirtImageMap = {
         'Highfields FC': 'images/shirts/highfields.svg',
-        'Vinyard FC': 'images/shirts/vineyard.svg',
+        'Vineyard FC': 'images/shirts/vineyard.svg',
         'Bethel Town FC': 'images/shirts/bethel.svg',
         'Lifepoint Church AFC': 'images/shirts/lifepoint.svg',
         'DC United FC': 'images/shirts/dc.svg',
