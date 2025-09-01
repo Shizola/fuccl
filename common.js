@@ -89,12 +89,12 @@ function parsePlayerData(playerDataString) {
     const weeklyPointsArray = parts[4] || ''; // Weekly points array as string
     const totalPoints = parseInt(parts[5]) || 0; // Fallback to 0 if parsing fails
 
-    // Convert position to match the test player format
+    // Convert position to match the full position names used in filtering
     const positionMap = {
-        Goalkeeper: 'gk',
-        Defender: 'df',
-        Midfielder: 'md',
-        Attacker: 'at'
+        Goalkeeper: 'goalkeeper',
+        Defender: 'defender',
+        Midfielder: 'midfielder',
+        Attacker: 'attacker'
     };
 
     // Map team names to shirt images
@@ -117,12 +117,11 @@ function parsePlayerData(playerDataString) {
 
     // Determine the shirt image
     let shirtImage = shirtImageMap[teamName] || 'images/shirts/template.svg';
-    if (positionMap[position] === 'gk') {
-        // Append "_gk" for goalkeepers
-        const teamKey = Object.keys(shirtImageMap).find(key => shirtImageMap[key] === shirtImage);
-        if (teamKey) {
-            shirtImage = shirtImage.replace('.svg', '_gk.svg');
-        }
+    if (positionMap[position] === 'goalkeeper') {
+        // For goalkeepers, try to use _gk version first, fallback to regular
+        const gkShirt = shirtImage.replace('.svg', '_gk.svg');
+        // Check if the GK shirt exists by trying to load it (this will fallback in onerror)
+        shirtImage = gkShirt;
     }
 
     return {

@@ -166,18 +166,18 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
 
     // Define vertical positions for each row
     const positionStyles = {
-        gk: { top: '10%' },
-        df: { top: '30%' },
-        md: { top: '50%' },
-        at: { top: '70%' }
+        goalkeeper: { top: '10%' },
+        defender: { top: '30%' },
+        midfielder: { top: '50%' },
+        attacker: { top: '70%' }
     };
 
     // Group players by position
     const positions = {
-        gk: [],
-        df: [],
-        md: [],
-        at: []
+        goalkeeper: [],
+        defender: [],
+        midfielder: [],
+        attacker: []
     };
 
     // Assign players to their positions
@@ -187,7 +187,7 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
         } else {
             console.warn('Unknown position for player:', player.name, player.position);
             // Default to defender if position is unknown
-            positions.df.push(player);
+            positions.defender.push(player);
         }
     });
 
@@ -250,7 +250,7 @@ function renderEmptyTeamSlots(onSlotClick) {
             const emptySlot = document.createElement('div');
             emptySlot.className = 'player-card empty-slot';
             emptySlot.dataset.slotIndex = slotIndex;
-            emptySlot.dataset.position = position.pos;
+            emptySlot.dataset.position = position.pos.toUpperCase();
 
             // Create + symbol
             const plusSymbol = document.createElement('div');
@@ -273,14 +273,15 @@ function renderEmptyTeamSlots(onSlotClick) {
             emptySlot.style.left = left;
 
             // Add click handler
-            emptySlot.addEventListener('click', () => {
+            emptySlot.clickHandler = () => {
                 currentTransferSlot = emptySlot;
                 if (onSlotClick) {
                     onSlotClick(position.pos.toUpperCase());
                 } else {
                     openTeamSelectionModal(position.pos.toUpperCase());
                 }
-            });
+            };
+            emptySlot.addEventListener('click', emptySlot.clickHandler);
 
             pitch.appendChild(emptySlot);
             slotIndex++;
@@ -302,6 +303,7 @@ function openPlayerModal(player) {
     const modalPlayerPosition = document.getElementById('modalPlayerPosition');
     const modalPlayerPoints = document.getElementById('modalPlayerPoints');
     const modalPlayerPrice = document.getElementById('modalPlayerPrice');
+    const selectPlayerBtn = document.getElementById('selectPlayerBtn');
 
     if (modal && modalPlayerName && modalPlayerTeam && modalPlayerPosition && modalPlayerPoints && modalPlayerPrice) {
         // Set player information in modal
@@ -310,10 +312,10 @@ function openPlayerModal(player) {
 
         // Convert position back to readable format
         const positionMap = {
-            'gk': 'Goalkeeper',
-            'df': 'Defender',
-            'md': 'Midfielder',
-            'at': 'Attacker'
+            'goalkeeper': 'Goalkeeper',
+            'defender': 'Defender',
+            'midfielder': 'Midfielder',
+            'attacker': 'Attacker'
         };
         modalPlayerPosition.textContent = positionMap[player.position] || player.position;
         modalPlayerPoints.textContent = player.points || 0;
@@ -322,6 +324,22 @@ function openPlayerModal(player) {
         // Store current player for action
         modal.dataset.playerId = player.id;
 
+        // Determine context and update button text
+        if (selectPlayerBtn) {
+            // Check if this player is already selected in the draft team
+            const isPlayerSelected = window.draftSelectedPlayers && window.draftSelectedPlayers.includes(player.id);
+
+            if (isPlayerSelected) {
+                // Player is already in the team - show sell option
+                selectPlayerBtn.textContent = 'Sell Player';
+                selectPlayerBtn.className = 'sell-player-btn'; // Add class for styling if needed
+            } else {
+                // Player is not in the team - show select option
+                selectPlayerBtn.textContent = 'Select Player';
+                selectPlayerBtn.className = 'select-player-btn'; // Add class for styling if needed
+            }
+        }
+
         // Show the modal
         modal.showModal();
     }
@@ -329,9 +347,14 @@ function openPlayerModal(player) {
 
 // Function to close the player modal
 function closePlayerModal() {
+    console.log('closePlayerModal called');
     const modal = document.getElementById('playerModal');
     if (modal) {
+        console.log('Closing player modal...');
         modal.close();
+        console.log('Player modal closed successfully');
+    } else {
+        console.error('Player modal not found');
     }
 }
 
@@ -341,6 +364,7 @@ function closePlayerModal() {
 
 // Function to open team selection modal
 function openTeamSelectionModal(position) {
+    console.log('openTeamSelectionModal called with position:', position);
     const modal = document.getElementById('teamSelectionModal');
     const modalTitle = document.getElementById('teamModalTitle');
     const modalPosition = document.getElementById('teamModalPosition');
@@ -366,6 +390,9 @@ function openTeamSelectionModal(position) {
 
         // Show the modal
         modal.showModal();
+        console.log('Team selection modal opened successfully');
+    } else {
+        console.error('Team selection modal elements not found');
     }
 }
 
@@ -386,7 +413,9 @@ function populateTeamList(teamListContainer) {
         { name: 'Bridgend Deanery FC', shirt: 'images/shirts/bridgend.svg' },
         { name: 'Rhondda Royals FC', shirt: 'images/shirts/rhondda.svg' },
         { name: 'Libanus Evangelical Church', shirt: 'images/shirts/libanus.svg' },
-        { name: 'Waterfront Community Church FC', shirt: 'images/shirts/waterfront.svg' }
+        { name: 'Waterfront Community Church FC', shirt: 'images/shirts/waterfront.svg' },
+        { name: 'Oasis FC', shirt: 'images/shirts/oasis.svg' },
+        { name: 'Mumbles Baptist FC', shirt: 'images/shirts/mumbles.svg' }
     ];
 
     // Create team options
@@ -501,23 +530,34 @@ function loadPlayersFromTeam(teamName, position, playerListContainer, excludePla
 function filterAndDisplayPlayers(allPlayers, teamName, position, playerListContainer, excludePlayerIds = []) {
     // Filter players by team and position
     const positionMap = {
-        'GK': 'gk',
-        'DF': 'df',
-        'MD': 'md',
-        'AT': 'at'
+        'GK': 'goalkeeper',
+        'DF': 'defender',
+        'MD': 'midfielder',
+        'AT': 'attacker'
     };
 
     const targetPosition = positionMap[position];
     console.log(`Filtering for team: ${teamName}, position: ${targetPosition}`);
 
+    // Debug: Log all unique team names and positions in the data
+    const uniqueTeams = [...new Set(allPlayers.map(p => p.teamName))];
+    const uniquePositions = [...new Set(allPlayers.map(p => p.position))];
+    console.log('Available teams in data:', uniqueTeams);
+    console.log('Available positions in data:', uniquePositions);
+
     const filteredPlayers = allPlayers.filter(player => {
-        // Filter by team and position
-        const matchesTeamAndPosition = player.teamName === teamName && player.position === targetPosition;
+        // Filter by team and position (case-insensitive team matching)
+        const matchesTeam = player.teamName.toLowerCase().includes(teamName.toLowerCase().replace(' fc', '').replace(' afc', '').replace(' church', '').replace(' baptist', '').replace(' town', '').replace(' united', '').replace(' community', '').replace(' evangelical', '').replace(' deanery', '').replace(' royals', ''));
+        const matchesPosition = player.position === targetPosition;
 
         // Exclude specified players
         const notExcluded = !excludePlayerIds.includes(player.id);
 
-        return matchesTeamAndPosition && notExcluded;
+        if (matchesTeam && matchesPosition) {
+            console.log(`Matched player: ${player.name}, team: ${player.teamName}, position: ${player.position}`);
+        }
+
+        return matchesTeam && matchesPosition && notExcluded;
     });
 
     console.log(`Found ${filteredPlayers.length} available players for ${teamName} ${position}`);
@@ -612,13 +652,14 @@ function closePlayerSelectionModal() {
 
 // Function to add a player to a specific slot
 function addPlayerToSlot(cardElement, player) {
+    console.log('addPlayerToSlot called for player:', player.name);
     // Clear empty slot styling
     cardElement.classList.remove('empty-slot');
     cardElement.innerHTML = '';
 
     // Remove old click handler
     if (cardElement.clickHandler) {
-        cardElement.removeEventListener('click', card.clickHandler);
+        cardElement.removeEventListener('click', cardElement.clickHandler);
         cardElement.clickHandler = null;
     }
 
@@ -670,9 +711,11 @@ function addPlayerToSlot(cardElement, player) {
 
     // Add click event listener to open modal (same as original cards)
     cardElement.clickHandler = () => {
+        console.log('Player card clicked - opening player modal for:', player.name);
         openPlayerModal(player);
     };
     cardElement.addEventListener('click', cardElement.clickHandler);
+    console.log('Player modal click handler set up for:', player.name);
 
     // Store player data on the card for later reference
     cardElement.dataset.playerId = player.id;

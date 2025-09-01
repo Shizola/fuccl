@@ -17,6 +17,10 @@
 
 <body>
     <main class="container">
+        <!-- Navigation bar -->
+        <nav>
+            <button onclick="logOut()">Logout</button>
+        </nav>
         <header>
             <h1>Create Your Team</h1>
             <p class="subtitle">Name your team and select your squad.</p>
@@ -52,7 +56,6 @@
             <div class="budget-display">
                 <h3>Remaining Budget</h3>
                 <div class="budget-amount">£<span id="teamBudget">100.0</span>m</div>
-                <p class="budget-note">You have £100m to spend on your squad</p>
             </div>
         </section>
 
@@ -128,6 +131,47 @@
                 </main>
                 <footer>
                     <button class="secondary" id="cancelPlayerSelection">Cancel</button>
+                </footer>
+            </article>
+        </dialog>
+
+        <!-- Error Modal -->
+        <dialog id="errorModal">
+            <article>
+                <header>
+                    <h3>Draft Validation Error</h3>
+                    <button aria-label="Close" rel="prev" id="closeErrorModal"></button>
+                </header>
+                <main>
+                    <div id="errorMessages">
+                        <!-- Error messages will be dynamically added here -->
+                    </div>
+                </main>
+                <footer>
+                    <button id="closeErrorBtn">OK</button>
+                </footer>
+            </article>
+        </dialog>
+
+        <!-- Confirmation Modal -->
+        <dialog id="confirmationModal">
+            <article>
+                <header>
+                    <h3>Confirm Your Team</h3>
+                    <button aria-label="Close" rel="prev" id="closeConfirmationModal"></button>
+                </header>
+                <main>
+                    <div class="confirmation-content">
+                        <div class="team-info-section">
+                            <p><strong>Team Name:</strong> <span id="confirmTeamName"></span></p>
+                            <p><strong>Manager:</strong> <span id="confirmManagerName"></span></p>
+                        </div>
+                        <p class="confirmation-note">Are you sure you want to create this team? You can make transfers later if needed.</p>
+                    </div>
+                </main>
+                <footer>
+                    <button class="secondary" id="cancelConfirmationBtn">Cancel</button>
+                    <button id="confirmSquadBtn">Create Team</button>
                 </footer>
             </article>
         </dialog>
