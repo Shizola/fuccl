@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Check if the error is due to missing selectedPlayers key
             if (error === "No selectedPlayers key found") {
-                console.log("User has no team data - redirecting to draft team page");
+                console.log("User has no team data - redirecting to create team page");
                 alert("No team found. You'll be redirected to create your team.");
                 window.location.href = "create-team.html";
                 return;

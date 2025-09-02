@@ -2,11 +2,17 @@ website flow
 
 new user - 
 
-index > register > draft team > pick team
+index > register > create team > pick team
 
 existing user - 
 
 index > login > points
+
+
+modals
+Confirm Your Team
+
+
 
 
 

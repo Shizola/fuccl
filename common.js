@@ -949,7 +949,7 @@ function initializePage(currentPage) {
                     console.log("User already has complete team, redirecting to points...");
                     window.location.href = "points.html";
                 } else {
-                    console.log("User needs to draft team - staying on draft page");
+                    console.log("User needs to create team - staying on create page");
                 }
             });
             break;
