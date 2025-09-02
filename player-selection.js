@@ -547,6 +547,7 @@ function closePlayerModal() {
 // Function to open team selection modal
 function openTeamSelectionModal(position) {
     console.log('openTeamSelectionModal called with position:', position);
+    console.trace('Stack trace for openTeamSelectionModal call');
     const modal = document.getElementById('teamSelectionModal');
     const modalTitle = document.getElementById('teamModalTitle');
     const modalPosition = document.getElementById('teamModalPosition');
@@ -958,27 +959,36 @@ function setupSharedModalListeners() {
 // ========================================
 
 // Shared function to create an empty slot (used by both create-team and transfers)
-function createEmptySlot(cardElement, originalPlayerId) {
-    // Clear the existing content
-    cardElement.innerHTML = '';
-
-    // Remove old click handler
-    if (cardElement.clickHandler) {
-        cardElement.removeEventListener('click', cardElement.clickHandler);
-    }
-
-    // Add empty slot class
-    cardElement.classList.add('empty-slot');
+function createEmptySlot(cardElement, originalPlayerId, setupClickHandler = true) {
+    console.log('createEmptySlot called with setupClickHandler:', setupClickHandler);
+    
+    // Store position and style before clearing
+    const cardTop = cardElement.style.top;
+    const cardLeft = cardElement.style.left;
+    const cardPosition = cardElement.style.position;
+    
+    // Completely remove all event listeners by cloning the element
+    const newCard = cardElement.cloneNode(false); // Clone without children
+    
+    // Restore positioning
+    newCard.style.position = cardPosition;
+    newCard.style.top = cardTop;
+    newCard.style.left = cardLeft;
+    
+    // Replace the old element with the clean one
+    cardElement.parentNode.replaceChild(newCard, cardElement);
+    
+    // Clear all classes and add empty slot class
+    newCard.className = 'player-card empty-slot';
 
     // Create + symbol
     const plusSymbol = document.createElement('div');
     plusSymbol.className = 'plus-symbol';
     plusSymbol.textContent = '+';
-    cardElement.appendChild(plusSymbol);
+    newCard.appendChild(plusSymbol);
 
     // Determine position based on card location
     let position = 'DF'; // Default
-    const cardTop = cardElement.style.top;
     if (cardTop === '10%') position = 'GK';
     else if (cardTop === '30%') position = 'DF';
     else if (cardTop === '50%') position = 'MD';
@@ -988,14 +998,35 @@ function createEmptySlot(cardElement, originalPlayerId) {
     const positionDiv = document.createElement('div');
     positionDiv.className = 'empty-slot-position';
     positionDiv.textContent = position;
-    cardElement.appendChild(positionDiv);
+    newCard.appendChild(positionDiv);
 
-    // Set up click handler for empty slot
-    cardElement.clickHandler = () => {
-        currentTransferSlot = cardElement;
-        openTeamSelectionModal(position);
-    };
-    cardElement.addEventListener('click', cardElement.clickHandler);
+    // Only set up click handler if requested
+    if (setupClickHandler) {
+        console.log('Setting up click handler for empty slot position:', position);
+        
+        // Add a flag to prevent immediate triggering
+        let justCreated = true;
+        setTimeout(() => { justCreated = false; }, 50);
+        
+        // Set up click handler for empty slot
+        newCard.clickHandler = (event) => {
+            if (justCreated) {
+                console.log('Blocking click event because slot was just created');
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            currentTransferSlot = newCard;
+            openTeamSelectionModal(position);
+        };
+        newCard.addEventListener('click', newCard.clickHandler);
+        console.log('Click handler set up successfully');
+    } else {
+        console.log('Skipping click handler setup as requested');
+    }
+    
+    // Return the new element so calling code can reference it
+    return newCard;
 }
 
 // Shared function to convert empty slot to player card (used by both create-team and transfers)
@@ -1009,60 +1040,32 @@ function convertEmptySlotToPlayerCard(emptySlot, player) {
         emptySlot.removeEventListener('click', emptySlot.clickHandler);
     }
 
-    // Ensure proper player card class is set and clear any lingering styles
-    emptySlot.className = 'player-card';
+    // Determine the correct context for the player card
+    let context = 'selection'; // Default to selection (shows price)
     
-    // Explicitly reset styles that might be left over from empty slot
-    emptySlot.style.opacity = '';
-    emptySlot.style.backgroundColor = '';
-    emptySlot.style.border = '';
-
-    // Create player card content with proper error handling
-    const shirtImg = document.createElement('img');
-    shirtImg.className = 'player-shirt loaded'; // Add 'loaded' class to ensure full opacity
-    shirtImg.src = player.shirtImage || 'images/shirts/template.svg';
-    shirtImg.alt = `${player.name} shirt`;
-    shirtImg.loading = 'lazy';
+    // Both create-team and transfers pages should show price for decision making
+    // Use the shared createPlayerCard function for consistency
+    const newPlayerCard = createPlayerCard(player, context);
     
-    // Add error fallback for shirt image
-    shirtImg.onerror = function () {
-        console.log('Shirt image failed to load for:', player.name, 'URL:', shirtImg.src);
-        this.src = 'images/shirts/template.svg';
-        this.classList.add('loaded'); // Ensure loaded class even on fallback
-    };
+    // Copy all the content and properties from the new card to the existing slot
+    emptySlot.className = newPlayerCard.className;
+    emptySlot.innerHTML = newPlayerCard.innerHTML;
     
-    // Debug: Log successful image loading
-    shirtImg.onload = function () {
-        console.log('Shirt image loaded successfully for:', player.name, 'URL:', shirtImg.src);
-        this.classList.add('loaded'); // Ensure loaded class is added
-    };
+    // Copy all attributes
+    Array.from(newPlayerCard.attributes).forEach(attr => {
+        emptySlot.setAttribute(attr.name, attr.value);
+    });
     
-    emptySlot.appendChild(shirtImg);
-
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'player-name';
-    nameDiv.textContent = player.name;
-    emptySlot.appendChild(nameDiv);
-
-    // Add price or position overlay depending on page context
-    const overlayDiv = document.createElement('div');
-    
-    // Check if we're on transfers page (has transferBudget) or create-team page
-    if (typeof transferBudget !== 'undefined') {
-        // Transfers page - show price
-        overlayDiv.className = 'player-price';
-        overlayDiv.textContent = `£${player.price}m`;
-    } else {
-        // Create-team page - show position
-        overlayDiv.className = 'player-position';
-        overlayDiv.textContent = player.position.toUpperCase();
+    // Copy event listeners by recreating them based on context
+    if (context === 'selection') {
+        // Selection page click handler
+        emptySlot.clickHandler = () => {
+            if (typeof openPlayerModal === 'function') {
+                openPlayerModal(player);
+            }
+        };
+        emptySlot.addEventListener('click', emptySlot.clickHandler);
     }
-    
-    emptySlot.appendChild(overlayDiv);
-
-    // Set player ID and name for future reference
-    emptySlot.setAttribute('data-player-id', player.id);
-    emptySlot.setAttribute('data-player-name', player.name);
 
     return emptySlot;
 }

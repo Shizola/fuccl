@@ -6,7 +6,7 @@ console.log("PlayFab Title ID set to:", PlayFab.settings.titleId);
 // DEBUG MODE CONFIGURATION
 // Set to true to disable redirect logic for testing
 // ========================================
-const DEBUG_MODE = false; // Set to true to test both create-team and transfers pages
+const DEBUG_MODE = true; // Set to true to test both create-team and transfers pages
 
 /* ========================================
    SHARED DATA CACHE AND UTILITIES

@@ -3,6 +3,12 @@
 // Uses shared player-selection.js for common functionality
 // ========================================
 
+// Track user actions to distinguish real clicks from programmatic ones
+window.lastUserAction = Date.now();
+document.addEventListener('mousedown', () => { window.lastUserAction = Date.now(); });
+document.addEventListener('keydown', () => { window.lastUserAction = Date.now(); });
+document.addEventListener('touchstart', () => { window.lastUserAction = Date.now(); });
+
 // Draft Team specific state
 let teamBudget = 100.0; // Starting budget in millions
 let selectedPlayerCount = 0;
@@ -25,11 +31,11 @@ window.draftSelectedPlayers = draftSelectedPlayers;
 function displayEmptyTeamForDraft() {
     console.log("Displaying empty team for initial draft...");
 
-    // Update budget display (starting budget)
-    updateDraftDisplay();
-
-    // Create empty slots for initial team selection
+    // Create empty slots for initial team selection first
     renderEmptyTeamSlots(openTeamSelectionModal);
+    
+    // Then update budget display and button states
+    updateDraftDisplay();
 }
 
 // Function to update the draft display elements
@@ -55,6 +61,22 @@ function updateDraftDisplay() {
     if (saveBtn) {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Submit Squad';
+    }
+
+    // Update Auto Pick button state - enable when there are empty slots
+    const autoCompleteBtn = document.getElementById('autoCompleteBtn');
+    if (autoCompleteBtn) {
+        const emptySlots = document.querySelectorAll('.empty-slot');
+        const hasEmptySlots = emptySlots.length > 0;
+        autoCompleteBtn.disabled = !hasEmptySlots; // Disabled when NO empty slots (all filled)
+        autoCompleteBtn.textContent = 'Auto Pick';
+    }
+
+    // Update Reset button state - grey out if all slots are empty
+    const resetBtn = document.getElementById('resetDraftBtn');
+    if (resetBtn) {
+        const allSlotsEmpty = selectedPlayerCount === 0;
+        resetBtn.disabled = allSlotsEmpty;
     }
 
     console.log(`Updated draft display - Budget: £${teamBudget.toFixed(1)}m, Players: ${selectedPlayerCount}/${requiredPlayers}`);
@@ -304,10 +326,25 @@ function saveDraftTeam() {
 
         console.log("Display name updated to:", teamName);
 
+        // Find the most expensive player to set as captain
+        const selectedPlayers = draftSelectedPlayers.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
+        const mostExpensivePlayer = selectedPlayers.reduce((max, player) => 
+            (player.price > max.price) ? player : max, selectedPlayers[0]);
+        const captainId = mostExpensivePlayer ? mostExpensivePlayer.id : null;
+        
+        console.log("Auto-selected captain:", mostExpensivePlayer ? mostExpensivePlayer.name : "None", "Price:", mostExpensivePlayer ? mostExpensivePlayer.price : "N/A");
+
         // Then save team info to user data
         const teamData = {
             teamName: teamName,
-            managerName: managerName
+            managerName: managerName,
+            captainId: captainId, // Auto-set to most expensive player
+            currentPlayerGameWeek: 1, // Starting at gameweek 1
+            leaderboardInfo: JSON.stringify({
+                teamName: teamName,
+                managerName: managerName
+            }),
+            freeTransfers: 1 // Starting with 1 free transfer
         };
 
         PlayFab.ClientApi.UpdateUserData({
@@ -341,8 +378,25 @@ function saveDraftTeam() {
                 }
 
                 console.log("Selected players saved successfully");
-                alert("Team created successfully! Redirecting to team selection.");
-                window.location.href = "pick-team.html";
+
+                // NEW: Initialize PlayerTotalPoints statistic for leaderboards
+                PlayFab.ClientApi.UpdatePlayerStatistics({
+                    Statistics: [{
+                        StatisticName: "PlayerTotalPoints",
+                        Value: 0
+                    }]
+                }, function(statResult, statError) {
+                    if (statError) {
+                        console.error("Error initializing PlayerTotalPoints:", statError);
+                        // Non-critical: Continue with success message
+                    } else {
+                        console.log("PlayerTotalPoints initialized to 0");
+                    }
+
+                    // Proceed with success
+                    alert("Team created successfully! Redirecting to team selection.");
+                    window.location.href = "pick-team.html";
+                });
             });
         });
     });
@@ -350,26 +404,24 @@ function saveDraftTeam() {
 
 // Function to reset the draft
 function resetDraft() {
-    if (confirm('Are you sure you want to reset your draft? This will clear all selected players.')) {
-        // Reset form
-        document.getElementById('teamName').value = '';
-        document.getElementById('managerName').value = '';
+    // Reset form
+    document.getElementById('teamName').value = '';
+    document.getElementById('managerName').value = '';
 
-        // Reset budget and player count
-        teamBudget = 100.0;
-        selectedPlayerCount = 0;
-        draftSelectedPlayers = [];
+    // Reset budget and player count
+    teamBudget = 100.0;
+    selectedPlayerCount = 0;
+    draftSelectedPlayers = [];
 
-        // Re-render empty slots
-        displayEmptyTeamForDraft();
+    // Re-render empty slots
+    displayEmptyTeamForDraft();
 
-        console.log('Draft reset successfully');
-    }
+    console.log('Draft reset successfully');
 }
 
-// Function to auto-complete the team
-function autoCompleteTeam() {
-    console.log('Starting auto-complete process...');
+// Function to auto-pick players for the team
+function autoPickTeam() {
+    console.log('Starting auto-pick process...');
 
     // Get all empty slots
     const emptySlots = document.querySelectorAll('.empty-slot');
@@ -454,9 +506,10 @@ function autoCompleteTeam() {
 
         // Calculate how much budget we can safely spend on this slot
         const minBudgetForOtherSlots = calculateMinimumBudgetNeeded(position);
-        const maxSpendForThisSlot = teamBudget - minBudgetForOtherSlots;
+        const spareBudget = 0.5; // Leave 0.5m spare for safety
+        const maxSpendForThisSlot = teamBudget - minBudgetForOtherSlots - spareBudget;
 
-        console.log(`Position ${position}: Budget=${teamBudget.toFixed(1)}m, MinForOthers=${minBudgetForOtherSlots.toFixed(1)}m, MaxSpend=${maxSpendForThisSlot.toFixed(1)}m`);
+        console.log(`Position ${position}: Budget=${teamBudget.toFixed(1)}m, MinForOthers=${minBudgetForOtherSlots.toFixed(1)}m, Spare=${spareBudget}m, MaxSpend=${maxSpendForThisSlot.toFixed(1)}m`);
 
         // Get current club counts
         const currentClubCounts = getClubCounts();
@@ -518,7 +571,7 @@ function autoCompleteTeam() {
     // Update display
     updateDraftDisplay();
 
-    console.log(`Auto-complete finished: ${slotsFilled} slots filled, £${budgetUsed.toFixed(1)}m spent, £${teamBudget.toFixed(1)}m remaining`);
+    console.log(`Auto-pick finished: ${slotsFilled} slots filled, £${budgetUsed.toFixed(1)}m spent, £${teamBudget.toFixed(1)}m remaining`);
 
     if (slotsFilled > 0) {
         updateDraftDisplay();
@@ -535,28 +588,44 @@ function autoCompleteTeam() {
 function selectPlayerFromTeam(player) {
     console.log('Selected player:', player.name, 'Price:', player.price, 'Points:', player.points);
 
-    // Add player to draft (no validation on selection - validation happens on submit)
-    if (!draftSelectedPlayers.includes(player.id)) {
-        draftSelectedPlayers.push(player.id);
-        selectedPlayerCount++;
-        teamBudget -= player.price;
-
-        console.log(`Added ${player.name} to draft for £${player.price}m`);
-
-        // Update the slot visually
-        if (currentTransferSlot) {
-            addPlayerToSlot(currentTransferSlot, player);
-        }
-
-        updateDraftDisplay();
+    // Check if player is already selected
+    if (draftSelectedPlayers.includes(player.id)) {
+        console.log('Player already selected, ignoring');
+        closePlayerSelectionModal();
+        return;
     }
 
+    // Add player to draft (allow going over budget so user can see full team and reallocate)
+    draftSelectedPlayers.push(player.id);
+    selectedPlayerCount++;
+    teamBudget -= player.price;
+
+    console.log(`Added ${player.name} to draft for £${player.price}m`);
+
+    // Update the slot visually
+    if (currentTransferSlot) {
+        addPlayerToSlot(currentTransferSlot, player);
+    }
+
+    updateDraftDisplay();
+
+    // Close the modal and clear any stale modal data
     closePlayerSelectionModal();
+    
+    // Clear any stale player modal data to prevent it from reopening
+    const playerModal = document.getElementById('playerModal');
+    if (playerModal) {
+        playerModal.dataset.playerId = '';
+        playerModal.removeAttribute('data-player-id');
+    }
 }
 
 // Function to handle selling a player from the draft team
 function sellPlayer(playerId) {
     console.log('sellPlayer called with playerId:', playerId);
+    
+    // Track when sell operation starts
+    window.lastSellOperation = Date.now();
 
     // Find the player in the cache
     const player = allPlayersCache.find(p => p.id === playerId);
@@ -589,8 +658,11 @@ function sellPlayer(playerId) {
                 console.log('Removed old click handler');
             }
 
-            // Convert back to empty slot using shared function
-            createEmptySlot(playerCard, playerId);
+            // Store reference for delayed conversion
+            window.pendingEmptySlotConversion = {
+                playerCard: playerCard,
+                playerId: playerId
+            };
         } else {
             console.error('Player card not found for playerId:', playerId);
         }
@@ -600,18 +672,93 @@ function sellPlayer(playerId) {
         console.error('Player not found in draftSelectedPlayers:', playerId);
     }
 
-    // Close the player modal immediately
+    // Close the player modal immediately and clear all modal data
     console.log('About to close player modal');
     closePlayerModal();
+    
+    // Clear any stale modal data to prevent reopening issues
+    const playerModal = document.getElementById('playerModal');
+    if (playerModal) {
+        playerModal.dataset.playerId = '';
+        playerModal.removeAttribute('data-player-id');
+        // Clear any other modal attributes
+        Object.keys(playerModal.dataset).forEach(key => {
+            delete playerModal.dataset[key];
+        });
+    }
+    
     console.log('sellPlayer function completed');
 
-    // Add a small delay to ensure modal is fully closed before setting up new handlers
+    // Add a small delay to ensure modal is fully closed and cleared
     setTimeout(() => {
         // Double-check that the modal is closed and remove any lingering event handlers
         const modal = document.getElementById('playerModal');
         if (modal && modal.open) {
             console.log('Modal still open, forcing close');
             modal.close();
+        }
+        
+        // Now handle the pending empty slot conversion
+        if (window.pendingEmptySlotConversion) {
+            const { playerCard, playerId } = window.pendingEmptySlotConversion;
+            console.log('Converting player card to empty slot after modal close');
+            
+            // Create empty slot without click handler - this returns a new element
+            const newEmptySlot = createEmptySlot(playerCard, playerId, false);
+            
+            // Set up click handler manually after another delay
+            setTimeout(() => {
+                // Determine position based on card location
+                let position = 'DF'; // Default
+                const cardTop = newEmptySlot.style.top;
+                if (cardTop === '10%') position = 'GK';
+                else if (cardTop === '30%') position = 'DF';
+                else if (cardTop === '50%') position = 'MD';
+                else if (cardTop === '70%') position = 'AT';
+                else if (cardTop === '90%') position = 'SUB';
+
+                console.log('Setting up delayed click handler for position:', position);
+                
+                // Add a flag to prevent immediate clicks
+                let justSetUp = true;
+                setTimeout(() => { justSetUp = false; }, 50);
+                
+                newEmptySlot.clickHandler = (event) => {
+                    // Check if this is a real user-initiated event
+                    if (!event.isTrusted) {
+                        console.log('Blocking programmatic click event');
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return false;
+                    }
+                    
+                    if (justSetUp) {
+                        console.log('Blocking click - handler was just set up');
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return false;
+                    }
+                    
+                    // Check if there was a sell operation recently (more specific than general user action)
+                    const now = Date.now();
+                    const timeSinceSell = now - (window.lastSellOperation || 0);
+                    
+                    if (timeSinceSell < 1000) {
+                        console.log('Blocking click - too soon after sell operation');
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return false;
+                    }
+                    
+                    console.log('Empty slot clicked by user for position:', position);
+                    currentTransferSlot = newEmptySlot;
+                    openTeamSelectionModal(position);
+                };
+                newEmptySlot.addEventListener('click', newEmptySlot.clickHandler);
+                console.log('Delayed click handler set up successfully');
+            }, 200);
+            
+            window.pendingEmptySlotConversion = null; // Clear the pending conversion
         }
     }, 100);
 }
@@ -698,7 +845,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (autoCompleteBtn) {
-        autoCompleteBtn.addEventListener('click', autoCompleteTeam);
+        autoCompleteBtn.addEventListener('click', autoPickTeam);
     }
 
     // Setup shared modal listeners
