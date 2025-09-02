@@ -237,7 +237,7 @@ window.sharedRenderPlayersOnPitch = renderPlayersOnPitch;
 // ========================================
 
 // Function to render players on the pitch
-function renderPlayersOnPitch(players, selectedPlayerIds = [], context = 'selection') {
+function renderPlayersOnPitch(players, selectedPlayerIds = [], context = 'selection', captainId = null) {
     // Get the pitch container
     const pitch = document.querySelector('.pitch');
     if (!pitch) {
@@ -274,8 +274,10 @@ function renderPlayersOnPitch(players, selectedPlayerIds = [], context = 'select
         mainPlayers = players.slice(0, players.length - 4);
     }
 
-    // Identify captain (first player in selectedPlayerIds if available)
-    const captainId = selectedPlayerIds.length > 0 ? selectedPlayerIds[0] : null;
+    // Identify captain from parameter or fallback to first player for backward compatibility
+    if (!captainId && selectedPlayerIds.length > 0) {
+        captainId = selectedPlayerIds[0]; // Fallback for backward compatibility
+    }
     
     // Debug logging for points page
     if (context === 'points') {

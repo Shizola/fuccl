@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             //console.log("Current team player IDs:", currentTeamPlayerIds);
             // Render the current team on the pitch
-            renderPlayersOnPitch(data.players, data.selectedPlayerIds);
+            renderPlayersOnPitch(data.players, data.selectedPlayerIds, data.captainId);
         }
     });
 
