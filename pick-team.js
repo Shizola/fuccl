@@ -60,10 +60,10 @@ function createPlayerCardFallback(player) {
 }
 
 // Function to render players on the pitch based on their position (using shared implementation)
-function renderPlayersOnPitch(players, selectedPlayerIds = []) {
+function renderPlayersOnPitch(players, selectedPlayerIds = [], captainId = null) {
     // Use shared function from player-selection.js with 'team' context
     if (typeof window.sharedRenderPlayersOnPitch === 'function') {
-        return window.sharedRenderPlayersOnPitch(players, selectedPlayerIds, 'team');
+        return window.sharedRenderPlayersOnPitch(players, selectedPlayerIds, 'team', captainId);
     } else {
         return renderPlayersOnPitchFallback(players, selectedPlayerIds);
     }
@@ -238,6 +238,7 @@ function saveTeamToPlayFab() {
     }
     
     const selectedPlayerIds = dataCache.playerData.selectedPlayerIds;
+    const captainId = dataCache.playerData.captainId || null;
     
     // Show saving state to user
     const saveBtn = document.getElementById('saveTeamBtn');
@@ -245,11 +246,19 @@ function saveTeamToPlayFab() {
     saveBtn.textContent = 'Saving...';
     saveBtn.disabled = true;
     
-    // Save the selectedPlayers array to PlayFab user data
+    // Prepare data to save - include both player order and captain separately
+    const dataToSave = {
+        "selectedPlayers": JSON.stringify(selectedPlayerIds)
+    };
+    
+    // Save captain separately if one is selected
+    if (captainId) {
+        dataToSave["captainId"] = captainId;
+    }
+    
+    // Save the selectedPlayers array and captain to PlayFab user data
     PlayFab.ClientApi.UpdateUserData({
-        Data: {
-            "selectedPlayers": JSON.stringify(selectedPlayerIds)
-        }
+        Data: dataToSave
     }, function(result, error) {
         // Reset button state
         saveBtn.textContent = originalText;
@@ -389,25 +398,19 @@ function makePlayerCaptain(playerId) {
         return;
     }
     
-    // If player is already captain (first position), do nothing
-    if (playerIndex === 0) {
+    // If player is already captain, do nothing
+    if (dataCache.playerData.captainId && String(dataCache.playerData.captainId) === String(playerId)) {
         console.log("Player is already captain");
         return;
     }
     
-    // Remove the player from their current position
-    const playerIdToMove = selectedPlayerIds.splice(playerIndex, 1)[0];
+    // Store captain separately - do NOT reorder the selectedPlayerIds array
+    dataCache.playerData.captainId = playerId;
     
-    // Add them to the first position (captain position)
-    selectedPlayerIds.unshift(playerIdToMove);
+    console.log(`Player ${playerId} is now captain. Captain stored separately, selectedPlayerIds order preserved:`, selectedPlayerIds);
     
-    console.log(`Player ${playerId} is now captain. Updated selectedPlayerIds:`, selectedPlayerIds);
-    
-    // Update only the selectedPlayerIds in cached data - keep original players array order
-    dataCache.playerData.selectedPlayerIds = selectedPlayerIds;
-    
-    // Re-render the pitch to update the captain badge (but keep player positions the same)
-    renderPlayersOnPitch(dataCache.playerData.players, selectedPlayerIds);
+    // Re-render the pitch to update the captain badge (player positions remain the same)
+    renderPlayersOnPitch(dataCache.playerData.players, selectedPlayerIds, dataCache.playerData.captainId);
     
     console.log("Captain updated and pitch re-rendered");
 }
@@ -636,7 +639,7 @@ function performSubstitution(selectedPlayerId, targetPlayerId) {
     cancelSubstituteMode();
     
     // Re-render the pitch to show the new positions
-    renderPlayersOnPitch(reorderedPlayers, selectedPlayerIds);
+    renderPlayersOnPitch(reorderedPlayers, selectedPlayerIds, dataCache.playerData.captainId);
     
     console.log("Pitch re-rendered with new player positions");
 }
@@ -714,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // You could show a user-friendly error message here
         } else {
             console.log("Players loaded successfully");
-            renderPlayersOnPitch(data.players, data.selectedPlayerIds);
+            renderPlayersOnPitch(data.players, data.selectedPlayerIds, data.captainId);
         }
     });
 });

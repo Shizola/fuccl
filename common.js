@@ -170,7 +170,7 @@ function loadSharedPlayersFromPlayFab(callback) {
 
     // Cache miss - fetch fresh data
     
-    // Fetch user data to get the selectedPlayers key
+    // Fetch user data to get the selectedPlayers key and captain
     PlayFab.ClientApi.GetUserData({}, function (result, error) {
         if (error) {
             console.error("Error retrieving user data from PlayFab:", error);
@@ -183,6 +183,9 @@ function loadSharedPlayersFromPlayFab(callback) {
                 callback("No selectedPlayers key found", null);
                 return;
             }
+
+            // Get captain ID if it exists
+            const captainId = result.data.Data.captainId ? result.data.Data.captainId.Value : null;
 
             let selectedPlayerIds;
             try {
@@ -253,7 +256,8 @@ function loadSharedPlayersFromPlayFab(callback) {
                             weeklyPointsTotal,         // Current week points
                             cumulativePointsTotal,     // Total points across all weeks
                             gameWeek,                  // Current gameweek
-                            selectedPlayerIds
+                            selectedPlayerIds,
+                            captainId                  // Store captain separately
                         };
 
                         // Cache the successful response

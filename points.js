@@ -49,10 +49,10 @@ function createPlayerCardFallback(player) {
 }
 
 // Function to render players on the pitch based on their position (using shared implementation)
-function renderPlayersOnPitch(players, selectedPlayerIds = []) {
+function renderPlayersOnPitch(players, selectedPlayerIds = [], captainId = null) {
     // Use shared function from player-selection.js with 'points' context
     if (typeof window.sharedRenderPlayersOnPitch === 'function') {
-        return window.sharedRenderPlayersOnPitch(players, selectedPlayerIds, 'points');
+        return window.sharedRenderPlayersOnPitch(players, selectedPlayerIds, 'points', captainId);
     } else {
         return renderPlayersOnPitchFallback(players, selectedPlayerIds);
     }
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             console.log("Players loaded successfully for points page");
-            renderPlayersOnPitch(data.players, data.selectedPlayerIds);
+            renderPlayersOnPitch(data.players, data.selectedPlayerIds, data.captainId);
         }
     });
 });
