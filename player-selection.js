@@ -497,8 +497,22 @@ function openPlayerSelectionModal(teamName, position) {
         modal.dataset.selectedTeam = teamName;
         modal.dataset.selectedPosition = position;
 
-        // Load and display players
-        loadPlayersFromTeam(teamName, position, playerList);
+        // Automatically detect current team players to exclude
+        let excludePlayerIds = [];
+        
+        // Check if we're on transfers page (has currentTeamPlayerIds)
+        if (typeof currentTeamPlayerIds !== 'undefined' && Array.isArray(currentTeamPlayerIds)) {
+            excludePlayerIds = currentTeamPlayerIds;
+            console.log('Transfers page: excluding current team players:', excludePlayerIds);
+        }
+        // Check if we're on create-team page (has draftSelectedPlayers)
+        else if (typeof window.draftSelectedPlayers !== 'undefined' && Array.isArray(window.draftSelectedPlayers)) {
+            excludePlayerIds = window.draftSelectedPlayers;
+            console.log('Create-team page: excluding draft players:', excludePlayerIds);
+        }
+
+        // Load and display players with appropriate exclusions
+        loadPlayersFromTeam(teamName, position, playerList, excludePlayerIds);
 
         // Show the modal
         modal.showModal();
@@ -653,30 +667,14 @@ function closePlayerSelectionModal() {
 // Function to add a player to a specific slot
 function addPlayerToSlot(cardElement, player) {
     console.log('addPlayerToSlot called for player:', player.name);
-    // Clear empty slot styling
-    cardElement.classList.remove('empty-slot');
-    cardElement.innerHTML = '';
-
-    // Remove old click handler
-    if (cardElement.clickHandler) {
-        cardElement.removeEventListener('click', cardElement.clickHandler);
-        cardElement.clickHandler = null;
-    }
-
-    // Use the same structure as createPlayerCard but add it to existing element
-    cardElement.className = 'player-card';
-
-    // Add player shirt image with lazy loading optimization
-    const shirtImg = document.createElement('img');
-    shirtImg.src = player.shirtImage;
-    shirtImg.alt = `${player.name}'s Shirt`;
-    shirtImg.className = 'player-shirt';
-
-    // PERFORMANCE OPTIMIZATION: Add lazy loading for better performance
-    shirtImg.loading = 'lazy';
-
+    
+    // Use shared function to convert empty slot to player card
+    convertEmptySlotToPlayerCard(cardElement, player);
+    
+    // Add additional functionality specific to player selection
     // Add intersection observer for progressive loading if supported
-    if ('IntersectionObserver' in window) {
+    const shirtImg = cardElement.querySelector('.player-shirt');
+    if (shirtImg && 'IntersectionObserver' in window) {
         const imageObserver = new IntersectionObserver((entries, observer) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -689,26 +687,6 @@ function addPlayerToSlot(cardElement, player) {
         imageObserver.observe(shirtImg);
     }
 
-    // Fallback to template.svg if the shirt image fails to load
-    shirtImg.onerror = function () {
-        this.src = 'images/shirts/template.svg';
-    };
-
-    cardElement.appendChild(shirtImg);
-
-    // Add player name
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'player-name';
-    nameDiv.textContent = extractSurname(player.name);
-    cardElement.appendChild(nameDiv);
-
-    // Add player price
-    const priceDiv = document.createElement('div');
-    priceDiv.className = 'player-price';
-    const playerPrice = player.price || '5.0'; // Default if no price available
-    priceDiv.textContent = `£${playerPrice}m`;
-    cardElement.appendChild(priceDiv);
-
     // Add click event listener to open modal (same as original cards)
     cardElement.clickHandler = () => {
         console.log('Player card clicked - opening player modal for:', player.name);
@@ -716,10 +694,6 @@ function addPlayerToSlot(cardElement, player) {
     };
     cardElement.addEventListener('click', cardElement.clickHandler);
     console.log('Player modal click handler set up for:', player.name);
-
-    // Store player data on the card for later reference
-    cardElement.dataset.playerId = player.id;
-    cardElement.dataset.playerName = player.name;
 
     // Preserve the slot index from the existing card element
     // (it should already be set from when the card was created)
@@ -794,4 +768,119 @@ function setupSharedModalListeners() {
             }
         });
     }
+}
+
+// ========================================
+// SHARED EMPTY SLOT AND PLAYER CARD FUNCTIONS
+// Used by both create-team and transfers pages
+// ========================================
+
+// Shared function to create an empty slot (used by both create-team and transfers)
+function createEmptySlot(cardElement, originalPlayerId) {
+    // Clear the existing content
+    cardElement.innerHTML = '';
+
+    // Remove old click handler
+    if (cardElement.clickHandler) {
+        cardElement.removeEventListener('click', cardElement.clickHandler);
+    }
+
+    // Add empty slot class
+    cardElement.classList.add('empty-slot');
+
+    // Create + symbol
+    const plusSymbol = document.createElement('div');
+    plusSymbol.className = 'plus-symbol';
+    plusSymbol.textContent = '+';
+    cardElement.appendChild(plusSymbol);
+
+    // Determine position based on card location
+    let position = 'DF'; // Default
+    const cardTop = cardElement.style.top;
+    if (cardTop === '10%') position = 'GK';
+    else if (cardTop === '30%') position = 'DF';
+    else if (cardTop === '50%') position = 'MD';
+    else if (cardTop === '70%') position = 'AT';
+    else if (cardTop === '90%') position = 'SUB';
+
+    const positionDiv = document.createElement('div');
+    positionDiv.className = 'empty-slot-position';
+    positionDiv.textContent = position;
+    cardElement.appendChild(positionDiv);
+
+    // Set up click handler for empty slot
+    cardElement.clickHandler = () => {
+        currentTransferSlot = cardElement;
+        openTeamSelectionModal(position);
+    };
+    cardElement.addEventListener('click', cardElement.clickHandler);
+}
+
+// Shared function to convert empty slot to player card (used by both create-team and transfers)
+function convertEmptySlotToPlayerCard(emptySlot, player) {
+    // Remove empty slot styling and content
+    emptySlot.classList.remove('empty-slot');
+    emptySlot.innerHTML = '';
+
+    // Remove old click handler
+    if (emptySlot.clickHandler) {
+        emptySlot.removeEventListener('click', emptySlot.clickHandler);
+    }
+
+    // Ensure proper player card class is set and clear any lingering styles
+    emptySlot.className = 'player-card';
+    
+    // Explicitly reset styles that might be left over from empty slot
+    emptySlot.style.opacity = '';
+    emptySlot.style.backgroundColor = '';
+    emptySlot.style.border = '';
+
+    // Create player card content with proper error handling
+    const shirtImg = document.createElement('img');
+    shirtImg.className = 'player-shirt loaded'; // Add 'loaded' class to ensure full opacity
+    shirtImg.src = player.shirtImage || 'images/shirts/template.svg';
+    shirtImg.alt = `${player.name} shirt`;
+    shirtImg.loading = 'lazy';
+    
+    // Add error fallback for shirt image
+    shirtImg.onerror = function () {
+        console.log('Shirt image failed to load for:', player.name, 'URL:', shirtImg.src);
+        this.src = 'images/shirts/template.svg';
+        this.classList.add('loaded'); // Ensure loaded class even on fallback
+    };
+    
+    // Debug: Log successful image loading
+    shirtImg.onload = function () {
+        console.log('Shirt image loaded successfully for:', player.name, 'URL:', shirtImg.src);
+        this.classList.add('loaded'); // Ensure loaded class is added
+    };
+    
+    emptySlot.appendChild(shirtImg);
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'player-name';
+    nameDiv.textContent = player.name;
+    emptySlot.appendChild(nameDiv);
+
+    // Add price or position overlay depending on page context
+    const overlayDiv = document.createElement('div');
+    
+    // Check if we're on transfers page (has transferBudget) or create-team page
+    if (typeof transferBudget !== 'undefined') {
+        // Transfers page - show price
+        overlayDiv.className = 'player-price';
+        overlayDiv.textContent = `£${player.price}m`;
+    } else {
+        // Create-team page - show position
+        overlayDiv.className = 'player-position';
+        overlayDiv.textContent = player.position.toUpperCase();
+    }
+    
+    emptySlot.appendChild(overlayDiv);
+
+    // Set player ID and name for future reference
+    emptySlot.setAttribute('data-player-id', player.id);
+    emptySlot.setAttribute('data-player-name', player.name);
+
+    return emptySlot;
 }

@@ -6,13 +6,29 @@
 // Transfer state
 let transferBudget = 100.0;
 let transfersMade = 0;
+let currentTeamPlayerIds = []; // Track players already in the team
+// currentTransferSlot is declared in player-selection.js
 
 // Override the selectPlayerFromTeam function for transfers logic
 function selectPlayerFromTeam(player) {
     console.log('Player selected for transfer:', player.name);
     closePlayerSelectionModal();
-    // TODO: Implement buying functionality
-    alert('Transfer functionality will be implemented later');
+    
+    // Check if we have enough budget
+    if (transferBudget < player.price) {
+        alert(`Not enough budget! You need £${player.price}m but only have £${transferBudget.toFixed(1)}m`);
+        return;
+    }
+    
+    // Check if we have a current transfer slot
+    if (!currentTransferSlot) {
+        console.error('No transfer slot selected');
+        alert('Please select an empty slot first');
+        return;
+    }
+    
+    // Buy the player - convert empty slot to player card
+    buyPlayer(player, currentTransferSlot);
 }
 
 // Function to sell a player (converts player card to empty slot)
@@ -35,44 +51,18 @@ function sellPlayer(playerId) {
     }
 
     // Convert player card to empty slot
-    playerCard.classList.add('empty-slot');
-    playerCard.innerHTML = '';
-
-    // Remove old click handler
-    if (playerCard.clickHandler) {
-        playerCard.removeEventListener('click', playerCard.clickHandler);
-    }
-
-    // Create empty slot content
-    const plusSymbol = document.createElement('div');
-    plusSymbol.className = 'plus-symbol';
-    plusSymbol.textContent = '+';
-    playerCard.appendChild(plusSymbol);
-
-    // Determine position based on card location
-    let position = 'DF'; // Default
-    const cardTop = playerCard.style.top;
-    if (cardTop === '10%') position = 'GK';
-    else if (cardTop === '30%') position = 'DF';
-    else if (cardTop === '50%') position = 'MD';
-    else if (cardTop === '70%') position = 'AT';
-    else if (cardTop === '90%') position = 'SUB';
-
-    const positionDiv = document.createElement('div');
-    positionDiv.className = 'empty-slot-position';
-    positionDiv.textContent = position;
-    playerCard.appendChild(positionDiv);
-
-    // Set up click handler for empty slot
-    playerCard.clickHandler = () => {
-        currentTransferSlot = playerCard;
-        openTeamSelectionModal(position);
-    };
-    playerCard.addEventListener('click', playerCard.clickHandler);
+    createEmptySlot(playerCard, playerId);
 
     // Update budget
     transferBudget += soldPlayerPrice;
     transfersMade++;
+    
+    // Remove player from current team tracking
+    const playerIndex = currentTeamPlayerIds.indexOf(playerId);
+    if (playerIndex > -1) {
+        currentTeamPlayerIds.splice(playerIndex, 1);
+        console.log('Player removed from team. Current team player IDs:', currentTeamPlayerIds);
+    }
     
     const budgetElement = document.getElementById('teamBudget');
     if (budgetElement) {
@@ -86,6 +76,56 @@ function sellPlayer(playerId) {
 
     console.log(`Player sold for £${soldPlayerPrice}m. Budget updated.`);
     closePlayerModal();
+}
+
+// Note: createEmptySlot function now shared in player-selection.js
+
+// Function to buy a player (converts empty slot to player card)
+function buyPlayer(player, emptySlot) {
+    console.log('Buying player:', player.name, 'for slot:', emptySlot);
+    console.log('Player object:', player); // Debug: log the entire player object
+
+    // Check budget
+    if (transferBudget < player.price) {
+        alert(`Not enough budget! You need £${player.price}m but only have £${transferBudget.toFixed(1)}m`);
+        return;
+    }
+
+    // Convert empty slot to player card using shared function
+    convertEmptySlotToPlayerCard(emptySlot, player);
+
+    // Set up click handler for player card (to show player details/sell option)
+    emptySlot.clickHandler = () => {
+        showPlayerModal(player);
+    };
+    emptySlot.addEventListener('click', emptySlot.clickHandler);
+
+    // Update budget
+    transferBudget -= player.price;
+    transfersMade++;
+    
+    // Add player to current team tracking
+    currentTeamPlayerIds.push(player.id);
+    console.log('Player added to team. Current team player IDs:', currentTeamPlayerIds);
+    
+    const budgetElement = document.getElementById('teamBudget');
+    if (budgetElement) {
+        budgetElement.textContent = (100.0 - (100.0 - transferBudget)).toFixed(1);
+    }
+    
+    const transfersMadeElement = document.getElementById('transfersMade');
+    if (transfersMadeElement) {
+        transfersMadeElement.textContent = transfersMade;
+    }
+
+    console.log(`Player bought for £${player.price}m. Budget updated.`);
+    
+    // Clear the current transfer slot
+    currentTransferSlot = null;
+    
+    // Close any open modals
+    closeTeamSelectionModal();
+    closePlayerSelectionModal();
 }
 
 // Initialize transfers page when DOM is loaded
@@ -129,6 +169,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             console.log("Team loaded successfully for transfers page");
+            // Store current team player IDs for filtering
+            currentTeamPlayerIds = data.selectedPlayerIds || [];
+            console.log("Current team player IDs:", currentTeamPlayerIds);
             // Render the current team on the pitch
             renderPlayersOnPitch(data.players, data.selectedPlayerIds);
         }

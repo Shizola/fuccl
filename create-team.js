@@ -589,54 +589,8 @@ function sellPlayer(playerId) {
                 console.log('Removed old click handler');
             }
 
-            // Convert back to empty slot
-            playerCard.className = 'player-card empty-slot';
-            playerCard.innerHTML = '';
-
-            // Create + symbol
-            const plusSymbol = document.createElement('div');
-            plusSymbol.className = 'plus-symbol';
-            plusSymbol.textContent = '+';
-            playerCard.appendChild(plusSymbol);
-
-            // Add position text
-            const positionDiv = document.createElement('div');
-            positionDiv.className = 'empty-slot-position';
-            // Convert full position name back to abbreviation for display
-            const positionAbbrev = {
-                'goalkeeper': 'GK',
-                'defender': 'DF',
-                'midfielder': 'MD',
-                'attacker': 'AT'
-            };
-            positionDiv.textContent = positionAbbrev[player.position] || player.position.toUpperCase();
-            playerCard.appendChild(positionDiv);
-
-            // Store position for later use
-            playerCard.dataset.position = positionAbbrev[player.position] || player.position.toUpperCase();
-
-            // Set up empty slot click handler ONLY after conversion is complete
-            // Use setTimeout to ensure this happens after modal is fully closed
-            setTimeout(() => {
-                playerCard.clickHandler = () => {
-                    console.log('Empty slot clicked - opening team selection modal');
-                    currentTransferSlot = playerCard;
-                    // Only open team selection modal if this is actually an empty slot
-                    if (playerCard.classList.contains('empty-slot')) {
-                        // Convert position back to abbreviation for team selection modal
-                        const positionAbbrev = {
-                            'goalkeeper': 'GK',
-                            'defender': 'DF',
-                            'midfielder': 'MD',
-                            'attacker': 'AT'
-                        };
-                        const position = positionAbbrev[player.position] || player.position.toUpperCase();
-                        openTeamSelectionModal(position);
-                    }
-                };
-                playerCard.addEventListener('click', playerCard.clickHandler);
-                console.log('Empty slot click handler set up for player:', player.name);
-            }, 150);
+            // Convert back to empty slot using shared function
+            createEmptySlot(playerCard, playerId);
         } else {
             console.error('Player card not found for playerId:', playerId);
         }
@@ -736,7 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const autoCompleteBtn = document.getElementById('autoCompleteBtn');
 
     if (saveBtn) {
-        saveBtn.addEventListener('click', handleDraftTeamSubmit);
+        saveBtn.addEventListener('click', handleCreateTeamSubmit);
     }
 
     if (resetBtn) {
