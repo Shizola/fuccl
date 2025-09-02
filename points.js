@@ -46,7 +46,7 @@ function createPlayerCard(player) {
     // Add player name
     const nameDiv = document.createElement('div');
     nameDiv.className = 'player-name';
-    nameDiv.textContent = player.name;
+    nameDiv.textContent = extractSurname(player.name);
     card.appendChild(nameDiv);
 
     // Add player points - use weeklyPoints instead of total points
@@ -90,6 +90,7 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
         sb: { top: '90%' } // Substitutes row
     };
 
+
     // Group players by position
     const positions = {
         gk: [],
@@ -97,6 +98,14 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
         md: [],
         at: [],
         sb: [] // Substitutes
+    };
+
+    // Position mapping from full names to abbreviations
+    const positionMapping = {
+        'goalkeeper': 'gk',
+        'defender': 'df',
+        'midfielder': 'md',
+        'attacker': 'at'
     };
 
     // Separate substitutes (last 4 players)
@@ -108,9 +117,14 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
     console.log("Captain ID identified:", captainId);
     console.log("Selected Player IDs:", selectedPlayerIds);
 
-    // Assign main players to their positions
+    // Assign main players to their positions (with mapping)
     mainPlayers.forEach(player => {
-        positions[player.position].push(player);
+        const mappedPosition = positionMapping[player.position] || player.position;
+        if (positions[mappedPosition]) {
+            positions[mappedPosition].push(player);
+        } else {
+            console.warn(`Unknown position: ${player.position} for player ${player.name}`);
+        }
     });
 
     // Assign substitutes to the 'sb' position
@@ -383,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (error === "No selectedPlayers key found") {
                 console.log("User has no team data - redirecting to draft team page");
                 alert("No team found. You'll be redirected to create your team.");
-                window.location.href = "draft-team.html";
+                window.location.href = "create-team.html";
                 return;
             }
             

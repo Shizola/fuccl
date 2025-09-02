@@ -1,6 +1,9 @@
-/* Transfers Page Styles */
+/* ========================================
+   FUCCL Transfers Page Styles
+   Specific styles for the transfers page
+   ======================================== */
 
-/* Team Info Section */
+/* Team Info Section - Transfers specific */
 .team-info {
     background: var(--pico-card-background-color);
     border: var(--pico-border-width) solid var(--pico-card-border-color);
@@ -24,357 +27,59 @@
     border-radius: var(--pico-border-radius);
 }
 
-/* Pitch and Team Display */
-.pitch-container {
-    max-width: 900px; /* Maintain the desired width */
-    margin: 20px auto;
-    text-align: center;
-    position: relative;
-    overflow: hidden; /* Ensure the edges of the image are cut off */
-    border-radius: 20px; /* Optional: Rounded corners */
-    border: 2px solid #ccc; /* Optional: Framed effect */
-    height: 600px; /* Default height */
-}
-
-/* Pitch styles */
-.pitch {
-    width: 85%; /* Adjust the width of the pitch */
-    position: relative; /* Ensure players are positioned relative to the pitch */
-    margin: 0 auto; /* Center the pitch horizontally */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden; /* Prevent overflow */
-    padding: 0; /* Remove any padding */
-    border: none; /* Ensure no border adds extra space */
-}
-
-.pitch-image {
-    width: 100%;
-    height: auto;
-    transform: scale(1) translate(0, 0%); /* Adjust scale and position */
-    transform-origin: center center; /* Scale from the center */
-    object-fit: cover; /* Ensure the image fills the container */
-}
-
-/* Player Cards */
-.player-card {
-    width: 70px; /* Default width */
-    aspect-ratio: 1 / 1; /* Maintain a square shape */
-    background-color: #008000; /* Default background color */
-    border-radius: 10px; /* Rounded corners */
-    text-align: center;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
-    position: absolute; /* Position relative to the .pitch container */
-    transform: translate(-50%, -50%); /* Center the player cards */
-    z-index: 2; /* Keep players above the pitch */
-    transition: width 0.3s ease, height 0.3s ease; /* Smooth resizing */
-    cursor: pointer; /* Add cursor pointer for clickable cards */
-}
-
-/* Hover effect for player cards */
-.player-card:hover {
-    transform: translate(-50%, -50%) scale(1.05); /* Slight scale on hover */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Enhanced shadow on hover */
-}
-
-/* Selected player card styling */
-.player-card.selected {
-    border: 3px solid #087cc4; /* Blue border for selected players */
-    box-shadow: 0 0 10px rgba(8, 124, 196, 0.5); /* Blue glow effect */
-}
-
+/* Player card styling for selling state */
 .player-card.selling {
     border-color: var(--pico-del-color);
     background: rgba(220, 53, 69, 0.1);
 }
 
-.player-shirt {
-    width: 100%;
-    max-height: 60px;
-    object-fit: contain;
-    background: transparent;
-    /* PERFORMANCE OPTIMIZATION: Smooth loading transitions */
-    opacity: 0.7;
-    transition: opacity 0.3s ease-in-out;
-}
-
-/* Progressive loading optimization */
-.player-shirt.loaded {
-    opacity: 1;
-}
-
-.player-name {
-    background-color: #ffffff;
-    font-weight: bold;
-    font-size: 8px;
-    color: black;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    position: absolute;
-    bottom: 18%;
-    left: 0;
-    width: 100%;
-    padding: 0;
-    line-height: 1;
-    margin: 0;
-    z-index: 2;
-    height: 12px;
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Vertically center the text */
-    justify-content: center; /* Horizontally center the text */
-}
-
-.player-points {
-    background-color: #087cc4;
-    color: white;
-    font-size: 8px;
-    padding: 0px 0;
-    font-weight: bold;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    height: 12px;
-    z-index: 1; /* Ensure it's below the player name */
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Vertically center the text */
-    justify-content: center; /* Horizontally center the text */
-}
-
-.player-price {
-    background-color: #087cc4; /* Blue background to match pick-team positions */
-    color: white;
-    font-size: 8px;
-    padding: 0px 0;
-    font-weight: bold;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    height: 12px;
-    z-index: 1; /* Ensure it's below the player name */
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Vertically center the text */
-    justify-content: center; /* Horizontally center the text */
-}
-
-/* Position overlay for transfers page with color coding */
-.player-position {
-    color: white;
-    font-size: 8px;
-    padding: 0px 0;
-    font-weight: bold;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    height: 12px;
-    z-index: 1; /* Ensure it's below the player name */
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Vertically center the text */
-    justify-content: center; /* Horizontally center the text */
-}
-
-/* Position color coding */
-.player-position.gk {
-    background-color: #087cc4; /* Blue for goalkeepers (matches points page) */
-    color: white;
-}
-
-.player-position.def {
-    background-color: #087cc4; /* Blue for defenders (matches points page) */
-    color: white;
-}
-
-.player-position.mid {
-    background-color: #087cc4; /* Blue for midfielders (matches points page) */
-    color: white;
-}
-
-.player-position.att {
-    background-color: #087cc4; /* Blue for attackers (matches points page) */
-    color: white;
-}
-
-/* Note: No special styling for substitute players on transfers page
-   All players show uniform blue price background for consistency */
-
-/* Position-based styling - not used in transfers but keeping for consistency */
-.player-card.gk { border-left: 4px solid #FFD700; }
-.player-card.df { border-left: 4px solid #32CD32; }
-.player-card.md { border-left: 4px solid #1E90FF; }
-.player-card.at { border-left: 4px solid #FF6347; }
-
-/* Captain and Substitute badges - matching pick-team.css exactly */
-.captain-player::before {
-    content: "C";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    background-color: #dc3545; /* Red background for captain */
-    color: #fff;
-    font-size: 14px;
-    font-weight: bold;
-    padding: 2px 8px;
-    border-radius: 3px;
-    z-index: 4;
-    line-height: 1;
-    border: 1px solid #000;
-}
-
-.substitute-player::before {
-    content: "SUB";
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background-color: #ffc107;
-    color: #000;
-    font-size: 7px;
-    font-weight: bold;
-    padding: 1px 4px;
-    border-radius: 3px;
-    z-index: 4;
-    line-height: 1;
-    border: 1px solid #000;
-}
-
-/* More specific captain badge rule */
-.player-card.captain-player::before {
-    content: "C" !important;
-    position: absolute !important;
-    top: 2px !important;
-    left: 2px !important;
-    background-color: #dc3545 !important; /* Red background for captain */
-    color: #fff !important;
-    font-size: 14px !important;
-    font-weight: bold !important;
-    padding: 2px 8px !important;
-    border-radius: 3px !important;
-    z-index: 4 !important;
-    line-height: 1 !important;
-    border: 1px solid #000 !important;
-}
-
-/* Empty slot styling for sold players */
-.player-card.empty-slot {
-    background-color: #f8f9fa; /* Light gray background */
-    border: 2px dashed #ccc; /* Dashed border */
-    opacity: 0.8;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-}
-
-.player-card.empty-slot:hover {
-    background-color: #e9ecef; /* Slightly darker on hover */
-    border-color: #adb5bd;
-    transform: translate(-50%, -50%) scale(1.02); /* Subtle scale on hover */
-}
-
-.plus-symbol {
-    font-size: 24px;
-    font-weight: bold;
-    color: #6c757d;
-    margin-bottom: 4px;
-    line-height: 1;
-}
-
-.empty-slot-position {
-    font-size: 8px;
-    font-weight: bold;
-    color: #6c757d;
-    text-align: center;
-    line-height: 1;
-}
-
-/* Responsive sizing for empty slots */
-@media (max-width: 610px) {
-    .plus-symbol {
-        font-size: 16px;
-    }
-    
-    .empty-slot-position {
-        font-size: 6px;
-    }
-}
-
-@media (min-width: 611px) and (max-width: 900px) {
-    .plus-symbol {
-        font-size: 20px;
-    }
-    
-    .empty-slot-position {
-        font-size: 7px;
-    }
-}
-
-@media (min-width: 901px) {
-    .plus-symbol {
-        font-size: 28px;
-    }
-    
-    .empty-slot-position {
-        font-size: 9px;
-    }
-}
-
-/* Transfer Actions */
+/* Transfer Actions - Transfers specific */
 .transfer-actions {
-    margin: var(--pico-spacing) 0;
+    text-align: center;
+    margin-top: 2rem;
 }
 
 .action-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--pico-spacing);
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
-/* Transfer Market */
+/* Transfer Market - Transfers specific */
 .transfer-market {
-    margin-top: calc(var(--pico-spacing) * 2);
+    margin-top: 2rem;
+    padding: 1rem;
+    background: var(--pico-card-background-color);
+    border: var(--pico-border-width) solid var(--pico-card-border-color);
+    border-radius: var(--pico-border-radius);
 }
 
 .market-filters {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--pico-spacing);
-    margin-bottom: var(--pico-spacing);
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 .market-players {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: var(--pico-spacing);
-    max-height: 600px;
-    overflow-y: auto;
-    border: 1px solid var(--pico-card-border-color);
-    border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
 }
 
 .market-player-card {
-    background: var(--pico-card-background-color);
+    padding: 1rem;
     border: 1px solid var(--pico-card-border-color);
     border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
+    background: var(--pico-card-background-color);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: var(--pico-spacing);
+    transition: all 0.3s ease;
 }
 
 .market-player-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--pico-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .market-player-card.selected {
@@ -383,173 +88,55 @@
 }
 
 .market-player-info {
-    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .market-player-name {
     font-weight: bold;
-    margin: 0 0 4px 0;
+    margin: 0;
 }
 
 .market-player-details {
     font-size: 0.875rem;
     color: var(--pico-muted-color);
-    margin: 0;
+    margin: 0.25rem 0;
 }
 
 .market-player-price {
     font-weight: bold;
     color: var(--pico-primary);
-    font-size: 1.1rem;
-}
-
-/* Player List Modal */
-.player-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--pico-spacing);
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.player-option {
-    background: var(--pico-card-background-color);
-    border: 1px solid var(--pico-card-border-color);
-    border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-}
-
-.player-option:hover {
-    background: var(--pico-primary-background);
-    border-color: var(--pico-primary);
-}
-
-.player-option.selected {
-    background: var(--pico-primary);
-    color: var(--pico-primary-inverse);
-    border-color: var(--pico-primary);
-}
-
-.player-option img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    margin-bottom: 8px;
-}
-
-.player-option h4 {
-    margin: 0 0 4px 0;
-    font-size: 0.875rem;
-}
-
-.player-option p {
     margin: 0;
-    font-size: 0.75rem;
-    opacity: 0.8;
 }
 
-/* Transfer Details Modal */
+/* ========================================
+   TRANSFERS MODAL STYLES (transfers specific)
+   ======================================== */
+
+/* Transfer Details Modal - Transfers specific */
 #transferDetails {
-    text-align: center;
+    max-width: 500px;
 }
 
 .transfer-summary {
     background: var(--pico-secondary-background);
+    padding: 1rem;
     border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
-    margin: var(--pico-spacing) 0;
+    margin: 1rem 0;
 }
 
 .transfer-cost {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: bold;
     color: var(--pico-primary);
-    margin: var(--pico-spacing) 0;
+    text-align: center;
+    margin: 1rem 0;
 }
 
-/* Responsive Design */
-/* Mobile screens (up to 610px) */
-@media (max-width: 610px) {
-    .pitch-container {
-        height: 400px;
-    }
-
-    .player-card {
-        width: 45px;
-        aspect-ratio: 1 / 1.1;
-    }
-
-    .player-card .player-name {
-        font-size: 6px;
-        bottom: 20%;
-    }
-
-    .player-card .player-price {
-        font-size: 6px;
-    }
-
-    .player-shirt {
-        width: 100%;
-        height: auto;
-    }
-}
-
-/* Tablet screens (611px to 900px) */
-@media (min-width: 611px) and (max-width: 900px) {
-    .pitch-container {
-        height: 500px;
-    }
-
-    .player-card {
-        width: 50px;
-        aspect-ratio: 1 / 1;
-    }
-
-    .player-card .player-name {
-        font-size: 6px;
-    }
-
-    .player-card .player-price {
-        font-size: 8px;
-    }
-
-    .player-shirt {
-        width: 100%;
-        height: auto;
-    }
-}
-
-/* Desktop screens (901px and up) */
-@media (min-width: 901px) {
-    .pitch-container {
-        height: 600px;
-    }
-
-    .player-card {
-        width: 90px;
-        aspect-ratio: 1 / 1;
-    }
-
-    .player-card .player-name {
-        font-size: 9.5px;
-        bottom: 14%;
-    }
-
-    .player-card .player-price {
-        font-size: 10px;
-    }
-
-    .player-shirt {
-        width: 100%;
-        height: auto;
-    }
-}
-
-/* Loading States */
+/* Loading States - Transfers specific */
 .loading {
+    position: relative;
     opacity: 0.6;
     pointer-events: none;
 }
@@ -559,227 +146,27 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
     width: 20px;
     height: 20px;
+    margin: -10px 0 0 -10px;
     border: 2px solid var(--pico-primary);
-    border-top: 2px solid transparent;
+    border-top-color: transparent;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 1s infinite linear;
 }
 
 @keyframes spin {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
+    to { transform: rotate(360deg); }
 }
 
-/* Empty States */
+/* Empty States - Transfers specific */
 .empty-state {
     text-align: center;
-    padding: calc(var(--pico-spacing) * 2);
+    padding: 2rem;
     color: var(--pico-muted-color);
 }
 
 .empty-state h3 {
-    margin-bottom: var(--pico-spacing);
-}
-
-/* ========================================
-   PLAYER MODAL STYLES
-   ======================================== */
-
-/* Ensure modal appears above everything */
-#playerModal {
-    z-index: 9999;
-}
-
-/* Modal footer button layout - stack vertically for mobile */
-#playerModal footer {
-    display: flex;
-    flex-direction: column;
-    gap: var(--pico-spacing);
-}
-
-/* Make buttons full width on mobile */
-#playerModal footer button {
-    width: 100%;
-    margin: 0;
-}
-
-/* Desktop layout - horizontal buttons */
-@media (min-width: 768px) {
-    #playerModal footer {
-        flex-direction: row;
-        justify-content: flex-end;
-    }
-    
-    #playerModal footer button {
-        width: auto;
-        min-width: 120px;
-    }
-}
-
-/* Modal content styling */
-#playerModal main p {
-    margin-bottom: var(--pico-spacing);
-}
-
-#playerModal main p strong {
-    margin-right: var(--pico-spacing);
-}
-
-/* ========================================
-   TEAM SELECTION MODAL STYLES
-   ======================================== */
-
-/* Team selection modal */
-#teamSelectionModal {
-    z-index: 9999;
-}
-
-/* Team list grid */
-.team-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--pico-spacing);
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-/* Individual team option */
-.team-option {
-    background: var(--pico-card-background-color);
-    border: 1px solid var(--pico-card-border-color);
-    border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-}
-
-.team-option:hover {
-    background: var(--pico-primary-background);
-    border-color: var(--pico-primary);
-    transform: translateY(-2px);
-}
-
-.team-option.selected {
-    background: var(--pico-primary);
-    color: var(--pico-primary-inverse);
-    border-color: var(--pico-primary);
-}
-
-.team-option img {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    margin-bottom: 8px;
-}
-
-.team-option h4 {
-    margin: 0 0 4px 0;
-    font-size: 0.9rem;
-}
-
-.team-option p {
-    margin: 0;
-    font-size: 0.8rem;
-    opacity: 0.8;
-}
-
-/* ========================================
-   PLAYER SELECTION MODAL STYLES
-   ======================================== */
-
-/* Player selection modal */
-#playerSelectionModal {
-    z-index: 9999;
-}
-
-/* Player selection list */
-.player-selection-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--pico-spacing);
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-/* Individual player option */
-.player-selection-option {
-    background: var(--pico-card-background-color);
-    border: 1px solid var(--pico-card-border-color);
-    border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: var(--pico-spacing);
-}
-
-.player-selection-option:hover {
-    background: var(--pico-primary-background);
-    border-color: var(--pico-primary);
-    transform: translateY(-1px);
-}
-
-.player-selection-option.selected {
-    background: var(--pico-primary);
-    color: var(--pico-primary-inverse);
-    border-color: var(--pico-primary);
-}
-
-.player-selection-option img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
-    flex-shrink: 0;
-}
-
-.player-selection-info {
-    flex: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.player-selection-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.player-selection-name {
-    font-weight: bold;
-    margin: 0;
-    font-size: 1rem;
-}
-
-.player-selection-stats {
-    margin: 0;
-    font-size: 0.875rem;
-    opacity: 0.8;
-    display: flex;
-    gap: var(--pico-spacing);
-}
-
-.player-selection-price {
-    font-weight: bold;
-    font-size: 1.1rem;
-    color: var(--pico-primary);
-    flex-shrink: 0;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .player-selection-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .player-selection-stats {
-        flex-direction: column;
-        gap: 4px;
-    }
+    margin: 0 0 1rem 0;
+    color: var(--pico-color);
 }

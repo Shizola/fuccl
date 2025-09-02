@@ -84,3 +84,531 @@ nav button {
     margin: 16px 0;
     text-align: center;
 }
+
+/* ========================================
+   SHARED PITCH AND PLAYER STYLES
+   Common styles used across multiple pages
+   ======================================== */
+
+/* Pitch Container - Shared across all pages */
+.pitch-container {
+    max-width: 900px;
+    margin: 20px auto;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 2px solid #ccc;
+    height: 600px;
+}
+
+/* Pitch Styles - Shared across all pages */
+.pitch {
+    width: 85%;
+    position: relative;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 0;
+    border: none;
+}
+
+.pitch-image {
+    width: 100%;
+    height: auto;
+    transform: scale(1) translate(0, 0%);
+    transform-origin: center center;
+    object-fit: cover;
+}
+
+/* Player Card Base Styles - Shared across all pages */
+.player-card {
+    width: 70px;
+    aspect-ratio: 1 / 1;
+    background-color: #008000;
+    border-radius: 10px;
+    text-align: center;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    transition: width 0.3s ease, height 0.3s ease;
+    cursor: pointer; /* Clickable cards */
+}
+
+/* Player Card Interaction Styles - Shared across all pages */
+.player-card:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Selected player card styling - Shared across all pages */
+.player-card.selected {
+    border: 3px solid #087cc4;
+    box-shadow: 0 0 10px rgba(8, 124, 196, 0.5);
+}
+
+/* Player Price overlay - Shared across all pages */
+.player-price {
+    background-color: #28a745; /* Green background for price */
+    color: white;
+    font-size: 8px;
+    padding: 0px 0;
+    font-weight: bold;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    height: 12px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Player Shirt Styles - Shared across all pages */
+.player-shirt {
+    width: 100%;
+    max-height: 60px;
+    object-fit: contain;
+    background: transparent;
+    opacity: 0.7;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.player-shirt.loaded {
+    opacity: 1;
+}
+
+/* Player Name Styles - Shared across all pages */
+.player-name {
+    background-color: #ffffff;
+    font-weight: bold;
+    font-size: 8px;
+    color: black;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: absolute;
+    bottom: 18%;
+    left: 0;
+    width: 100%;
+    padding: 0;
+    line-height: 1;
+    margin: 0;
+    z-index: 2;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Badge Styles - Shared across all pages */
+.substitute-player::before {
+    content: "SUB";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #ffc107;
+    color: #000;
+    font-size: 7px;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 3px;
+    z-index: 4;
+    line-height: 1;
+    border: 1px solid #000;
+}
+
+.captain-player::before,
+.player-card.captain-player::before {
+    content: "C" !important;
+    position: absolute !important;
+    top: 2px !important;
+    left: 2px !important;
+    background-color: #dc3545 !important;
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding: 2px 8px !important;
+    border-radius: 3px !important;
+    z-index: 4 !important;
+    line-height: 1 !important;
+    border: 1px solid #000 !important;
+}
+
+/* Error Message Styles - Shared across all pages */
+.error-message {
+    color: #e74c3c;
+    text-align: center;
+    padding: 20px;
+    font-weight: bold;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px;
+}
+
+/* ========================================
+   SHARED MODAL AND SELECTION STYLES
+   Used by both create-team and transfers pages
+   ======================================== */
+
+/* Enhanced Player Selection Modal Styles */
+.player-selection-option {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.player-selection-option:hover {
+    border-color: #4CAF50;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    transform: translateY(-1px);
+}
+
+.player-selection-option img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    margin-right: 1rem;
+}
+
+.player-selection-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-selection-details {
+    flex: 1;
+}
+
+.player-selection-details h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+}
+
+.player-selection-stats {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0.25rem 0;
+}
+
+.player-selection-price {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 1rem;
+}
+
+/* Team Selection Modal Styles */
+.team-option {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.team-option:hover {
+    border-color: #4CAF50;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    transform: translateY(-1px);
+}
+
+.team-option img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    margin-right: 1rem;
+}
+
+.team-option h4 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Base modal styling */
+#playerModal,
+#teamSelectionModal,
+#playerSelectionModal,
+#errorModal,
+#confirmationModal {
+    z-index: 1000;
+}
+
+/* Team list grid */
+.team-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Player selection list */
+.player-selection-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ========================================
+   SHARED RESPONSIVE DESIGN
+   Common breakpoints used across all pages
+   ======================================== */
+
+/* Mobile screens (up to 610px) */
+@media (max-width: 610px) {
+    .pitch-container {
+        height: 400px;
+        margin: 10px auto;
+    }
+
+    .player-card {
+        width: 45px;
+    }
+
+    .player-card .player-name {
+        font-size: 6px;
+        height: 10px;
+    }
+
+    .player-shirt {
+        max-height: 35px;
+    }
+
+    .substitute-player::before {
+        font-size: 5px;
+        padding: 1px 2px;
+    }
+
+    .captain-player::before,
+    .player-card.captain-player::before {
+        font-size: 10px !important;
+        padding: 1px 4px !important;
+    }
+
+    .team-list {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons,
+    .draft-actions .action-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons button,
+    .draft-actions .action-buttons button {
+        width: 100%;
+    }
+
+    .player-price {
+        font-size: 6px;
+        height: 10px;
+    }
+}
+
+/* Tablet screens (611px to 900px) */
+@media (min-width: 611px) and (max-width: 900px) {
+    .pitch-container {
+        height: 500px;
+    }
+
+    .player-card {
+        width: 50px;
+    }
+
+    .player-card .player-name {
+        font-size: 7px;
+        height: 12px;
+    }
+
+    .player-shirt {
+        max-height: 40px;
+    }
+
+    .substitute-player::before {
+        font-size: 6px;
+        padding: 1px 3px;
+    }
+
+    .captain-player::before,
+    .player-card.captain-player::before {
+        font-size: 12px !important;
+        padding: 2px 5px !important;
+    }
+
+    .player-price {
+        font-size: 7px;
+    }
+}
+
+/* Desktop screens (901px and above) */
+@media (min-width: 901px) {
+    .pitch-container {
+        height: 600px;
+    }
+
+    .player-card {
+        width: 55px;
+    }
+
+    .player-card .player-name {
+        font-size: 8px;
+        height: 14px;
+    }
+
+    .player-shirt {
+        max-height: 45px;
+    }
+
+    .substitute-player::before {
+        font-size: 7px;
+        padding: 2px 4px;
+    }
+
+    .captain-player::before,
+    .player-card.captain-player::before {
+        font-size: 14px !important;
+        padding: 2px 6px !important;
+    }
+
+    .player-price {
+        font-size: 10px;
+        height: 14px;
+    }
+}
+
+/* Tablet screens (611px to 900px) */
+@media (min-width: 611px) and (max-width: 900px) {
+    .pitch-container {
+        height: 500px;
+    }
+
+    .player-card {
+        width: 60px;
+    }
+
+    .player-card .player-name {
+        font-size: 7px;
+    }
+}
+
+/* Desktop screens (901px and up) */
+@media (min-width: 901px) {
+    .player-card {
+        width: 90px;
+    }
+
+    .player-card .player-name {
+        font-size: 10px;
+        height: 14px;
+    }
+
+    .player-shirt {
+        max-height: 75px;
+    }
+}
+
+/* ========================================
+   SHARED EMPTY SLOT STYLING
+   Used by both draft-team and transfers pages
+   ======================================== */
+
+/* Empty slot styling for positions that need to be filled */
+.player-card.empty-slot {
+    background-color: #f8f9fa;
+    border: 2px dashed #ccc;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+.player-card.empty-slot:hover {
+    border-color: #4CAF50;
+    opacity: 1;
+}
+
+.player-card.empty-slot .player-name {
+    background-color: transparent;
+    color: #666;
+    font-style: italic;
+}
+
+/* Plus symbol for empty slots */
+.plus-symbol {
+    font-size: 24px;
+    color: #4CAF50;
+    font-weight: bold;
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin-top: -10px; /* Adjust for position text below */
+}
+
+/* Position text for empty slots */
+.empty-slot-position {
+    background-color: transparent;
+    color: #666;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    position: absolute;
+    bottom: 15%;
+    left: 0;
+    width: 100%;
+    font-style: italic;
+}
+
+/* ========================================
+   EMPTY SLOT RESPONSIVE DESIGN
+   ======================================== */
+
+/* Mobile screens */
+@media (max-width: 768px) {
+    .plus-symbol {
+        font-size: 18px;
+    }
+    
+    .empty-slot-position {
+        font-size: 8px;
+    }
+}
+
+/* Tablet screens */
+@media (min-width: 611px) and (max-width: 900px) {
+    .plus-symbol {
+        font-size: 20px;
+    }
+    
+    .empty-slot-position {
+        font-size: 9px;
+    }
+}
+
+/* Desktop screens */
+@media (min-width: 901px) {
+    .plus-symbol {
+        font-size: 30px;
+    }
+    
+    .empty-slot-position {
+        font-size: 10px;
+    }
+}

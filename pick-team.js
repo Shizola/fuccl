@@ -57,7 +57,7 @@ function createPlayerCard(player) {
     // Add player name
     const nameDiv = document.createElement('div');
     nameDiv.className = 'player-name';
-    nameDiv.textContent = player.name;
+    nameDiv.textContent = extractSurname(player.name);
     card.appendChild(nameDiv);
 
     // Add player position instead of points for pick team page

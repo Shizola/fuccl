@@ -1,0 +1,235 @@
+/* ========================================
+   FUCCL Draft Team Page Styles
+   Specific styles for the team creation page
+   ======================================== */
+
+/* Page Header - Draft Team specific */
+.subtitle {
+    color: #666;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+/* Navigation Styles - Draft Team specific (logout only) */
+nav {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+nav button {
+    width: auto;
+    min-width: 80px;
+}
+
+/* Team Creation Form Styles - Draft Team specific */
+.team-creation {
+    margin-bottom: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-field input {
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-field input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.character-counter {
+    font-size: 0.875rem;
+    text-align: right;
+    margin-top: 0.25rem;
+    color: #666;
+}
+
+/* Budget Section Styles - Draft Team specific */
+.budget-section {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.budget-display h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.budget-amount {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.budget-note {
+    margin: 0.25rem 0 0 0;
+    opacity: 0.9;
+    font-size: 0.85rem;
+}
+
+/* Over Budget Styles - Draft Team specific */
+.budget-section.over-budget {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+}
+
+.budget-section.over-budget .budget-amount {
+    color: #ffebee;
+}
+
+/* Draft Actions Styles - Draft Team specific */
+.draft-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.draft-actions .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.draft-note {
+    color: #666;
+    font-style: italic;
+    margin: 0;
+}
+
+/* ========================================
+   DRAFT TEAM MODAL STYLES
+   ======================================== */
+
+/* Error modal - Draft Team specific */
+#errorModal article {
+    max-width: 500px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#errorModal header h3 {
+    color: #dc3545;
+    margin: 0;
+}
+
+#errorMessages {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+#errorMessages p {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    background: rgba(220, 53, 69, 0.1);
+    border-left: 4px solid #dc3545;
+    border-radius: 4px;
+    color: #721c24;
+}
+
+/* Confirmation modal - Draft Team specific */
+#confirmationModal article {
+    max-width: 600px;
+}
+
+.confirmation-content {
+    background: #d1e7dd;
+    border: 1px solid #badbcc;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.team-info-section {
+    margin-bottom: 1rem;
+}
+
+.team-info-section p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+}
+
+.team-info-section p strong {
+    color: #198754;
+}
+
+.confirmation-note {
+    font-style: italic;
+    color: #666;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+/* ========================================
+   DRAFT TEAM RESPONSIVE DESIGN
+   ======================================== */
+
+/* Mobile responsive design */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .budget-amount {
+        font-size: 1.5rem;
+    }
+}
+
+/* Form validation states - Draft Team specific */
+.form-field input:valid {
+    border-color: #28a745;
+}
+
+.form-field input:invalid:not(:placeholder-shown) {
+    border-color: #dc3545;
+}
+
+/* Button states - Draft Team specific */
+#saveDraftBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#saveDraftBtn:not(:disabled):hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}

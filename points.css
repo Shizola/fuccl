@@ -3,142 +3,7 @@
    Specific styles for the points visualization page
    ======================================== */
 
-.pitch-container {
-    max-width: 900px; /* Maintain the desired width */
-    margin: 20px auto;
-    text-align: center;
-    position: relative;
-    overflow: hidden; /* Ensure the edges of the image are cut off */
-    border-radius: 20px; /* Optional: Rounded corners */
-    border: 2px solid #ccc; /* Optional: Framed effect */
-    height: 600px; /* Default height */
-}
-
-/* Pitch styles */
-.pitch {
-    width: 85%; /* Adjust the width of the pitch */
-    position: relative; /* Ensure players are positioned relative to the pitch */
-    margin: 0 auto; /* Center the pitch horizontally */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden; /* Prevent overflow */
-    padding: 0; /* Remove any padding */
-    border: none; /* Ensure no border adds extra space */
-}
-
-.pitch-image-wrapper {
-    position: absolute; /* Ensure the pitch stays in place */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1; /* Keep it below the player cards */
-}
-
-.pitch-image-wrapper img {
-    width: 100%;
-    height: auto;
-    transform: scale(1) translate(0, 0%); /* Adjust scale and position */
-    transform-origin: center center; /* Scale from the center */
-    object-fit: cover; /* Ensure the image fills the container */
-}
-
-/* Container for the player cards */
-.player-cards-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px;
-    position: absolute; /* Keep it on top of the pitch */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    z-index: 2; /* Ensure it appears above the pitch image */
-}
-
-/* Pitch container styles */
-.player-card {
-    width: 70px; /* Default width */
-    aspect-ratio: 1 / 1; /* Maintain a square shape */
-    background-color: #008000; /* Default background color */
-    border-radius: 10px; /* Rounded corners */
-    text-align: center;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
-    position: absolute; /* Position relative to the .pitch container */
-    transform: translate(-50%, -50%); /* Center the player cards */
-    z-index: 2; /* Keep players above the pitch */
-    transition: width 0.3s ease, height 0.3s ease; /* Smooth resizing */
-}
-
-/* Add a pseudo-element to display the width (for debugging - remove in production) */
-.player-card::after {
-    display: none;
-    content: attr(data-width);
-    position: absolute;
-    top: 5%;
-    right: 5%;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-size: 8px;
-    padding: 2px 4px;
-    border-radius: 3px;
-    z-index: 3;
-    pointer-events: none;
-}
-
-/* Shirt image styling */
-.player-shirt {
-    width: 100%;
-    max-height: 60px;
-    object-fit: contain;
-    background: transparent;
-    /* PERFORMANCE OPTIMIZATION: Smooth loading transitions */
-    opacity: 0.7;
-    transition: opacity 0.3s ease-in-out;
-}
-
-/* Progressive loading optimization */
-.player-shirt.loaded {
-    opacity: 1;
-}
-
-/* Error message styling */
-.error-message {
-    color: #e74c3c;
-    text-align: center;
-    padding: 20px;
-    font-weight: bold;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    margin: 20px;
-}
-
-.player-name {
-    background-color: #ffffff;
-    font-weight: bold;
-    font-size: 8px;
-    color: black;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    position: absolute;
-    bottom: 18%;
-    left: 0;
-    width: 100%;
-    padding: 0;
-    line-height: 1;
-    margin: 0;
-    z-index: 2;
-    height: 12px;
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Vertically center the text */
-    justify-content: center; /* Horizontally center the text */
-}
-
-/* Points overlay */
+/* Points overlay - Points page specific */
 .player-points {
     background-color: #087cc4;
     color: white;
@@ -151,67 +16,16 @@
     width: 100%;
     margin: 0;
     height: 12px;
-    z-index: 1; /* Ensure it's below the player name */
-    display: flex; /* Enable flexbox */
-    align-items: center; /* Vertically center the text */
-    justify-content: center; /* Horizontally center the text */
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Substitute player styling with yellow background */
+/* Substitute player styling with yellow background - Points page specific */
 .substitute-player .player-points {
-    background-color: #ffc107; /* Yellow background for substitute points */
-    color: #000; /* Black text for better contrast on yellow */
-}
-
-/* Substitute badge styling */
-.substitute-player::before {
-    content: "SUB";
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background-color: #ffc107; /* Yellow background */
-    color: #000; /* Black text */
-    font-size: 7px;
-    font-weight: bold;
-    padding: 1px 4px;
-    border-radius: 3px;
-    z-index: 4;
-    line-height: 1;
-    border: 1px solid #000;
-}
-
-/* Captain badge styling */
-.captain-player::before {
-    content: "C";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    background-color: #dc3545; /* Red background for captain */
-    color: #fff; /* White text */
-    font-size: 14px;
-    font-weight: bold;
-    padding: 2px 8px;
-    border-radius: 3px;
-    z-index: 4;
-    line-height: 1;
-    border: 1px solid #000;
-}
-
-/* More specific captain badge rule to ensure it works */
-.player-card.captain-player::before {
-    content: "C" !important;
-    position: absolute !important;
-    top: 2px !important;
-    left: 2px !important;
-    background-color: #dc3545 !important; /* Red background for captain */
-    color: #fff !important;
-    font-size: 14px !important;
-    font-weight: bold !important;
-    padding: 2px 8px !important;
-    border-radius: 3px !important;
-    z-index: 4 !important;
-    line-height: 1 !important;
-    border: 1px solid #000 !important;
+    background-color: #ffc107;
+    color: #000;
 }
 
 /* Debug display element (can be enabled for testing) */
@@ -228,142 +42,24 @@ body::after {
 }
 
 /* ========================================
-   RESPONSIVE DESIGN
-   Media queries for different screen sizes
+   POINTS PAGE RESPONSIVE OVERRIDES
    ======================================== */
 
-/* Mobile screens (up to 610px) */
+/* Mobile specific overrides for points page */
 @media (max-width: 610px) {
-    .pitch-container {
-        height: 400px;
-    }
-
-    .player-card {
-        width: 45px;
-        aspect-ratio: 1 / 1.1;
-    }
-
-    .player-card .player-name {
-        font-size: 6px;
-        bottom: 20%;
-    }
-
     .player-card .player-points {
-        font-size: 8px;
-    }
-
-    .player-shirt {
-        width: 100%;
-        height: auto;
-    }
-
-    /* Smaller badges for mobile */
-    .substitute-player::before {
-        font-size: 5px;
-        padding: 0px 2px;
-        top: 1px;
-        right: 1px;
-    }
-
-    .captain-player::before,
-    .player-card.captain-player::before {
-        font-size: 10px !important;
-        padding: 1px 5px !important;
-        top: 1px !important;
-        left: 1px !important;
-    }
-
-    /* Debug displays (can be enabled for testing) */
-    .player-card::after {
-        content: "35px";
+        font-size: 6px;
+        height: 10px;
     }
 
     body::after {
-        content: "Player Card Size: 35px";
+        content: "Mobile size: 45px";
     }
 }
 
-/* Tablet screens (611px to 900px) */
+/* Tablet specific overrides for points page */
 @media (min-width: 611px) and (max-width: 900px) {
-    .pitch-container {
-        height: 500px;
-    }
-
-    .player-card {
-        width: 50px;
-        aspect-ratio: 1 / 1;
-    }
-
-    .player-card .player-name {
-        font-size: 6px;
-    }
-
     .player-card .player-points {
-        font-size: 10px;
-    }
-
-    .player-shirt {
-        width: 100%;
-        height: auto;
-    }
-
-    /* Medium badges for tablet */
-    .substitute-player::before {
-        font-size: 6px;
-        padding: 1px 3px;
-        top: 1px;
-        right: 1px;
-    }
-
-    .captain-player::before,
-    .player-card.captain-player::before {
-        font-size: 12px !important;
-        padding: 1px 6px !important;
-        top: 1px !important;
-        left: 1px !important;
-    }
-
-    /* Debug displays (can be enabled for testing) */
-    .player-card::after {
-        content: "50px";
-    }
-
-    body::after {
-        content: "Player Card Size: 50px";
-    }
-}
-
-/* Desktop screens (901px and up) */
-@media (min-width: 901px) {
-    .pitch-container {
-        height: 600px;
-    }
-
-    .player-card {
-        width: 90px;
-        aspect-ratio: 1 / 1;
-    }
-
-    .player-card .player-name {
-        font-size: 9.5px;
-        bottom: 14%;
-    }
-
-    .player-card .player-points {
-        font-size: 12px;
-    }
-
-    .player-shirt {
-        width: 100%;
-        height: auto;
-    }
-
-    /* Debug displays (can be enabled for testing) */
-    .player-card::after {
-        content: "90";
-    }
-
-    body::after {
-        content: "Player Card Size: 90px";
+        font-size: 7px;
     }
 }

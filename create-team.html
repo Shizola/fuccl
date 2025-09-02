@@ -9,8 +9,7 @@
     <!-- Link to Pico.css CDN -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
     <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
-    <link rel="stylesheet" href="transfers.css"> <!-- Page-specific styles -->
-    <link rel="stylesheet" href="draft-team.css"> <!-- Create team specific styles -->
+    <link rel="stylesheet" href="create-team.css"> <!-- Create team specific styles -->
 
     <title>Create Team - FUCCL</title>
 </head>
@@ -28,7 +27,7 @@
 
         <!-- Team Creation Form -->
         <section class="team-creation">
-            <form id="draft-team-form" onsubmit="handleDraftTeamSubmit(event)">
+            <form id="create-team-form" onsubmit="handleCreateTeamSubmit(event)">
                 <div class="form-grid">
                     <div class="form-field">
                         <label for="teamName">
@@ -184,6 +183,6 @@
     <!-- Custom JavaScript -->
     <script src="common.js"></script>
     <script src="player-selection.js"></script>
-    <script src="draft-team.js"></script>
+    <script src="create-team.js"></script>
 </body>
 </html>

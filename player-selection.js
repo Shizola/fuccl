@@ -1,6 +1,6 @@
 // ========================================
 // PLAYER SELECTION SHARED FUNCTIONALITY
-// Common functions used by draft-team and transfers pages
+// Common functions used by create-team and transfers pages
 // ========================================
 
 // Cache for all players data
@@ -24,13 +24,6 @@ function isCacheValid() {
 // ========================================
 // PLAYER DATA LOADING
 // ========================================
-
-// Function to extract surname from full name
-function extractSurname(fullName) {
-    if (!fullName) return '';
-    const nameParts = fullName.trim().split(' ');
-    return nameParts[nameParts.length - 1]; // Return the last part as surname
-}
 
 // Function to load all players from PlayFab (called once on page load)
 function loadAllPlayers(callback) {

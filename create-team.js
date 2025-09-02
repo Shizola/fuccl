@@ -253,7 +253,7 @@ function confirmSquad() {
 }
 
 // Function to handle draft team submission
-function handleDraftTeamSubmit(event) {
+function handleCreateTeamSubmit(event) {
     event.preventDefault();
     
     // Validate before showing confirmation modal

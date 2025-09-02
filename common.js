@@ -2,10 +2,33 @@
 PlayFab.settings.titleId = "E210B";
 console.log("PlayFab Title ID set to:", PlayFab.settings.titleId);
 
+// ========================================
+// DEBUG MODE CONFIGURATION
+// Set to true to disable redirect logic for testing
+// ========================================
+const DEBUG_MODE = true; // Set to true to test both create-team and transfers pages
+
 /* ========================================
    SHARED DATA CACHE AND UTILITIES
    Common data loading and caching functionality
    ======================================== */
+
+// Function to extract surname from full name with first initial
+function extractSurname(fullName) {
+    if (!fullName) return '';
+    const nameParts = fullName.trim().split(' ');
+    
+    if (nameParts.length === 1) {
+        // If only one name part, return as is
+        return nameParts[0];
+    }
+    
+    // Get first initial and surname
+    const firstInitial = nameParts[0].charAt(0).toUpperCase();
+    const surname = nameParts[nameParts.length - 1];
+    
+    return `${firstInitial}. ${surname}`;
+}
 
 // Simple data cache to avoid refetching the same data
 const sharedDataCache = {
@@ -532,8 +555,8 @@ function checkUserStatusAndRedirect() {
     PlayFab.ClientApi.GetUserData({}, function(result, error) {
         if (error) {
             console.error("Error checking user data:", error);
-            // On error, default to draft team page to be safe
-            window.location.href = "draft-team.html";
+            // On error, default to create team page to be safe
+            window.location.href = "create-team.html";
             return;
         }
 
@@ -543,24 +566,28 @@ function checkUserStatusAndRedirect() {
 
         if (!teamName) {
             // New user - no team created yet
-            if (currentPage !== 'draft-team.html') {
-                console.log("New user - redirecting to draft team page");
-                window.location.href = "draft-team.html";
+            if (currentPage !== 'create-team.html') {
+                console.log("New user - redirecting to create team page");
+                window.location.href = "create-team.html";
             } else {
-                console.log("New user already on draft team page - staying here");
+                console.log("New user already on create team page - staying here");
             }
         } else if (!selectedPlayersString) {
-            // User has team but no selected players - redirect to draft team
-            if (currentPage !== 'draft-team.html') {
-                console.log("User has team but no players - redirecting to draft team page");
-                window.location.href = "draft-team.html";
+            // User has team but no selected players - redirect to create team
+            if (currentPage !== 'create-team.html') {
+                console.log("User has team but no players - redirecting to create team page");
+                window.location.href = "create-team.html";
             } else {
-                console.log("User has team but no players - already on draft team page");
+                console.log("User has team but no players - already on create team page");
             }
         } else {
             // User has both team and selected players - redirect to points
-            console.log("User has complete team - redirecting to points page");
-            window.location.href = "points.html";
+            if (DEBUG_MODE && currentPage === 'create-team.html') {
+                console.log("DEBUG MODE: User has complete team but staying on create-team page for testing");
+            } else {
+                console.log("User has complete team - redirecting to points page");
+                window.location.href = "points.html";
+            }
         }
     });
 }
@@ -892,9 +919,9 @@ function initializePage(currentPage) {
                         
                         // Check if the error is due to missing selectedPlayers key
                         if (error === "No selectedPlayers key found") {
-                            console.log("User has no team data - redirecting to draft team page");
+                            console.log("User has no team data - redirecting to create team page");
                             alert("No team found. You'll be redirected to create your team.");
-                            window.location.href = "draft-team.html";
+                            window.location.href = "create-team.html";
                             return;
                         }
                         
@@ -915,7 +942,7 @@ function initializePage(currentPage) {
             }
             break;
             
-        case 'draft-team.html':
+        case 'create-team.html':
             // Check if user already has a complete team
             PlayFab.ClientApi.GetUserData({}, function(result, error) {
                 if (!error && result.data.Data.teamName && result.data.Data.selectedPlayers) {
@@ -931,7 +958,7 @@ function initializePage(currentPage) {
 
 // Page load handling
 window.addEventListener('load', function() {
-    const publicPages = ['index.html', 'login.html', 'register.html', 'reset-password.html', 'draft-team.html'];
+    const publicPages = ['index.html', 'login.html', 'register.html', 'reset-password.html', 'create-team.html'];
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     
     // Setup PlayFab authentication and get session status
