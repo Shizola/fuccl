@@ -171,7 +171,9 @@ function loadSharedPlayersFromPlayFab(callback) {
     // Cache miss - fetch fresh data
     
     // Fetch user data to get the selectedPlayers key and captain
-    PlayFab.ClientApi.GetUserData({}, function (result, error) {
+    PlayFab.ClientApi.GetUserData({
+        Keys: ["selectedPlayers", "captainId", "teamName", "managerName"]
+    }, function (result, error) {
         if (error) {
             console.error("Error retrieving user data from PlayFab:", error);
             callback(error, null);
@@ -878,11 +880,11 @@ function initializePage(currentPage) {
                             pitch.innerHTML = '<div class="error-message">Failed to load player data. Please refresh the page.</div>';
                         }
                     } else {
-                        const { players, selectedPlayerIds } = data;
+                        const { players, selectedPlayerIds, captainId } = data;
                         console.log("Selected players:", players);
                         // Render the players on the pitch
                         if (typeof renderPlayersOnPitch === 'function') {
-                            renderPlayersOnPitch(players, selectedPlayerIds);
+                            renderPlayersOnPitch(players, selectedPlayerIds, captainId);
                         }
                     }
                 });
@@ -921,11 +923,11 @@ function initializePage(currentPage) {
                             pitch.innerHTML = '<div class="error-message">Failed to load player data. Please refresh the page.</div>';
                         }
                     } else {
-                        const { players, selectedPlayerIds } = data;
+                        const { players, selectedPlayerIds, captainId } = data;
                         console.log("Available players for selection:", players);
                         // Render the players on the pitch
                         if (typeof renderPlayersOnPitch === 'function') {
-                            renderPlayersOnPitch(players, selectedPlayerIds);
+                            renderPlayersOnPitch(players, selectedPlayerIds, captainId);
                         }
                     }
                 });

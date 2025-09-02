@@ -274,11 +274,6 @@ function renderPlayersOnPitch(players, selectedPlayerIds = [], context = 'select
         mainPlayers = players.slice(0, players.length - 4);
     }
 
-    // Identify captain from parameter or fallback to first player for backward compatibility
-    if (!captainId && selectedPlayerIds.length > 0) {
-        captainId = selectedPlayerIds[0]; // Fallback for backward compatibility
-    }
-    
     // Debug logging for points page
     if (context === 'points') {
         console.log("renderPlayersOnPitch called with:");

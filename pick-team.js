@@ -270,15 +270,6 @@ function saveTeamToPlayFab() {
         } else {
             console.log("Team saved successfully to PlayFab:", result);
             alert("Team saved successfully!");
-            
-            // Optionally update the leaderboard with current points
-            if (dataCache.playerData.weeklyPointsTotal !== undefined && 
-                dataCache.playerData.cumulativePointsTotal !== undefined) {
-                submitWeeklyPointsToLeaderboard(
-                    dataCache.playerData.weeklyPointsTotal, 
-                    dataCache.playerData.cumulativePointsTotal
-                );
-            }
         }
     });
 }
@@ -590,7 +581,7 @@ function performSubstitution(selectedPlayerId, targetPlayerId) {
     }
     
     const selectedPlayerIds = dataCache.playerData.selectedPlayerIds;
-    const originalCaptainId = selectedPlayerIds[0]; // Store the original captain
+    const originalCaptainId = dataCache.playerData.captainId; // Get the current captain
     
     // Find the indices of both players
     const selectedPlayerIndex = selectedPlayerIds.findIndex(id => String(id) === String(selectedPlayerId));
@@ -606,20 +597,15 @@ function performSubstitution(selectedPlayerId, targetPlayerId) {
     selectedPlayerIds[selectedPlayerIndex] = selectedPlayerIds[targetPlayerIndex];
     selectedPlayerIds[targetPlayerIndex] = temp;
     
-    // After the swap, ensure the captain is whoever is now in the starting XI (positions 0-10)
-    // Find where the original captain ended up
-    const captainNewIndex = selectedPlayerIds.findIndex(id => String(id) === String(originalCaptainId));
-    
-    // If the captain is now in the substitutes (positions 11-14), we need a new captain
-    if (captainNewIndex >= 11) {
-        // The captain was substituted out, so whoever took their place becomes the new captain
-        console.log(`Captain ${originalCaptainId} was substituted out. Player ${selectedPlayerIds[0]} is now captain.`);
-    } else if (captainNewIndex !== 0) {
-        // The captain is still in the starting XI but not in position 0
-        // Move them to position 0 to maintain captaincy
-        const captainIdToMove = selectedPlayerIds.splice(captainNewIndex, 1)[0];
-        selectedPlayerIds.unshift(captainIdToMove);
-        console.log(`Captain ${originalCaptainId} maintained captaincy and moved to position 0`);
+    // Check if the captain was affected by the substitution
+    if (originalCaptainId && String(originalCaptainId) === String(selectedPlayerId)) {
+        // The captain was substituted out, need to assign new captain to the player who took their place
+        dataCache.playerData.captainId = targetPlayerId;
+        console.log(`Captain ${originalCaptainId} was substituted out. Player ${targetPlayerId} is now captain.`);
+    } else if (originalCaptainId && String(originalCaptainId) === String(targetPlayerId)) {
+        // The target player was the captain and was substituted in/moved
+        dataCache.playerData.captainId = selectedPlayerId;
+        console.log(`Captain ${originalCaptainId} was moved. Player ${selectedPlayerId} is now captain.`);
     }
     
     console.log(`Substitution completed. Updated selectedPlayerIds:`, selectedPlayerIds);
@@ -717,6 +703,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // You could show a user-friendly error message here
         } else {
             console.log("Players loaded successfully");
+            // Store the loaded data in the cache for later use
+            dataCache.playerData = data;
             renderPlayersOnPitch(data.players, data.selectedPlayerIds, data.captainId);
         }
     });
