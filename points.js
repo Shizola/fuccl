@@ -378,7 +378,16 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPlayersFromPlayFab(function(error, data) {
         if (error) {
             console.error("Failed to load player data:", error);
-            // Show error message to user
+            
+            // Check if the error is due to missing selectedPlayers key
+            if (error === "No selectedPlayers key found") {
+                console.log("User has no team data - redirecting to draft team page");
+                alert("No team found. You'll be redirected to create your team.");
+                window.location.href = "draft-team.html";
+                return;
+            }
+            
+            // Show error message to user for other errors
             const pitch = document.querySelector('.pitch');
             if (pitch) {
                 pitch.innerHTML = '<div class="error-message">Failed to load team data. Please try refreshing the page.</div>';

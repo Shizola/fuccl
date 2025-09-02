@@ -273,23 +273,7 @@ nav button {
 #playerModal header button[aria-label="Close"],
 #teamSelectionModal header button[aria-label="Close"],
 #playerSelectionModal header button[aria-label="Close"] {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-#playerModal header button[aria-label="Close"]:hover,
-#teamSelectionModal header button[aria-label="Close"]:hover,
-#playerSelectionModal header button[aria-label="Close"]:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
+    display: none;
 }
 
 #playerModal main,
@@ -599,21 +583,7 @@ nav button {
 }
 
 #errorModal header button[aria-label="Close"] {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-#errorModal header button[aria-label="Close"]:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
+    display: none;
 }
 
 /* Error modal content background */
@@ -735,21 +705,7 @@ nav button {
 }
 
 #confirmationModal header button[aria-label="Close"] {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-#confirmationModal header button[aria-label="Close"]:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
+    display: none;
 }
 
 /* Confirmation modal main content */

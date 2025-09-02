@@ -81,6 +81,45 @@ function validateSquadRules() {
         errors.push(`Your squad budget has been exceeded by £${Math.abs(teamBudget).toFixed(1)}m. Please remove some players or select cheaper alternatives.`);
     }
 
+    // Check formation requirements for 4-4-2
+    const players = draftSelectedPlayers.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
+    const positionCounts = {
+        goalkeeper: players.filter(p => p.position === 'goalkeeper').length,
+        defender: players.filter(p => p.position === 'defender').length,
+        midfielder: players.filter(p => p.position === 'midfielder').length,
+        attacker: players.filter(p => p.position === 'attacker').length
+    };
+
+    console.log('Position counts for 4-4-2 validation:', positionCounts);
+
+    // Check minimum requirements for 4-4-2 formation (1+1 GK, 4+1 DF, 4+1 MD, 2+1 AT)
+    if (positionCounts.goalkeeper < 2) {
+        errors.push('You need at least 2 goalkeepers (1 starting + 1 substitute).');
+    }
+    if (positionCounts.defender < 5) {
+        errors.push('You need at least 5 defenders (4 starting + 1 substitute).');
+    }
+    if (positionCounts.midfielder < 5) {
+        errors.push('You need at least 5 midfielders (4 starting + 1 substitute).');
+    }
+    if (positionCounts.attacker < 3) {
+        errors.push('You need at least 3 attackers (2 starting + 1 substitute).');
+    }
+
+    // Check maximum requirements
+    if (positionCounts.goalkeeper > 2) {
+        errors.push('You can only have 2 goalkeepers maximum.');
+    }
+    if (positionCounts.defender > 5) {
+        errors.push('You can only have 5 defenders maximum.');
+    }
+    if (positionCounts.midfielder > 5) {
+        errors.push('You can only have 5 midfielders maximum.');
+    }
+    if (positionCounts.attacker > 3) {
+        errors.push('You can only have 3 attackers maximum.');
+    }
+
     // Check club limits (max 3 players per club)
     const clubCounts = {};
     draftSelectedPlayers.forEach(playerId => {
@@ -100,6 +139,57 @@ function validateSquadRules() {
     }
 
     return errors;
+}
+
+// Function to organize players into 4-4-2 formation
+function organizePlayersInto442Formation(selectedPlayerIds) {
+    // Get player objects from cache
+    const players = selectedPlayerIds.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
+    
+    // Group players by position
+    const goalkeepers = players.filter(p => p.position === 'goalkeeper');
+    const defenders = players.filter(p => p.position === 'defender');
+    const midfielders = players.filter(p => p.position === 'midfielder');
+    const attackers = players.filter(p => p.position === 'attacker');
+    
+    console.log('Formation organization:', {
+        goalkeepers: goalkeepers.length,
+        defenders: defenders.length,
+        midfielders: midfielders.length,
+        attackers: attackers.length
+    });
+    
+    // Validate we have enough players for 4-4-2 formation
+    if (goalkeepers.length < 1 || defenders.length < 4 || midfielders.length < 4 || attackers.length < 2) {
+        console.error('Invalid formation - not enough players for 4-4-2');
+        return selectedPlayerIds; // Return original if validation fails
+    }
+    
+    // Create 4-4-2 formation: 1 GK, 4 DF, 4 MD, 2 AT (starting XI)
+    const startingXI = [
+        goalkeepers[0].id,           // 1 GK
+        ...defenders.slice(0, 4).map(p => p.id),     // 4 DF
+        ...midfielders.slice(0, 4).map(p => p.id),   // 4 MD
+        ...attackers.slice(0, 2).map(p => p.id)      // 2 AT
+    ];
+    
+    // Create substitutes: remaining players (1 GK, 1 DF, 1 MD, 1 AT)
+    const substitutes = [
+        ...(goalkeepers.length > 1 ? [goalkeepers[1].id] : []),         // Sub GK
+        ...(defenders.length > 4 ? [defenders[4].id] : []),             // Sub DF
+        ...(midfielders.length > 4 ? [midfielders[4].id] : []),         // Sub MD
+        ...(attackers.length > 2 ? [attackers[2].id] : [])              // Sub AT
+    ];
+    
+    const organizedFormation = [...startingXI, ...substitutes];
+    
+    console.log('4-4-2 Formation organized:', {
+        startingXI: startingXI.length,
+        substitutes: substitutes.length,
+        total: organizedFormation.length
+    });
+    
+    return organizedFormation;
 }
 
 // Function to show error modal with validation messages
@@ -202,40 +292,58 @@ function saveDraftTeam() {
 
     console.log('Saving draft team:', { teamName, managerName, selectedPlayers: draftSelectedPlayers });
 
-    // First save team info
-    const teamData = {
-        teamName: teamName,
-        managerName: managerName
-    };
-
-    PlayFab.ClientApi.UpdateUserData({
-        Data: teamData
+    // First update the PlayFab display name to the team name
+    PlayFab.ClientApi.UpdateUserTitleDisplayName({
+        DisplayName: teamName
     }, function(result, error) {
         if (error) {
-            console.error("Error saving team data:", error);
-            alert("Failed to save team information. Please try again.");
+            console.error("Error updating display name:", error);
+            alert("Failed to set team name as display name. Please try again.");
             return;
         }
 
-        console.log("Team data saved successfully");
+        console.log("Display name updated to:", teamName);
 
-        // Then save selected players
-        const selectedPlayersData = {
-            selectedPlayers: JSON.stringify(draftSelectedPlayers)
+        // Then save team info to user data
+        const teamData = {
+            teamName: teamName,
+            managerName: managerName
         };
 
         PlayFab.ClientApi.UpdateUserData({
-            Data: selectedPlayersData
+            Data: teamData
         }, function(result, error) {
             if (error) {
-                console.error("Error saving selected players:", error);
-                alert("Failed to save selected players. Please try again.");
+                console.error("Error saving team data:", error);
+                alert("Failed to save team information. Please try again.");
                 return;
             }
 
-            console.log("Selected players saved successfully");
-            alert("Team created successfully! Redirecting to your dashboard.");
-            window.location.href = "points.html";
+            console.log("Team data saved successfully");
+
+            // Organize players into proper 4-4-2 formation before saving
+            const organizedPlayers = organizePlayersInto442Formation(draftSelectedPlayers);
+            console.log('Original draft order:', draftSelectedPlayers);
+            console.log('4-4-2 organized order:', organizedPlayers);
+
+            // Finally save selected players in 4-4-2 formation
+            const selectedPlayersData = {
+                selectedPlayers: JSON.stringify(organizedPlayers)
+            };
+
+            PlayFab.ClientApi.UpdateUserData({
+                Data: selectedPlayersData
+            }, function(result, error) {
+                if (error) {
+                    console.error("Error saving selected players:", error);
+                    alert("Failed to save selected players. Please try again.");
+                    return;
+                }
+
+                console.log("Selected players saved successfully");
+                alert("Team created successfully! Redirecting to team selection.");
+                window.location.href = "pick-team.html";
+            });
         });
     });
 }
@@ -291,17 +399,71 @@ function autoCompleteTeam() {
         return clubCounts;
     }
 
-    // Process each empty slot
+    // Helper function to get minimum price for each position
+    function getMinimumPrices() {
+        const positionMap = {
+            'GK': 'goalkeeper',
+            'DF': 'defender', 
+            'MD': 'midfielder',
+            'AT': 'attacker'
+        };
+
+        const minPrices = {};
+        
+        Object.entries(positionMap).forEach(([abbrev, fullPosition]) => {
+            const playersInPosition = allPlayersCache.filter(p => p.position === fullPosition);
+            minPrices[abbrev] = playersInPosition.length > 0 ? 
+                Math.min(...playersInPosition.map(p => p.price || 0)) : 4.0; // Default minimum
+        });
+
+        console.log('Minimum prices by position:', minPrices);
+        return minPrices;
+    }
+
+    // Get remaining slots by position
+    const remainingSlots = {};
+    emptySlots.forEach(slot => {
+        const position = slot.dataset.position;
+        if (position) {
+            remainingSlots[position] = (remainingSlots[position] || 0) + 1;
+        }
+    });
+
+    console.log('Remaining slots by position:', remainingSlots);
+
+    const minimumPrices = getMinimumPrices();
+
+    // Calculate minimum budget needed for remaining slots (excluding current slot)
+    function calculateMinimumBudgetNeeded(excludePosition) {
+        let minBudget = 0;
+        Object.entries(remainingSlots).forEach(([pos, count]) => {
+            if (pos !== excludePosition) {
+                minBudget += (minimumPrices[pos] || 4.0) * count;
+            } else if (count > 1) {
+                // If there are multiple slots of the same position, account for the others
+                minBudget += (minimumPrices[pos] || 4.0) * (count - 1);
+            }
+        });
+        return minBudget;
+    }
+
+    // Process each empty slot with budget-aware selection
     emptySlots.forEach(slot => {
         const position = slot.dataset.position;
         if (!position) return;
+
+        // Calculate how much budget we can safely spend on this slot
+        const minBudgetForOtherSlots = calculateMinimumBudgetNeeded(position);
+        const maxSpendForThisSlot = teamBudget - minBudgetForOtherSlots;
+
+        console.log(`Position ${position}: Budget=${teamBudget.toFixed(1)}m, MinForOthers=${minBudgetForOtherSlots.toFixed(1)}m, MaxSpend=${maxSpendForThisSlot.toFixed(1)}m`);
 
         // Get current club counts
         const currentClubCounts = getClubCounts();
 
         // Find available players for this position
         const availablePlayers = allPlayersCache.filter(player => {
-            // Check if player matches position (map abbreviated position to full name)
+            // Check if player matches position
             const positionMap = {
                 'GK': 'goalkeeper',
                 'DF': 'defender',
@@ -314,8 +476,8 @@ function autoCompleteTeam() {
             // Check if player is not already selected
             const notSelected = !draftSelectedPlayers.includes(player.id);
 
-            // Check if player is affordable
-            const affordable = player.price <= teamBudget;
+            // Check if player is affordable AND leaves enough budget for other slots
+            const affordable = player.price <= maxSpendForThisSlot;
 
             // Check club limit (max 3 players per club)
             const currentClubCount = currentClubCounts[player.teamName] || 0;
@@ -325,10 +487,10 @@ function autoCompleteTeam() {
         });
 
         if (availablePlayers.length > 0) {
-            // Sort by price (cheapest first for auto-complete to maximize budget usage)
-            availablePlayers.sort((a, b) => (a.price || 0) - (b.price || 0));
+            // Sort by price (most expensive first for better team quality)
+            availablePlayers.sort((a, b) => (b.price || 0) - (a.price || 0));
 
-            // Select the first available player (cheapest)
+            // Select the first available player (most expensive that fits budget constraints)
             const selectedPlayer = availablePlayers[0];
 
             // Add to draft
@@ -337,26 +499,31 @@ function autoCompleteTeam() {
             teamBudget -= selectedPlayer.price;
             budgetUsed += selectedPlayer.price;
 
+            // Update remaining slots count
+            remainingSlots[position]--;
+            if (remainingSlots[position] === 0) {
+                delete remainingSlots[position];
+            }
+
             // Update the slot visually
             addPlayerToSlot(slot, selectedPlayer);
             slotsFilled++;
 
-            console.log(`Auto-selected ${selectedPlayer.name} (${position}) for £${selectedPlayer.price}m`);
+            console.log(`Auto-selected ${selectedPlayer.name} (${position}) for £${selectedPlayer.price}m. Remaining budget: £${teamBudget.toFixed(1)}m`);
         } else {
-            console.log(`No available players found for position ${position} (considering club limits)`);
+            console.log(`No suitable players found for position ${position} within budget constraints (max spend: £${maxSpendForThisSlot.toFixed(1)}m)`);
         }
     });
 
     // Update display
     updateDraftDisplay();
 
-    console.log(`Auto-complete finished: ${slotsFilled} slots filled, £${budgetUsed}m spent`);
+    console.log(`Auto-complete finished: ${slotsFilled} slots filled, £${budgetUsed.toFixed(1)}m spent, £${teamBudget.toFixed(1)}m remaining`);
 
     if (slotsFilled > 0) {
-        // Update display without showing alert
         updateDraftDisplay();
     } else {
-        alert('No suitable players found to fill the remaining slots (considering all rules).');
+        alert('No suitable players found to fill the remaining slots within budget constraints.');
     }
 }
 

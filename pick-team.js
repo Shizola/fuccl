@@ -161,9 +161,24 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
     // Identify captain (first player in selectedPlayerIds if available)
     const captainId = selectedPlayerIds.length > 0 ? selectedPlayerIds[0] : null;
 
+    // Position mapping from full names to abbreviations
+    const positionMapping = {
+        'goalkeeper': 'gk',
+        'defender': 'df', 
+        'midfielder': 'md',
+        'attacker': 'at'
+    };
+
     // Assign main players to their positions
     mainPlayers.forEach(player => {
-        positions[player.position].push(player);
+        const mappedPosition = positionMapping[player.position] || player.position;
+        if (positions[mappedPosition]) {
+            positions[mappedPosition].push(player);
+        } else {
+            console.warn('Unknown position for player:', player.name, player.position);
+            // Default to defender if position is unknown
+            positions.df.push(player);
+        }
     });
 
     // Assign substitutes to the 'sb' position

@@ -25,6 +25,13 @@ function isCacheValid() {
 // PLAYER DATA LOADING
 // ========================================
 
+// Function to extract surname from full name
+function extractSurname(fullName) {
+    if (!fullName) return '';
+    const nameParts = fullName.trim().split(' ');
+    return nameParts[nameParts.length - 1]; // Return the last part as surname
+}
+
 // Function to load all players from PlayFab (called once on page load)
 function loadAllPlayers(callback) {
     // Check cache first
@@ -119,7 +126,7 @@ function createPlayerCard(player) {
     // Add player name
     const nameDiv = document.createElement('div');
     nameDiv.className = 'player-name';
-    nameDiv.textContent = player.name;
+    nameDiv.textContent = extractSurname(player.name);
     card.appendChild(nameDiv);
 
     // Add player price
@@ -699,7 +706,7 @@ function addPlayerToSlot(cardElement, player) {
     // Add player name
     const nameDiv = document.createElement('div');
     nameDiv.className = 'player-name';
-    nameDiv.textContent = player.name;
+    nameDiv.textContent = extractSurname(player.name);
     cardElement.appendChild(nameDiv);
 
     // Add player price
