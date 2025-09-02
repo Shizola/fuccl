@@ -19,204 +19,86 @@ function isCacheValid() {
     return isSharedCacheValid();
 }
 
-// Function to create a player card
+// Function to create a player card (using shared implementation)
 function createPlayerCard(player) {
+    // Use shared function from player-selection.js with 'team' context
+    if (typeof window.sharedCreatePlayerCard === 'function') {
+        return window.sharedCreatePlayerCard(player, 'team');
+    } else {
+        return createPlayerCardFallback(player);
+    }
+}
+
+// Fallback implementation in case shared function isn't loaded
+function createPlayerCardFallback(player) {
+    console.warn("Using fallback createPlayerCard - shared function not available");
     const card = document.createElement('div');
     card.className = 'player-card';
 
-    // Add player shirt image with lazy loading optimization
+    // Basic implementation for emergency fallback
     const shirtImg = document.createElement('img');
-    shirtImg.src = player.shirtImage;
+    shirtImg.src = player.shirtImage || 'images/shirts/template.svg';
     shirtImg.alt = `${player.name}'s Shirt`;
     shirtImg.className = 'player-shirt';
-    
-    // PERFORMANCE OPTIMIZATION: Add lazy loading for better performance
-    shirtImg.loading = 'lazy';
-    
-    // Add intersection observer for progressive loading if supported
-    if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.classList.add('loaded');
-                    observer.unobserve(img);
-                }
-            });
-        });
-        imageObserver.observe(shirtImg);
-    }
-
-    // Fallback to template.svg if the shirt image fails to load
-    shirtImg.onerror = function () {
-        this.src = 'images/shirts/template.svg';
-    };
-
     card.appendChild(shirtImg);
 
-    // Add player name
     const nameDiv = document.createElement('div');
     nameDiv.className = 'player-name';
     nameDiv.textContent = extractSurname(player.name);
     card.appendChild(nameDiv);
 
-    // Add player position instead of points for pick team page
     const positionDiv = document.createElement('div');
     positionDiv.className = 'player-position';
-    // Display the position (convert abbreviations to readable format)
-    // Don't show "SUB" for substitutes, they'll be visually highlighted instead
-    const positionMap = {
-        'gk': 'GK',
-        'df': 'DEF', 
-        'md': 'MID',
-        'at': 'ATT'
-    };
-    
-    // Map position to CSS class for color coding
-    const positionClassMap = {
-        'gk': 'gk',
-        'df': 'def',
-        'md': 'mid',
-        'at': 'att'
-    };
-    
-    const displayPosition = positionMap[player.position] || player.position.toUpperCase();
-    const positionClass = positionClassMap[player.position] || '';
-    
-    positionDiv.textContent = displayPosition;
-    
-    // Add position-specific class for color coding
-    if (positionClass) {
-        positionDiv.classList.add(positionClass);
-    }
-    
+    positionDiv.textContent = player.position?.toUpperCase() || 'POS';
     card.appendChild(positionDiv);
 
-    // Add click event listener to open modal or handle substitute mode
-    card.addEventListener('click', () => {
-        // Check if we're in substitute mode
-        if (window.substituteMode && window.substituteMode.active) {
-            // Check if this is the selected player (blue highlighted)
-            if (card.classList.contains('substitute-mode-selected')) {
-                // Cancel substitute mode when clicking the highlighted player
-                cancelSubstituteMode();
-                return; // Don't open modal
-            }
-            
-            // Check if this card is greyed out (not available for substitution)
-            if (card.classList.contains('substitute-mode-greyed')) {
-                // Do nothing for greyed out players
-                return;
-            }
-            
-            // This is an available player for substitution - perform the swap
-            performSubstitution(window.substituteMode.selectedPlayerId, player.id);
-            return; // Don't open modal
-        }
-        
-        // Normal behavior - open modal
-        openPlayerModal(player);
-    });
+    card.addEventListener('click', () => openPlayerModal(player));
+    card.dataset.playerId = player.id;
+    card.dataset.playerName = player.name;
 
     return card;
 }
 
-// Function to render players on the pitch based on their position (optimized)
+// Function to render players on the pitch based on their position (using shared implementation)
 function renderPlayersOnPitch(players, selectedPlayerIds = []) {
-    // Get the pitch container
+    // Use shared function from player-selection.js with 'team' context
+    if (typeof window.sharedRenderPlayersOnPitch === 'function') {
+        return window.sharedRenderPlayersOnPitch(players, selectedPlayerIds, 'team');
+    } else {
+        return renderPlayersOnPitchFallback(players, selectedPlayerIds);
+    }
+}
+
+// Fallback implementation in case shared function isn't loaded
+function renderPlayersOnPitchFallback(players, selectedPlayerIds = []) {
+    console.warn("Using fallback renderPlayersOnPitch - shared function not available");
+    
     const pitch = document.querySelector('.pitch');
     if (!pitch) {
         console.error("Pitch container not found - cannot render players");
         return;
     }
 
-    // Clear existing players
     pitch.innerHTML = '<img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">';
-
-    // OPTIMIZATION: Use DocumentFragment for batch DOM operations
     const fragment = document.createDocumentFragment();
 
-    // Define vertical positions for each row, including substitutes
     const positionStyles = {
         gk: { top: '10%' },
         df: { top: '30%' },
         md: { top: '50%' },
         at: { top: '70%' },
-        sb: { top: '90%' } // Substitutes row
+        sb: { top: '90%' }
     };
 
-    // Group players by position
-    const positions = {
-        gk: [],
-        df: [],
-        md: [],
-        at: [],
-        sb: [] // Substitutes
-    };
-
-    // Separate substitutes (last 4 players)
-    const substitutes = players.slice(-4);
-    const mainPlayers = players.slice(0, players.length - 4);
-
-    // Identify captain (first player in selectedPlayerIds if available)
-    const captainId = selectedPlayerIds.length > 0 ? selectedPlayerIds[0] : null;
-
-    // Position mapping from full names to abbreviations
-    const positionMapping = {
-        'goalkeeper': 'gk',
-        'defender': 'df', 
-        'midfielder': 'md',
-        'attacker': 'at'
-    };
-
-    // Assign main players to their positions
-    mainPlayers.forEach(player => {
-        const mappedPosition = positionMapping[player.position] || player.position;
-        if (positions[mappedPosition]) {
-            positions[mappedPosition].push(player);
-        } else {
-            console.warn('Unknown position for player:', player.name, player.position);
-            // Default to defender if position is unknown
-            positions.df.push(player);
-        }
+    // Basic fallback rendering
+    players.forEach((player, index) => {
+        const playerCard = createPlayerCard(player);
+        playerCard.style.position = 'absolute';
+        playerCard.style.top = '50%';
+        playerCard.style.left = `${(index + 1) * (100 / (players.length + 1))}%`;
+        fragment.appendChild(playerCard);
     });
 
-    // Assign substitutes to the 'sb' position
-    substitutes.forEach(player => {
-        positions.sb.push(player);
-    });
-
-    // Render players for each position
-    Object.keys(positions).forEach(position => {
-        const rowPlayers = positions[position];
-
-        rowPlayers.forEach((player, index) => {
-            const playerCard = createPlayerCard(player);
-
-            // Calculate dynamic left position to avoid overlap
-            const left = `${(index + 1) * (100 / (rowPlayers.length + 1))}%`;
-
-            // Apply inline styles for positioning
-            playerCard.style.position = 'absolute';
-            playerCard.style.top = positionStyles[position].top;
-            playerCard.style.left = left;
-
-            // Add substitute styling if this is a substitute
-            if (position === 'sb') {
-                playerCard.classList.add('substitute-player');
-            }
-
-            // Add captain styling if this is the captain
-            if (captainId && player.id && String(player.id) === String(captainId)) {
-                playerCard.classList.add('captain-player');
-            }
-
-            // Add to fragment instead of DOM
-            fragment.appendChild(playerCard);
-        });
-    });
-
-    // Append all player cards at once to minimize layout thrashing
     pitch.appendChild(fragment);
 }
 
@@ -251,18 +133,9 @@ function loadPlayersFromPlayFab(callback) {
         if (error) {
             callback(error, null);
         } else {
-            // Update the pick team specific display elements
-            updatePickTeamDisplay();
             callback(null, data);
         }
     });
-}
-
-// Helper function to update the pick team display elements
-function updatePickTeamDisplay() {
-    // For pick team page, we don't need to update points displays
-    // This function can be used later for team selection status updates
-    console.log("Pick team display updated");
 }
 
 // Function to load the current gameweek from PlayFab Title Data
@@ -351,30 +224,6 @@ function submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTota
             }
         });
     });
-}
-
-// Test function to call the submission method
-function testLeaderboardSubmission() {
-    // Load players and gameweek from PlayFab to get points data
-    loadPlayersFromPlayFab(function (error, data) {
-        if (error) {
-            console.error("Failed to load player data:", error);
-        } else {
-            const { weeklyPointsTotal, cumulativePointsTotal } = data;
-            
-            console.log("Weekly points:", weeklyPointsTotal);
-            console.log("Cumulative points for leaderboard:", cumulativePointsTotal);
-            
-            // Submit the cumulative points to the leaderboard
-            submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTotal);
-        }
-    });
-}
-
-// Add event listener to the test button
-const testButton = document.getElementById('testLeaderboardBtn');
-if (testButton) {
-    testButton.addEventListener('click', testLeaderboardSubmission);
 }
 
 // Function to save team changes to PlayFab
@@ -554,17 +403,11 @@ function makePlayerCaptain(playerId) {
     
     console.log(`Player ${playerId} is now captain. Updated selectedPlayerIds:`, selectedPlayerIds);
     
-    // Reorder the players array to match the new selectedPlayerIds order
-    const reorderedPlayers = selectedPlayerIds.map(id => {
-        return dataCache.playerData.players.find(player => String(player.id) === String(id));
-    }).filter(player => player !== undefined);
-    
-    // Update the cached data with both new order and new players array
+    // Update only the selectedPlayerIds in cached data - keep original players array order
     dataCache.playerData.selectedPlayerIds = selectedPlayerIds;
-    dataCache.playerData.players = reorderedPlayers;
     
-    // Re-render the pitch to update the captain badge
-    renderPlayersOnPitch(reorderedPlayers, selectedPlayerIds);
+    // Re-render the pitch to update the captain badge (but keep player positions the same)
+    renderPlayersOnPitch(dataCache.playerData.players, selectedPlayerIds);
     
     console.log("Captain updated and pitch re-rendered");
 }
@@ -580,77 +423,135 @@ function startSubstituteMode(playerId) {
     window.substituteMode.selectedPlayerId = playerId;
     window.substituteMode.active = true;
     
-    // Find the selected player to determine if they're a substitute or outfield player
-    let selectedPlayer = null;
-    let isSelectedPlayerSub = false;
-    let selectedPlayerPosition = null;
-    
-    if (dataCache.playerData && dataCache.playerData.players) {
-        selectedPlayer = dataCache.playerData.players.find(p => 
-            String(p.id) === String(playerId)
-        );
-        
-        if (selectedPlayer) {
-            selectedPlayerPosition = selectedPlayer.position;
-            // Check if this player is in the substitutes (last 4 players)
-            const players = dataCache.playerData.players;
-            const substitutes = players.slice(-4);
-            isSelectedPlayerSub = substitutes.some(sub => String(sub.id) === String(playerId));
-        }
+    // Get the full team data to understand player positions
+    if (!dataCache.playerData || !dataCache.playerData.players) {
+        console.error("No player data available for substitution logic");
+        return;
     }
     
-    console.log(`Selected player is ${isSelectedPlayerSub ? 'substitute' : 'outfield player'} with position: ${selectedPlayerPosition}`);
+    const allPlayers = dataCache.playerData.players;
     
-    // Find and highlight/grey out players appropriately
+    // Split into starting 11 and bench (last 4 players)
+    const starting11 = allPlayers.slice(0, 11);
+    const bench = allPlayers.slice(11); // Last 4 players
+    
+    // Find the selected player and determine if they're in starting 11 or bench
+    const selectedPlayer = allPlayers.find(p => String(p.id) === String(playerId));
+    if (!selectedPlayer) {
+        console.error(`Could not find selected player with ID: ${playerId}`);
+        return;
+    }
+    
+    const isSelectedInStarting11 = starting11.some(p => String(p.id) === String(playerId));
+    const isSelectedOnBench = bench.some(p => String(p.id) === String(playerId));
+    
+    // Get all player cards on the pitch
     const playerCards = document.querySelectorAll('.player-card');
-    playerCards.forEach(card => {
+    
+    playerCards.forEach((card, index) => {
         // Remove any existing substitute highlighting and greying
         card.classList.remove('substitute-mode-selected', 'substitute-mode-greyed');
         
-        // Get the player name to find the corresponding player data
-        const playerName = card.querySelector('.player-name')?.textContent;
+        // Get the player ID from the data attribute instead of trying to match by name
+        const cardPlayerId = card.getAttribute('data-player-id');
+        if (!cardPlayerId) {
+            return;
+        }
         
-        if (dataCache.playerData && dataCache.playerData.players) {
-            const player = dataCache.playerData.players.find(p => p.name === playerName);
+        const cardPlayer = allPlayers.find(p => String(p.id) === String(cardPlayerId));
+        if (!cardPlayer) {
+            return;
+        }
+        
+        if (String(cardPlayer.id) === String(playerId)) {
+            // This is the selected player - highlight with blue outline
+            card.classList.add('substitute-mode-selected');
+        } else {
+            // This is not the selected player - apply substitution rules
+            const isCardInStarting11 = starting11.some(p => String(p.id) === String(cardPlayer.id));
+            const isCardOnBench = bench.some(p => String(p.id) === String(cardPlayer.id));
             
-            if (player) {
-                // Check if this card's player is a substitute
-                const players = dataCache.playerData.players;
-                const substitutes = players.slice(-4);
-                const isCardPlayerSub = substitutes.some(sub => String(sub.id) === String(player.id));
+            let shouldGreyOut = false;
+            
+            if (isSelectedInStarting11 && isCardInStarting11) {
+                // Selected starting player, card is also starting player - GREY OUT
+                shouldGreyOut = true;
+            } else if (isSelectedOnBench && isCardOnBench) {
+                // Selected bench player, card is also bench player - GREY OUT
+                shouldGreyOut = true;
+            } else {
+                // One is starting, one is bench - check substitution validity
+                const selectedIsGK = selectedPlayer.position === 'gk' || selectedPlayer.position === 'goalkeeper';
+                const cardIsGK = cardPlayer.position === 'gk' || cardPlayer.position === 'goalkeeper';
                 
-                if (String(player.id) === String(playerId)) {
-                    // This is the selected player - highlight with blue outline
-                    card.classList.add('substitute-mode-selected');
-                    console.log(`Highlighted player ${player.name} for substitution`);
+                if (selectedIsGK && !cardIsGK) {
+                    shouldGreyOut = true;
+                } else if (!selectedIsGK && cardIsGK) {
+                    shouldGreyOut = true;
                 } else {
-                    // This is not the selected player - check if we should grey it out
-                    let shouldGreyOut = false;
-                    
-                    // Rule 1: Players in the same category (outfield vs outfield, sub vs sub) are greyed out
-                    if (isSelectedPlayerSub && isCardPlayerSub) {
-                        shouldGreyOut = true; // Both are subs
-                    } else if (!isSelectedPlayerSub && !isCardPlayerSub) {
-                        shouldGreyOut = true; // Both are outfield
-                    }
-                    
-                    // Rule 2: Position compatibility - GK can only be subbed with GK
-                    if (!shouldGreyOut) {
-                        const isSelectedGK = selectedPlayerPosition === 'gk';
-                        const isCardGK = player.position === 'gk';
+                    // Check formation rules for outfield player substitutions
+                    if (!selectedIsGK && !cardIsGK) {
+                        // Count current positions in starting 11
+                        const currentFormation = {
+                            gk: 0,
+                            defender: 0,
+                            midfielder: 0,
+                            attacker: 0
+                        };
                         
-                        // If selected is GK but card is not GK, or vice versa, grey out
-                        if (isSelectedGK !== isCardGK) {
+                        starting11.forEach(p => {
+                            const pos = p.position.toLowerCase();
+                            if (pos === 'gk' || pos === 'goalkeeper') {
+                                currentFormation.gk++;
+                            } else if (pos === 'df' || pos === 'defender') {
+                                currentFormation.defender++;
+                            } else if (pos === 'md' || pos === 'midfielder') {
+                                currentFormation.midfielder++;
+                            } else if (pos === 'at' || pos === 'attacker') {
+                                currentFormation.attacker++;
+                            }
+                        });
+                        
+                        // Simulate the substitution to check if it would violate formation rules
+                        const selectedPos = selectedPlayer.position.toLowerCase();
+                        const cardPos = cardPlayer.position.toLowerCase();
+                        
+                        // Create a copy of the formation after the substitution
+                        const newFormation = { ...currentFormation };
+                        
+                        // Remove the selected player's position
+                        if (selectedPos === 'df' || selectedPos === 'defender') {
+                            newFormation.defender--;
+                        } else if (selectedPos === 'md' || selectedPos === 'midfielder') {
+                            newFormation.midfielder--;
+                        } else if (selectedPos === 'at' || selectedPos === 'attacker') {
+                            newFormation.attacker--;
+                        }
+                        
+                        // Add the card player's position
+                        if (cardPos === 'df' || cardPos === 'defender') {
+                            newFormation.defender++;
+                        } else if (cardPos === 'md' || cardPos === 'midfielder') {
+                            newFormation.midfielder++;
+                        } else if (cardPos === 'at' || cardPos === 'attacker') {
+                            newFormation.attacker++;
+                        }
+                        
+                        // Check if the new formation violates rules
+                        // Rules: 1 GK, at least 3 defenders, at least 1 attacker
+                        if (newFormation.gk !== 1) {
                             shouldGreyOut = true;
-                            console.log(`Position incompatible: ${selectedPlayerPosition} cannot be subbed with ${player.position}`);
+                        } else if (newFormation.defender < 3) {
+                            shouldGreyOut = true;
+                        } else if (newFormation.attacker < 1) {
+                            shouldGreyOut = true;
                         }
                     }
-                    
-                    if (shouldGreyOut) {
-                        card.classList.add('substitute-mode-greyed');
-                        console.log(`Greyed out ${player.name} (${player.position})`);
-                    }
                 }
+            }
+            
+            if (shouldGreyOut) {
+                card.classList.add('substitute-mode-greyed');
             }
         }
     });

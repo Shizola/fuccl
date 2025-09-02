@@ -171,7 +171,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Team loaded successfully for transfers page");
             // Store current team player IDs for filtering
             currentTeamPlayerIds = data.selectedPlayerIds || [];
-            console.log("Current team player IDs:", currentTeamPlayerIds);
+            
+            //console.log("Current team player IDs:", currentTeamPlayerIds);
             // Render the current team on the pitch
             renderPlayersOnPitch(data.players, data.selectedPlayerIds);
         }

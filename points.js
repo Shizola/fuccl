@@ -8,162 +8,78 @@ function isCacheValid() {
            (Date.now() - dataCache.lastFetch) < dataCache.CACHE_DURATION;
 }
 
-// Function to create a player card
+// Function to create a player card (using shared implementation)
 function createPlayerCard(player) {
+    // Use shared function from player-selection.js with 'points' context
+    if (typeof window.sharedCreatePlayerCard === 'function') {
+        return window.sharedCreatePlayerCard(player, 'points');
+    } else {
+        return createPlayerCardFallback(player);
+    }
+}
+
+// Fallback implementation in case shared function isn't loaded
+function createPlayerCardFallback(player) {
+    console.warn("Using fallback createPlayerCard - shared function not available");
     const card = document.createElement('div');
     card.className = 'player-card';
 
-    // Add player shirt image with lazy loading optimization
+    // Basic implementation for emergency fallback
     const shirtImg = document.createElement('img');
-    shirtImg.src = player.shirtImage;
+    shirtImg.src = player.shirtImage || 'images/shirts/template.svg';
     shirtImg.alt = `${player.name}'s Shirt`;
     shirtImg.className = 'player-shirt';
-    
-    // PERFORMANCE OPTIMIZATION: Add lazy loading for better performance
-    shirtImg.loading = 'lazy';
-    
-    // Add intersection observer for progressive loading if supported
-    if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.classList.add('loaded');
-                    observer.unobserve(img);
-                }
-            });
-        });
-        imageObserver.observe(shirtImg);
-    }
-
-    // Fallback to template.svg if the shirt image fails to load
-    shirtImg.onerror = function () {
-        this.src = 'images/shirts/template.svg';
-    };
-
     card.appendChild(shirtImg);
 
-    // Add player name
     const nameDiv = document.createElement('div');
     nameDiv.className = 'player-name';
     nameDiv.textContent = extractSurname(player.name);
     card.appendChild(nameDiv);
 
-    // Add player points - use weeklyPoints instead of total points
     const pointsDiv = document.createElement('div');
     pointsDiv.className = 'player-points';
-    // Display weekly points if available, otherwise fall back to total points
     const pointsToShow = player.weeklyPoints !== undefined ? player.weeklyPoints : player.points;
     pointsDiv.textContent = `${pointsToShow} pts`;
     card.appendChild(pointsDiv);
 
+    card.dataset.playerId = player.id;
+    card.dataset.playerName = player.name;
+
     return card;
 }
 
-// Function to render players on the pitch based on their position (optimized)
+// Function to render players on the pitch based on their position (using shared implementation)
 function renderPlayersOnPitch(players, selectedPlayerIds = []) {
-    console.log("renderPlayersOnPitch called with:");
-    console.log("- players:", players);
-    console.log("- selectedPlayerIds:", selectedPlayerIds);
-    console.log("- selectedPlayerIds type:", typeof selectedPlayerIds);
-    console.log("- selectedPlayerIds isArray:", Array.isArray(selectedPlayerIds));
-    console.log("- selectedPlayerIds length:", selectedPlayerIds ? selectedPlayerIds.length : 'undefined');
-    // Get the pitch container
+    // Use shared function from player-selection.js with 'points' context
+    if (typeof window.sharedRenderPlayersOnPitch === 'function') {
+        return window.sharedRenderPlayersOnPitch(players, selectedPlayerIds, 'points');
+    } else {
+        return renderPlayersOnPitchFallback(players, selectedPlayerIds);
+    }
+}
+
+// Fallback implementation in case shared function isn't loaded
+function renderPlayersOnPitchFallback(players, selectedPlayerIds = []) {
+    console.warn("Using fallback renderPlayersOnPitch - shared function not available");
+    
     const pitch = document.querySelector('.pitch');
     if (!pitch) {
         console.error("Pitch container not found - cannot render players");
         return;
     }
 
-    // Clear existing players
     pitch.innerHTML = '<img src="images/pitch.svg" alt="Football Pitch" class="pitch-image">';
-
-    // OPTIMIZATION: Use DocumentFragment for batch DOM operations
     const fragment = document.createDocumentFragment();
 
-    // Define vertical positions for each row, including substitutes
-    const positionStyles = {
-        gk: { top: '10%' },
-        df: { top: '30%' },
-        md: { top: '50%' },
-        at: { top: '70%' },
-        sb: { top: '90%' } // Substitutes row
-    };
-
-
-    // Group players by position
-    const positions = {
-        gk: [],
-        df: [],
-        md: [],
-        at: [],
-        sb: [] // Substitutes
-    };
-
-    // Position mapping from full names to abbreviations
-    const positionMapping = {
-        'goalkeeper': 'gk',
-        'defender': 'df',
-        'midfielder': 'md',
-        'attacker': 'at'
-    };
-
-    // Separate substitutes (last 4 players)
-    const substitutes = players.slice(-4);
-    const mainPlayers = players.slice(0, players.length - 4);
-
-    // Identify captain (first player in selectedPlayerIds if available)
-    const captainId = selectedPlayerIds.length > 0 ? selectedPlayerIds[0] : null;
-    console.log("Captain ID identified:", captainId);
-    console.log("Selected Player IDs:", selectedPlayerIds);
-
-    // Assign main players to their positions (with mapping)
-    mainPlayers.forEach(player => {
-        const mappedPosition = positionMapping[player.position] || player.position;
-        if (positions[mappedPosition]) {
-            positions[mappedPosition].push(player);
-        } else {
-            console.warn(`Unknown position: ${player.position} for player ${player.name}`);
-        }
+    // Basic fallback rendering
+    players.forEach((player, index) => {
+        const playerCard = createPlayerCard(player);
+        playerCard.style.position = 'absolute';
+        playerCard.style.top = '50%';
+        playerCard.style.left = `${(index + 1) * (100 / (players.length + 1))}%`;
+        fragment.appendChild(playerCard);
     });
 
-    // Assign substitutes to the 'sb' position
-    substitutes.forEach(player => {
-        positions.sb.push(player);
-    });
-
-    // Render players for each position
-    Object.keys(positions).forEach(position => {
-        const rowPlayers = positions[position];
-
-        rowPlayers.forEach((player, index) => {
-            const playerCard = createPlayerCard(player);
-
-            // Calculate dynamic left position to avoid overlap
-            const left = `${(index + 1) * (100 / (rowPlayers.length + 1))}%`;
-
-            // Apply inline styles for positioning
-            playerCard.style.position = 'absolute';
-            playerCard.style.top = positionStyles[position].top;
-            playerCard.style.left = left;
-
-            // Add substitute styling if this is a substitute
-            if (position === 'sb') {
-                playerCard.classList.add('substitute-player');
-            }
-
-            // Add captain styling if this is the captain
-            if (captainId && player.id && String(player.id) === String(captainId)) {
-                playerCard.classList.add('captain-player');
-                console.log(`Captain badge added to player: ${player.name} (ID: ${player.id})`);
-            }
-
-            // Add to fragment instead of DOM
-            fragment.appendChild(playerCard);
-        });
-    });
-
-    // Append all player cards at once to minimize layout thrashing
     pitch.appendChild(fragment);
 }
 
@@ -277,10 +193,7 @@ function submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTota
         }, function (result, error) {
             if (error) {
                 console.error("Error submitting weekly points to leaderboard:", error);
-                console.error("Error details:", JSON.stringify(error));
             } else {
-                console.log("Successfully submitted weekly points to leaderboard:", result);
-                
                 // 2. Store the team and manager info in a shared data location for leaderboard use
                 PlayFab.ClientApi.UpdateUserData({
                     Data: {
@@ -294,8 +207,6 @@ function submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTota
                 }, function(updateResult, updateError) {
                     if (updateError) {
                         console.error("Error storing leaderboard metadata:", updateError);
-                    } else {
-                        console.log("Successfully stored leaderboard metadata");
                     }
                 });
                 
@@ -305,8 +216,6 @@ function submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTota
                 }, function(displayResult, displayError) {
                     if (displayError) {
                         console.error("Error updating display name:", displayError);
-                    } else {
-                        console.log("Successfully updated display name to team name");
                     }
                 });
             }
@@ -322,9 +231,6 @@ function testLeaderboardSubmission() {
             console.error("Failed to load player data:", error);
         } else {
             const { weeklyPointsTotal, cumulativePointsTotal } = data;
-            
-            console.log("Weekly points:", weeklyPointsTotal);
-            console.log("Cumulative points for leaderboard:", cumulativePointsTotal);
             
             // Submit the cumulative points to the leaderboard
             submitWeeklyPointsToLeaderboard(weeklyPointsTotal, cumulativePointsTotal);
@@ -359,8 +265,6 @@ function cleanup() {
     dataCache.playerData = null;
     dataCache.gameWeek = null;
     dataCache.lastFetch = null;
-    
-    console.log("Memory cleanup completed");
 }
 
 // Add page visibility API to cleanup when tab is hidden
@@ -380,10 +284,7 @@ window.addEventListener('beforeunload', cleanup);
 
 // Initialize the points page when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Points page initialized");
-    
-    // Clear cache to force fresh data (temporary debug measure)
-    console.log("Clearing cache to force fresh data load");
+    // Clear cache to force fresh data load
     dataCache.playerData = null;
     dataCache.gameWeek = null;
     dataCache.lastFetch = 0;
@@ -408,11 +309,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             console.log("Players loaded successfully for points page");
-            console.log("Data received:", data);
-            console.log("Data keys:", Object.keys(data));
-            console.log("Selected Player IDs from data:", data.selectedPlayerIds);
-            console.log("Type of selectedPlayerIds:", typeof data.selectedPlayerIds);
-            console.log("Is array:", Array.isArray(data.selectedPlayerIds));
             renderPlayersOnPitch(data.players, data.selectedPlayerIds);
         }
     });

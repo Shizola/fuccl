@@ -82,7 +82,7 @@ function loadAllPlayers(callback) {
 // ========================================
 
 // Function to create a player card for the pitch
-function createPlayerCard(player) {
+function createPlayerCard(player, context = 'selection') {
     const card = document.createElement('div');
     card.className = 'player-card';
 
@@ -122,21 +122,102 @@ function createPlayerCard(player) {
     nameDiv.textContent = extractSurname(player.name);
     card.appendChild(nameDiv);
 
-    // Add player price
-    const priceDiv = document.createElement('div');
-    priceDiv.className = 'player-price';
+    // Add context-specific overlay
+    const overlayDiv = document.createElement('div');
+    
+    switch (context) {
+        case 'points':
+            overlayDiv.className = 'player-points';
+            // Display weekly points if available, otherwise fall back to total points
+            const pointsToShow = player.weeklyPoints !== undefined ? player.weeklyPoints : player.points;
+            overlayDiv.textContent = `${pointsToShow} pts`;
+            break;
+            
+        case 'team':
+            overlayDiv.className = 'player-position';
+            // Display the position (convert abbreviations to readable format)
+            const positionMap = {
+                'gk': 'GK',
+                'df': 'DEF', 
+                'md': 'MID',
+                'at': 'ATT'
+            };
+            
+            // Map position to CSS class for color coding
+            const positionClassMap = {
+                'gk': 'gk',
+                'df': 'def',
+                'md': 'mid',
+                'at': 'att'
+            };
+            
+            const displayPosition = positionMap[player.position] || player.position.toUpperCase();
+            const positionClass = positionClassMap[player.position] || '';
+            
+            overlayDiv.textContent = displayPosition;
+            
+            // Add position-specific class for color coding
+            if (positionClass) {
+                overlayDiv.classList.add(positionClass);
+            }
+            break;
+            
+        case 'selection':
+        default:
+            overlayDiv.className = 'player-price';
+            // Use actual player price from data
+            const playerPrice = player.price || '5.0'; // Default if no price available
+            overlayDiv.textContent = `£${playerPrice}m`;
+            break;
+    }
+    
+    card.appendChild(overlayDiv);
 
-    // Use actual player price from data
-    const playerPrice = player.price || '5.0'; // Default if no price available
-    priceDiv.textContent = `£${playerPrice}m`;
-
-    card.appendChild(priceDiv);
-
-    // Add click event listener to open modal
-    card.clickHandler = () => {
-        openPlayerModal(player);
-    };
-    card.addEventListener('click', card.clickHandler);
+    // Add context-specific click handlers
+    if (context === 'team') {
+        // Pick team page click handler
+        card.addEventListener('click', () => {
+            // Check if we're in substitute mode
+            if (window.substituteMode && window.substituteMode.active) {
+                // Check if this is the selected player (blue highlighted)
+                if (card.classList.contains('substitute-mode-selected')) {
+                    // Cancel substitute mode when clicking the highlighted player
+                    if (typeof cancelSubstituteMode === 'function') {
+                        cancelSubstituteMode();
+                    }
+                    return; // Don't open modal
+                }
+                
+                // If we're in substitute mode and clicked a substitute player, swap them
+                if (card.classList.contains('substitute-player')) {
+                    if (typeof performSubstitution === 'function') {
+                        performSubstitution(window.substituteMode.selectedPlayerId, player.id);
+                    }
+                    return; // Don't open modal
+                }
+                
+                // If we clicked a main player, perform substitution
+                if (typeof performSubstitution === 'function') {
+                    performSubstitution(window.substituteMode.selectedPlayerId, player.id);
+                }
+                return; // Don't open modal
+            }
+            
+            // Normal click behavior - open modal
+            if (typeof openPlayerModal === 'function') {
+                openPlayerModal(player);
+            }
+        });
+    } else if (context === 'selection') {
+        // Selection page click handler
+        card.clickHandler = () => {
+            if (typeof openPlayerModal === 'function') {
+                openPlayerModal(player);
+            }
+        };
+        card.addEventListener('click', card.clickHandler);
+    }
+    // Points page doesn't need click handlers (view-only)
 
     // Store player data on the card for later reference
     card.dataset.playerId = player.id;
@@ -145,12 +226,18 @@ function createPlayerCard(player) {
     return card;
 }
 
+// Make the shared createPlayerCard function globally accessible with a unique name
+window.sharedCreatePlayerCard = createPlayerCard;
+
+// Make the shared renderPlayersOnPitch function globally accessible
+window.sharedRenderPlayersOnPitch = renderPlayersOnPitch;
+
 // ========================================
 // PITCH RENDERING
 // ========================================
 
 // Function to render players on the pitch
-function renderPlayersOnPitch(players, selectedPlayerIds = []) {
+function renderPlayersOnPitch(players, selectedPlayerIds = [], context = 'selection') {
     // Get the pitch container
     const pitch = document.querySelector('.pitch');
     if (!pitch) {
@@ -164,32 +251,63 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
     // OPTIMIZATION: Use DocumentFragment for batch DOM operations
     const fragment = document.createDocumentFragment();
 
-    // Define vertical positions for each row
-    const positionStyles = {
-        goalkeeper: { top: '10%' },
-        defender: { top: '30%' },
-        midfielder: { top: '50%' },
-        attacker: { top: '70%' }
+    // Context-aware configuration
+    const config = getContextConfig(context);
+    
+    // Position mapping from full names to abbreviations
+    const positionMapping = {
+        'goalkeeper': 'gk',
+        'defender': 'df',
+        'midfielder': 'md',
+        'attacker': 'at'
     };
 
     // Group players by position
-    const positions = {
-        goalkeeper: [],
-        defender: [],
-        midfielder: [],
-        attacker: []
-    };
+    const positions = initializePositions(config.hasSubstitutes);
+    
+    // Handle substitutes if context supports them
+    let mainPlayers = players;
+    let substitutes = [];
+    
+    if (config.hasSubstitutes && players.length > 11) {
+        substitutes = players.slice(-4);
+        mainPlayers = players.slice(0, players.length - 4);
+    }
 
-    // Assign players to their positions
-    players.forEach(player => {
-        if (positions[player.position]) {
-            positions[player.position].push(player);
+    // Identify captain (first player in selectedPlayerIds if available)
+    const captainId = selectedPlayerIds.length > 0 ? selectedPlayerIds[0] : null;
+    
+    // Debug logging for points page
+    if (context === 'points') {
+        console.log("renderPlayersOnPitch called with:");
+        console.log("- players:", players);
+        console.log("- selectedPlayerIds:", selectedPlayerIds);
+        console.log("- Captain ID identified:", captainId);
+    }
+
+    // Assign main players to their positions
+    mainPlayers.forEach(player => {
+        const mappedPosition = positionMapping[player.position] || player.position;
+        const targetPosition = config.useAbbreviations ? mappedPosition : player.position;
+        
+        if (positions[targetPosition]) {
+            positions[targetPosition].push(player);
         } else {
-            console.warn('Unknown position for player:', player.name, player.position);
-            // Default to defender if position is unknown
-            positions.defender.push(player);
+            console.warn(`Unknown position: ${player.position} for player ${player.name}`);
+            // Default fallback
+            const fallbackPos = config.useAbbreviations ? 'df' : 'defender';
+            if (positions[fallbackPos]) {
+                positions[fallbackPos].push(player);
+            }
         }
     });
+
+    // Assign substitutes if applicable
+    if (config.hasSubstitutes) {
+        substitutes.forEach(player => {
+            positions.sb.push(player);
+        });
+    }
 
     // Render players for each position
     let slotCounter = 0;
@@ -197,18 +315,34 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
         const rowPlayers = positions[position];
 
         rowPlayers.forEach((player, index) => {
-            const playerCard = createPlayerCard(player);
-            // Assign slot index for tracking
-            playerCard.dataset.slotIndex = slotCounter;
-            slotCounter++;
+            const playerCard = createPlayerCard(player, context);
+            
+            // Add slot index for selection context
+            if (context === 'selection') {
+                playerCard.dataset.slotIndex = slotCounter;
+                slotCounter++;
+            }
 
             // Calculate dynamic left position to avoid overlap
             const left = `${(index + 1) * (100 / (rowPlayers.length + 1))}%`;
 
             // Apply inline styles for positioning
             playerCard.style.position = 'absolute';
-            playerCard.style.top = positionStyles[position].top;
+            playerCard.style.top = config.positionStyles[position].top;
             playerCard.style.left = left;
+
+            // Add context-specific styling
+            if (config.hasSubstitutes && position === 'sb') {
+                playerCard.classList.add('substitute-player');
+            }
+
+            // Add captain styling if this is the captain
+            if (captainId && player.id && String(player.id) === String(captainId)) {
+                playerCard.classList.add('captain-player');
+                if (context === 'points') {
+                    console.log(`Captain badge added to player: ${player.name} (ID: ${player.id})`);
+                }
+            }
 
             // Add to fragment instead of DOM
             fragment.appendChild(playerCard);
@@ -217,6 +351,57 @@ function renderPlayersOnPitch(players, selectedPlayerIds = []) {
 
     // Append all player cards at once to minimize layout thrashing
     pitch.appendChild(fragment);
+}
+
+// Helper function to get context-specific configuration
+function getContextConfig(context) {
+    switch (context) {
+        case 'selection':
+            return {
+                hasSubstitutes: false,
+                useAbbreviations: false,
+                positionStyles: {
+                    goalkeeper: { top: '10%' },
+                    defender: { top: '30%' },
+                    midfielder: { top: '50%' },
+                    attacker: { top: '70%' }
+                }
+            };
+        case 'team':
+        case 'points':
+        default:
+            return {
+                hasSubstitutes: true,
+                useAbbreviations: true,
+                positionStyles: {
+                    gk: { top: '10%' },
+                    df: { top: '30%' },
+                    md: { top: '50%' },
+                    at: { top: '70%' },
+                    sb: { top: '90%' } // Substitutes row
+                }
+            };
+    }
+}
+
+// Helper function to initialize position groups
+function initializePositions(hasSubstitutes) {
+    if (hasSubstitutes) {
+        return {
+            gk: [],
+            df: [],
+            md: [],
+            at: [],
+            sb: [] // Substitutes
+        };
+    } else {
+        return {
+            goalkeeper: [],
+            defender: [],
+            midfielder: [],
+            attacker: []
+        };
+    }
 }
 
 // ========================================

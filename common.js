@@ -6,7 +6,7 @@ console.log("PlayFab Title ID set to:", PlayFab.settings.titleId);
 // DEBUG MODE CONFIGURATION
 // Set to true to disable redirect logic for testing
 // ========================================
-const DEBUG_MODE = true; // Set to true to test both create-team and transfers pages
+const DEBUG_MODE = false; // Set to true to test both create-team and transfers pages
 
 /* ========================================
    SHARED DATA CACHE AND UTILITIES
@@ -52,7 +52,7 @@ function calculateWeeklyPoints(playerDataString, gameWeek) {
         const pointsArray = parts[4].split(','); // Weekly points are stored as a comma-separated string
 
         // Log the points array for debugging
-        console.log(`Points Array for Gameweek ${gameWeek}:`, pointsArray);
+        //console.log(`Points Array for Gameweek ${gameWeek}:`, pointsArray);
 
         // Return the points for the current gameweek (1-based index)
         return parseInt(pointsArray[gameWeek - 1] || 0);
@@ -69,7 +69,7 @@ function calculateTotalPointsUpToCurrentWeek(playerDataString, currentGameWeek) 
         const pointsArray = parts[4].split(','); // Weekly points are stored as a comma-separated string
         
         // Log the points array for debugging
-        console.log(`Points Array up to Gameweek ${currentGameWeek}:`, pointsArray);
+        //console.log(`Points Array up to Gameweek ${currentGameWeek}:`, pointsArray);
         
         // Sum up points for all weeks up to the current gameweek
         let totalPoints = 0;
@@ -78,10 +78,10 @@ function calculateTotalPointsUpToCurrentWeek(playerDataString, currentGameWeek) 
             const weeklyPoints = parseInt(pointsArray[week] || 0);
             totalPoints += weeklyPoints;
             
-            console.log(`Week ${week + 1}: ${weeklyPoints} points`);
+            //console.log(`Week ${week + 1}: ${weeklyPoints} points`);
         }
         
-        console.log(`Total accumulated points up to week ${currentGameWeek}: ${totalPoints}`);
+        //console.log(`Total accumulated points up to week ${currentGameWeek}: ${totalPoints}`);
         return totalPoints;
     } catch (error) {
         console.error("Error calculating total points:", error, "Player Data:", playerDataString);
@@ -162,15 +162,13 @@ function parsePlayerData(playerDataString) {
 function loadSharedPlayersFromPlayFab(callback) {
     // Check cache first
     if (isSharedCacheValid()) {
-        console.log("Using shared cached data");
-        
         // Return cached data
         const cachedData = sharedDataCache.playerData;
         callback(null, cachedData);
         return;
     }
 
-    console.log("Shared cache miss - fetching fresh data");
+    // Cache miss - fetch fresh data
     
     // Fetch user data to get the selectedPlayers key
     PlayFab.ClientApi.GetUserData({}, function (result, error) {
@@ -190,7 +188,6 @@ function loadSharedPlayersFromPlayFab(callback) {
             try {
                 // Parse the JSON string into an array
                 selectedPlayerIds = JSON.parse(selectedPlayersString);
-                console.log("Parsed selectedPlayerIds:", selectedPlayerIds);
             } catch (e) {
                 console.error("Error parsing selectedPlayersString:", e);
                 callback("Error parsing selectedPlayersString", null);
@@ -200,8 +197,6 @@ function loadSharedPlayersFromPlayFab(callback) {
             // OPTIMIZATION: Batch all title data requests into a single API call
             const titleDataKeys = selectedPlayerIds.map(id => `player_${id}`);
             titleDataKeys.push("gameWeek"); // Add gameWeek to the keys to fetch it in the same API call
-
-            console.log(`Fetching ${titleDataKeys.length} keys in single API call:`, titleDataKeys);
 
             // Single API call to fetch all player data + gameweek
             PlayFab.ClientApi.GetTitleData({ Keys: titleDataKeys }, function (titleDataResult, titleDataError) {
@@ -245,17 +240,12 @@ function loadSharedPlayersFromPlayFab(callback) {
                                 player.cumulativePoints = cumulativePoints;
                                 cumulativePointsTotal += cumulativePoints;
                                 
-                                console.log(`Player ${player.name}: Week ${gameWeek} points = ${weeklyPoints}, Cumulative = ${cumulativePoints}`);
-                                
                                 return player;
                             } else {
                                 console.warn(`No data found for player ID: ${id}`);
                                 return null;
                             }
                         }).filter(player => player !== null); // Filter out any null values
-
-                        // Log the total cumulative points for leaderboard
-                        console.log(`Team total cumulative points: ${cumulativePointsTotal} (across all ${gameWeek} weeks)`);
 
                         // Prepare data for response
                         const responseData = {
@@ -305,8 +295,6 @@ function cleanupSharedResources() {
     sharedDataCache.playerData = null;
     sharedDataCache.gameWeek = null;
     sharedDataCache.lastFetch = null;
-    
-    console.log("Shared memory cleanup completed");
 }
 
 // Add page visibility API to cleanup when tab is hidden
@@ -328,11 +316,9 @@ window.addEventListener('beforeunload', cleanupSharedResources);
 function setupPlayFabAuth() {
     const sessionTicket = localStorage.getItem("sessionTicket");
     if (sessionTicket) {
-        console.log("Found session ticket, setting up authentication");
         PlayFab._internalSettings.sessionTicket = sessionTicket;
         return true;
     }
-    console.log("No session ticket found");
     return false;
 }
 
