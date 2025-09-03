@@ -274,6 +274,31 @@ function confirmSquad() {
     saveDraftTeam();
 }
 
+// Function to show reset confirmation modal
+function showResetConfirmationModal() {
+    const resetConfirmationModal = document.getElementById('resetConfirmationModal');
+    if (resetConfirmationModal) {
+        resetConfirmationModal.showModal();
+    }
+}
+
+// Function to close reset confirmation modal
+function closeResetConfirmationModal() {
+    const resetConfirmationModal = document.getElementById('resetConfirmationModal');
+    if (resetConfirmationModal) {
+        resetConfirmationModal.close();
+    }
+}
+
+// Function to handle reset confirmation
+function confirmReset() {
+    // Close reset confirmation modal
+    closeResetConfirmationModal();
+    
+    // Execute the actual reset
+    resetDraft();
+}
+
 // Function to handle draft team submission
 function handleCreateTeamSubmit(event) {
     event.preventDefault();
@@ -841,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (resetBtn) {
-        resetBtn.addEventListener('click', resetDraft);
+        resetBtn.addEventListener('click', showResetConfirmationModal);
     }
 
     if (autoCompleteBtn) {
@@ -943,6 +968,33 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmationModal.addEventListener('click', function(event) {
             if (event.target === confirmationModal) {
                 closeConfirmationModal();
+            }
+        });
+    }
+
+    // Setup reset confirmation modal listeners
+    const closeResetConfirmationModalBtn = document.getElementById('closeResetConfirmationModal');
+    const cancelResetBtn = document.getElementById('cancelResetBtn');
+    const confirmResetBtn = document.getElementById('confirmResetBtn');
+    
+    if (closeResetConfirmationModalBtn) {
+        closeResetConfirmationModalBtn.addEventListener('click', closeResetConfirmationModal);
+    }
+    
+    if (cancelResetBtn) {
+        cancelResetBtn.addEventListener('click', closeResetConfirmationModal);
+    }
+    
+    if (confirmResetBtn) {
+        confirmResetBtn.addEventListener('click', confirmReset);
+    }
+
+    // Close reset confirmation modal when clicking outside
+    const resetConfirmationModal = document.getElementById('resetConfirmationModal');
+    if (resetConfirmationModal) {
+        resetConfirmationModal.addEventListener('click', function(event) {
+            if (event.target === resetConfirmationModal) {
+                closeResetConfirmationModal();
             }
         });
     }

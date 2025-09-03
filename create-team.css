@@ -170,6 +170,24 @@ nav button {
     max-width: 600px;
 }
 
+/* Reset confirmation modal - Draft Team specific */
+#resetConfirmationModal article {
+    max-width: 600px;
+}
+
+#resetConfirmationModal header h3 {
+    color: #dc3545; /* Warning color for reset action */
+}
+
+#resetConfirmationModal .confirmation-content {
+    background: #fff3cd; /* Warning background */
+    border: 1px solid #ffeaa7;
+}
+
+#resetConfirmationModal .confirmation-note {
+    color: #856404; /* Warning text color */
+}
+
 .confirmation-content {
     background: #d1e7dd;
     border: 1px solid #badbcc;
