@@ -151,9 +151,9 @@ nav button {
     box-shadow: 0 0 10px rgba(8, 124, 196, 0.5);
 }
 
-/* Player Price overlay - Shared across all pages */
-.player-price {
-    background-color: #087cc4; /* Blue background to match player-points */
+/* Player Position overlay - Shared across all pages */
+.player-position {
+    background-color: #087cc4; /* Blue background to match player-price */
     color: white;
     font-size: 8px;
     padding: 0px 0;
@@ -175,7 +175,7 @@ nav button {
     width: 100%;
     max-height: 60px;
     object-fit: contain;
-    background: transparent;
+    background: white;
     opacity: 0.7;
     transition: opacity 0.3s ease-in-out;
 }
@@ -421,6 +421,11 @@ nav button {
         font-size: 6px;
         height: 10px;
     }
+
+    .player-position {
+        font-size: 6px;
+        height: 10px;
+    }
 }
 
 /* Tablet screens (611px to 900px) */
@@ -456,6 +461,10 @@ nav button {
     .player-price {
         font-size: 7px;
     }
+
+    .player-position {
+        font-size: 7px;
+    }
 }
 
 /* Desktop screens (901px and above) */
@@ -489,6 +498,11 @@ nav button {
     }
 
     .player-price {
+        font-size: 10px;
+        height: 14px;
+    }
+
+    .player-position {
         font-size: 10px;
         height: 14px;
     }
