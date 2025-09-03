@@ -175,6 +175,25 @@
             </article>
         </dialog>
 
+        <!-- Reset Confirmation Modal -->
+        <dialog id="resetConfirmationModal">
+            <article>
+                <header>
+                    <h3>Reset Team</h3>
+                    <button aria-label="Close" rel="prev" id="closeResetConfirmationModal"></button>
+                </header>
+                <main>
+                    <div class="confirmation-content">
+                        <p class="confirmation-note">Are you sure you want to reset your entire team? This will clear all selected players, team name, and manager name. This action cannot be undone.</p>
+                    </div>
+                </main>
+                <footer>
+                    <button class="secondary" id="cancelResetBtn">Cancel</button>
+                    <button id="confirmResetBtn">Reset Team</button>
+                </footer>
+            </article>
+        </dialog>
+
     </main>
 
     <!-- PlayFab SDK -->
