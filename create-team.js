@@ -147,7 +147,7 @@ function validateSquadRules() {
     draftSelectedPlayers.forEach(playerId => {
         const player = allPlayersCache.find(p => p.id === playerId);
         if (player) {
-            clubCounts[player.teamName] = (clubCounts[player.teamName] || 0) + 1;
+            clubCounts[player.team] = (clubCounts[player.team] || 0) + 1;
         }
     });
 
@@ -586,8 +586,6 @@ function autoPickTeam() {
 
 // Override the shared selectPlayerFromTeam function for draft-specific logic
 function selectPlayerFromTeam(player) {
-    console.log('Selected player:', player.name, 'Price:', player.price, 'Points:', player.points);
-
     // Check if player is already selected
     if (draftSelectedPlayers.includes(player.id)) {
         console.log('Player already selected, ignoring');
@@ -595,172 +593,55 @@ function selectPlayerFromTeam(player) {
         return;
     }
 
-    // Add player to draft (allow going over budget so user can see full team and reallocate)
+    // Add player to draft state
     draftSelectedPlayers.push(player.id);
     selectedPlayerCount++;
     teamBudget -= player.price;
-
-    console.log(`Added ${player.name} to draft for £${player.price}m`);
 
     // Update the slot visually
     if (currentTransferSlot) {
         addPlayerToSlot(currentTransferSlot, player);
     }
 
+    // Update budget display and button states
     updateDraftDisplay();
 
-    // Close the modal and clear any stale modal data
+    // Close the selection modal
     closePlayerSelectionModal();
-    
-    // Clear any stale player modal data to prevent it from reopening
-    const playerModal = document.getElementById('playerModal');
-    if (playerModal) {
-        playerModal.dataset.playerId = '';
-        playerModal.removeAttribute('data-player-id');
-    }
 }
 
 // Function to handle selling a player from the draft team
 function sellPlayer(playerId) {
-    console.log('sellPlayer called with playerId:', playerId);
-    
-    // Track when sell operation starts
-    window.lastSellOperation = Date.now();
+    // Immediately close the modal
+    closePlayerModal();
 
-    // Find the player in the cache
     const player = allPlayersCache.find(p => p.id === playerId);
     if (!player) {
         console.error('Player not found in cache:', playerId);
-        closePlayerModal();
         return;
     }
 
-    console.log('Found player:', player.name, 'position:', player.position);
-
-    // Remove player from draft
     const playerIndex = window.draftSelectedPlayers.indexOf(playerId);
     if (playerIndex > -1) {
+        // Update state
         window.draftSelectedPlayers.splice(playerIndex, 1);
         selectedPlayerCount--;
-        teamBudget += player.price; // Add money back to budget
+        teamBudget += player.price;
 
-        console.log(`Sold ${player.name} for £${player.price}m`);
-
-        // Find and update the player card to become an empty slot
+        // Find the card in the DOM
         const playerCard = document.querySelector(`[data-player-id="${playerId}"]`);
         if (playerCard) {
-            console.log('Found player card, converting to empty slot');
-
-            // Remove old click handler first to prevent any interference
-            if (playerCard.clickHandler) {
-                playerCard.removeEventListener('click', playerCard.clickHandler);
-                playerCard.clickHandler = null;
-                console.log('Removed old click handler');
-            }
-
-            // Store reference for delayed conversion
-            window.pendingEmptySlotConversion = {
-                playerCard: playerCard,
-                playerId: playerId
-            };
+            // Replace the player card with a new, functional empty slot
+            createEmptySlot(playerCard, playerId, true);
         } else {
             console.error('Player card not found for playerId:', playerId);
         }
 
+        // Update the UI
         updateDraftDisplay();
     } else {
         console.error('Player not found in draftSelectedPlayers:', playerId);
     }
-
-    // Close the player modal immediately and clear all modal data
-    console.log('About to close player modal');
-    closePlayerModal();
-    
-    // Clear any stale modal data to prevent reopening issues
-    const playerModal = document.getElementById('playerModal');
-    if (playerModal) {
-        playerModal.dataset.playerId = '';
-        playerModal.removeAttribute('data-player-id');
-        // Clear any other modal attributes
-        Object.keys(playerModal.dataset).forEach(key => {
-            delete playerModal.dataset[key];
-        });
-    }
-    
-    console.log('sellPlayer function completed');
-
-    // Add a small delay to ensure modal is fully closed and cleared
-    setTimeout(() => {
-        // Double-check that the modal is closed and remove any lingering event handlers
-        const modal = document.getElementById('playerModal');
-        if (modal && modal.open) {
-            console.log('Modal still open, forcing close');
-            modal.close();
-        }
-        
-        // Now handle the pending empty slot conversion
-        if (window.pendingEmptySlotConversion) {
-            const { playerCard, playerId } = window.pendingEmptySlotConversion;
-            console.log('Converting player card to empty slot after modal close');
-            
-            // Create empty slot without click handler - this returns a new element
-            const newEmptySlot = createEmptySlot(playerCard, playerId, false);
-            
-            // Set up click handler manually after another delay
-            setTimeout(() => {
-                // Determine position based on card location
-                let position = 'DF'; // Default
-                const cardTop = newEmptySlot.style.top;
-                if (cardTop === '10%') position = 'GK';
-                else if (cardTop === '30%') position = 'DF';
-                else if (cardTop === '50%') position = 'MD';
-                else if (cardTop === '70%') position = 'AT';
-                else if (cardTop === '90%') position = 'SUB';
-
-                console.log('Setting up delayed click handler for position:', position);
-                
-                // Add a flag to prevent immediate clicks
-                let justSetUp = true;
-                setTimeout(() => { justSetUp = false; }, 50);
-                
-                newEmptySlot.clickHandler = (event) => {
-                    // Check if this is a real user-initiated event
-                    if (!event.isTrusted) {
-                        console.log('Blocking programmatic click event');
-                        event.preventDefault();
-                        event.stopPropagation();
-                        return false;
-                    }
-                    
-                    if (justSetUp) {
-                        console.log('Blocking click - handler was just set up');
-                        event.preventDefault();
-                        event.stopPropagation();
-                        return false;
-                    }
-                    
-                    // Check if there was a sell operation recently (more specific than general user action)
-                    const now = Date.now();
-                    const timeSinceSell = now - (window.lastSellOperation || 0);
-                    
-                    if (timeSinceSell < 1000) {
-                        console.log('Blocking click - too soon after sell operation');
-                        event.preventDefault();
-                        event.stopPropagation();
-                        return false;
-                    }
-                    
-                    console.log('Empty slot clicked by user for position:', position);
-                    currentTransferSlot = newEmptySlot;
-                    openTeamSelectionModal(position);
-                };
-                newEmptySlot.addEventListener('click', newEmptySlot.clickHandler);
-                console.log('Delayed click handler set up successfully');
-            }, 200);
-            
-            window.pendingEmptySlotConversion = null; // Clear the pending conversion
-        }
-    }, 100);
 }
 
 // Override openPlayerSelectionModal to exclude already selected players
@@ -797,6 +678,32 @@ function openPlayerSelectionModal(teamName, position) {
         console.log(`Opened player selection modal for ${teamName} ${position}, excluding ${draftSelectedPlayers.length} players`);
     } else {
         console.error('Player selection modal elements not found');
+    }
+}
+
+// Function to set up draft-specific modal listeners
+function setupDraftModalListeners() {
+    const selectBtn = document.getElementById('selectPlayerBtn');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const modal = document.getElementById('playerModal');
+            const playerId = modal.dataset.playerId; // Get current player ID at time of click
+
+            if (playerId) {
+                if (selectBtn.textContent === 'Sell Player') {
+                    sellPlayer(playerId);
+                } else if (selectBtn.textContent === 'Select Player') {
+                    const player = allPlayersCache.find(p => p.id === playerId);
+                    if (player) {
+                        selectPlayerFromTeam(player);
+                        closePlayerModal(); // Close after selection
+                    }
+                }
+            }
+        });
     }
 }
 
@@ -852,51 +759,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSharedModalListeners();
 
     // Setup draft-specific modal listeners
-    const selectBtn = document.getElementById('selectPlayerBtn');
-    if (selectBtn) {
-        selectBtn.addEventListener('click', function(event) {
-            // Prevent event propagation to avoid any interference
-            event.preventDefault();
-            event.stopPropagation();
-
-            const modal = document.getElementById('playerModal');
-            const playerId = modal.dataset.playerId;
-            if (playerId) {
-                console.log('Button clicked, playerId:', playerId, 'button text:', selectBtn.textContent);
-                // Check button text to determine action
-                if (selectBtn.textContent === 'Sell Player') {
-                    console.log('Sell Player button clicked for playerId:', playerId);
-                    sellPlayer(playerId);
-                    // Prevent any further event handling
-                    return false;
-                } else if (selectBtn.textContent === 'Select Player') {
-                    console.log('Select Player button clicked for playerId:', playerId);
-                    // For selecting a player from the player info modal
-                    const player = allPlayersCache.find(p => p.id === playerId);
-                    if (player) {
-                        // Add player to draft
-                        if (!draftSelectedPlayers.includes(player.id)) {
-                            draftSelectedPlayers.push(player.id);
-                            selectedPlayerCount++;
-                            teamBudget -= player.price;
-
-                            console.log(`Added ${player.name} to draft for £${player.price}m`);
-
-                            // Update the slot visually
-                            if (currentTransferSlot) {
-                                addPlayerToSlot(currentTransferSlot, player);
-                            }
-
-                            updateDraftDisplay();
-                        }
-
-                        // Close the player modal
-                        closePlayerModal();
-                    }
-                }
-            }
-        });
-    }
+    setupDraftModalListeners();
 
     // Setup error modal listeners
     const closeErrorBtn = document.getElementById('closeErrorBtn');
