@@ -169,6 +169,38 @@
             </article>
         </dialog>
 
+        <!-- Confirm Transfers Modal -->
+        <dialog id="confirmTransfersModal">
+            <article>
+                <header>
+                    <h3>Confirm Transfers</h3>
+                </header>
+                <main>
+                    <p id="noChangesMessage" style="display:none;">No changes have been made to your squad.</p>
+                    <div id="transfersSummary" class="transfers-summary" style="display:none;">
+                        <h4>Changes</h4>
+                        <div class="transfers-lists">
+                            <div class="transfers-out">
+                                <h5>Out</h5>
+                                <ul id="transfersOutList"></ul>
+                            </div>
+                            <div class="transfers-in">
+                                <h5>In</h5>
+                                <ul id="transfersInList"></ul>
+                            </div>
+                        </div>
+                        <div class="transfer-cost-summary">
+                            <p><strong>Points Cost:</strong> <span id="pointsCost"></span> pts</p>
+                        </div>
+                    </div>
+                </main>
+                <footer>
+                    <button class="secondary" id="cancelConfirmTransfersBtn">Cancel</button>
+                    <button class="success" id="confirmTransfersExecuteBtn">Confirm</button>
+                </footer>
+            </article>
+        </dialog>
+
     </main>
 
     <!-- PlayFab SDK -->

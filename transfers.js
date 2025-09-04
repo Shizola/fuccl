@@ -61,8 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             console.log("Team loaded successfully for transfers page");
-            // Store current team player IDs for filtering
+            // Store current team player IDs for filtering and snapshot original squad & captain
             currentTeamPlayerIds = data.selectedPlayerIds || [];
+            window.originalTeamPlayerIds = [...currentTeamPlayerIds];
+            window.originalCaptainId = data.captainId || null;
             
             // Calculate the actual remaining budget based on current team
             let initialBudget = 100.0;
@@ -105,7 +107,45 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up confirm transfers button
     const confirmTransfersBtn = document.getElementById('confirmTransfersBtn');
     if (confirmTransfersBtn) {
-        confirmTransfersBtn.addEventListener('click', handleSubmit);
+        // Override click: run validation then open confirmation modal
+        confirmTransfersBtn.addEventListener('click', function(e){
+            e.preventDefault();
+            // Run validation from shared handleSubmit logic but intercept
+            if (typeof pageContext !== 'undefined') {
+                // Reuse validation part of handleSubmit by replicating necessary logic minimally
+                // We'll manually perform the same validation steps present in handleSubmit
+                const errors = [];
+                if (tempBudget < 0) {
+                    errors.push(`Your squad budget has been exceeded by £${Math.abs(tempBudget).toFixed(1)}m. Please remove some players or select cheaper alternatives.`);
+                }
+                const players = tempSelectedPlayers.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
+                const positionCounts = {
+                    goalkeeper: players.filter(p => p.position === 'goalkeeper').length,
+                    defender: players.filter(p => p.position === 'defender').length,
+                    midfielder: players.filter(p => p.position === 'midfielder').length,
+                    attacker: players.filter(p => p.position === 'attacker').length
+                };
+                if (positionCounts.goalkeeper < 2) errors.push('You need at least 2 goalkeepers (1 starting + 1 substitute).');
+                if (positionCounts.defender < 5) errors.push('You need at least 5 defenders (4 starting + 1 substitute).');
+                if (positionCounts.midfielder < 5) errors.push('You need at least 5 midfielders (4 starting + 1 substitute).');
+                if (positionCounts.attacker < 3) errors.push('You need at least 3 attackers (2 starting + 1 substitute).');
+                const clubCounts = {};
+                tempSelectedPlayers.forEach(playerId => {
+                    const player = allPlayersCache.find(p => p.id === playerId);
+                    if (player) {
+                        clubCounts[player.teamName] = (clubCounts[player.teamName] || 0) + 1;
+                    }
+                });
+                for (const [clubName, count] of Object.entries(clubCounts)) {
+                    if (count > 3) errors.push(`You have ${count} players from ${clubName}. The maximum allowed is 3 players per club.`);
+                }
+                if (errors.length) {
+                    showErrorModal(errors);
+                    return;
+                }
+            }
+            openTransfersConfirmation();
+        });
         // Enable button if transfers have been made
         confirmTransfersBtn.disabled = tempTransfersMade === 0;
     }
@@ -146,7 +186,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add function to update transfers display (mimicking updateDraftDisplay from create-team.js)
     function updateTransfersDisplay() {
-        const TOTAL_PLAYERS = 15;
+    const TOTAL_PLAYERS = 15;
+
+    // Calculate dynamic transfer metrics via set differences
+    const originalSet = new Set(window.originalTeamPlayerIds || []);
+    const currentSet = new Set(tempSelectedPlayers);
+
+    // Players added (in current but not in original)
+    const added = [...currentSet].filter(id => !originalSet.has(id));
+    // Players removed (in original but not in current)
+    const removed = [...originalSet].filter(id => !currentSet.has(id));
+    // Effective transfers is max of added vs removed (handles slot experimentation)
+    const effectiveTransfers = Math.max(added.length, removed.length);
+    window.effectiveTransfers = effectiveTransfers; // expose for debugging
 
         // Budget: if HTML already wraps the span with £ and m, only inject the number
         const budgetElement = document.getElementById('teamBudget');
@@ -171,6 +223,17 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 playersTotalEl.textContent = TOTAL_PLAYERS;
             }
+
+            // Apply success (green) when full squad, error (red) otherwise
+            const playersBox = playersCountEl.closest('.players-selected');
+            if (playersBox) {
+                playersBox.classList.remove('status-success', 'status-error');
+                if (tempSelectedPlayers.length === TOTAL_PLAYERS) {
+                    playersBox.classList.add('status-success');
+                } else {
+                    playersBox.classList.add('status-error');
+                }
+            }
         } else {
             // Fallback: single element (ensure NO extra /15 added here)
             const legacyPlayersEl = document.getElementById('playersSelected');
@@ -183,7 +246,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const freeTransfersBox = document.querySelector('.free-transfers');
         const freeTransfersValueEl = document.getElementById('freeTransfers');
         if (freeTransfersBox && freeTransfersValueEl) {
-            const freeTransfersRemaining = Math.max(0, initialFreeTransfers - tempTransfersMade);
+            const currentFreePool = (typeof window.initialFreeTransfers === 'number') ? window.initialFreeTransfers : initialFreeTransfers;
+            const freeTransfersRemaining = Math.max(0, currentFreePool - effectiveTransfers);
             freeTransfersValueEl.textContent = freeTransfersRemaining;
             freeTransfersBox.classList.remove('status-success', 'status-warning', 'status-neutral');
             freeTransfersBox.classList.add(freeTransfersRemaining > 0 ? 'status-neutral' : 'status-warning');
@@ -193,15 +257,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const costBox = document.querySelector('.cost-status');
         const costValueEl = document.getElementById('transferCost');
         if (costBox && costValueEl) {
-            const paidTransfers = Math.max(0, tempTransfersMade - initialFreeTransfers);
+            const paidTransfers = Math.max(0, effectiveTransfers - initialFreeTransfers);
             const cost = paidTransfers * 4;
             costValueEl.textContent = cost;
             costBox.classList.remove('status-success', 'status-warning', 'status-neutral');
             costBox.classList.add(cost === 0 ? 'status-neutral' : 'status-warning');
         }
 
-        const confirmBtn = document.getElementById('confirmTransfersBtn');
-        if (confirmBtn) confirmBtn.disabled = tempTransfersMade === 0;
+    const confirmBtn = document.getElementById('confirmTransfersBtn');
+    if (confirmBtn) confirmBtn.disabled = effectiveTransfers === 0;
         // Shared auto pick button update
         if (typeof updateAutoPickButtons === 'function') {
             updateAutoPickButtons();
@@ -211,21 +275,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // Expose if needed
     window.updateTransfersDisplay = updateTransfersDisplay;
 
+    // Sync helper to be called after successful saveTransfers to refresh display using updated global free transfers
+    window.syncFreeTransfers = function() {
+        // Re-run display update; it will read window.initialFreeTransfers
+        updateTransfersDisplay();
+    };
+
     // Add reset transfers function (adapted from resetDraft in create-team.js)
     function resetTransfers() {
-        // Reset temp state to original
-        tempSelectedPlayers = [...currentTeamPlayerIds];
-        tempBudget = 100.0; // Reset to initial budget
-        tempTransfersMade = 0;
+        console.log('Resetting transfers to original snapshot');
+        if (!window.originalTeamPlayerIds) {
+            console.warn('No original snapshot found; aborting reset');
+            return;
+        }
 
-        // Re-render the pitch with original team
-        loadSharedPlayersFromPlayFab(function(error, data) {
-            if (!error) {
-                renderPlayersOnPitch(data.players, data.selectedPlayerIds, 'selection', data.captainId);
-            }
+        // Restore selected players to original snapshot
+        tempSelectedPlayers = [...window.originalTeamPlayerIds];
+        currentTeamPlayerIds = [...window.originalTeamPlayerIds];
+
+        // Recompute remaining budget based on original squad prices
+        if (!allPlayersCache) {
+            console.warn('Player cache not ready; attempting to load before reset render');
+            loadAllPlayers(function() {
+                resetTransfers(); // retry after cache loads
+            });
+            return;
+        }
+
+        const initialBudget = 100.0;
+        let squadCost = 0;
+        tempSelectedPlayers.forEach(id => {
+            const p = allPlayersCache.find(pl => pl.id === id);
+            if (p && p.price) squadCost += p.price;
         });
+        tempBudget = +(initialBudget - squadCost).toFixed(1);
 
+        // Zero any pending effective transfer cost by restoring snapshot
+        tempTransfersMade = 0; // legacy var
+        window.effectiveTransfers = 0;
+
+        // Restore free transfers display from initial loaded value
+        if (typeof window.initialFreeTransfers === 'number') {
+            // nothing to change; just use existing initialFreeTransfers
+        }
+
+        // Re-render pitch using cached players in same order as original snapshot
+        const orderedPlayers = tempSelectedPlayers
+            .map(id => allPlayersCache.find(p => p.id === id))
+            .filter(Boolean);
+        renderPlayersOnPitch(orderedPlayers, tempSelectedPlayers, 'selection', window.originalCaptainId);
+
+        // Update UI
         updateTransfersDisplay();
+        console.log('Reset complete: players', tempSelectedPlayers.length, 'budget', tempBudget);
     }
 
     // Add auto fill transfers function (adapted from autoPickTeam in create-team.js)
@@ -408,6 +510,73 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========================================
     // TRANSFERS-SPECIFIC OVERRIDES
     // ========================================
+
+    // Confirmation modal logic
+    function openTransfersConfirmation(){
+        const modal = document.getElementById('confirmTransfersModal');
+        if(!modal) return;
+
+        const originalSet = new Set(window.originalTeamPlayerIds || []);
+        const currentSet = new Set(tempSelectedPlayers);
+        const addedIds = [...currentSet].filter(id => !originalSet.has(id));
+        const removedIds = [...originalSet].filter(id => !currentSet.has(id));
+        const effectiveTransfers = Math.max(addedIds.length, removedIds.length);
+        const freeAvail = typeof window.initialFreeTransfers === 'number' ? window.initialFreeTransfers : 1;
+        const paid = Math.max(0, effectiveTransfers - freeAvail);
+        const costPts = paid * 4;
+
+        const outList = document.getElementById('transfersOutList');
+        const inList = document.getElementById('transfersInList');
+        const summaryWrapper = document.getElementById('transfersSummary');
+        const noChangesMessage = document.getElementById('noChangesMessage');
+        const pointsCostEl = document.getElementById('pointsCost');
+
+        if(addedIds.length === 0 && removedIds.length === 0){
+            summaryWrapper.style.display='none';
+            noChangesMessage.style.display='block';
+        } else {
+            summaryWrapper.style.display='block';
+            noChangesMessage.style.display='none';
+        }
+
+        function playerLabel(id){
+            const p = allPlayersCache ? allPlayersCache.find(pl=>pl.id===id) : null;
+            if(!p) return id;
+            return `${p.name} (£${(p.price||0).toFixed(1)}m)`;
+        }
+
+        if(outList){
+            outList.innerHTML = removedIds.map(id => `<li>${playerLabel(id)}</li>`).join('') || '<li><em>None</em></li>';
+        }
+        if(inList){
+            inList.innerHTML = addedIds.map(id => `<li>${playerLabel(id)}</li>`).join('') || '<li><em>None</em></li>';
+        }
+        if(pointsCostEl) pointsCostEl.textContent = costPts;
+
+        // Disable confirm if no net changes
+        const executeBtn = document.getElementById('confirmTransfersExecuteBtn');
+        if(executeBtn) executeBtn.disabled = effectiveTransfers === 0;
+
+        modal.showModal();
+    }
+
+    // Modal button listeners
+    const cancelConfirmTransfersBtn = document.getElementById('cancelConfirmTransfersBtn');
+    if(cancelConfirmTransfersBtn){
+        cancelConfirmTransfersBtn.addEventListener('click', ()=>{
+            const m = document.getElementById('confirmTransfersModal');
+            if(m) m.close();
+        });
+    }
+    const executeTransfersBtn = document.getElementById('confirmTransfersExecuteBtn');
+    if(executeTransfersBtn){
+        executeTransfersBtn.addEventListener('click', function(){
+            // Proceed with save
+            saveTransfers();
+            const m = document.getElementById('confirmTransfersModal');
+            if(m) m.close();
+        });
+    }
 
     // Override selectPlayerFromTeam for transfers context
     function selectPlayerFromTeam(player) {

@@ -116,7 +116,23 @@ function selectPlayerFromTeam(player) {
     }
 
     // Allow over-budget for both contexts (validation happens on submit)
-    tempSelectedPlayers.push(player.id);
+    // Maintain slot ordering: if we have a currentTransferSlot with a slotIndex, insert there instead of pushing
+    let inserted = false;
+    if (currentTransferSlot && currentTransferSlot.dataset && currentTransferSlot.dataset.slotIndex !== undefined) {
+        const rawIndex = parseInt(currentTransferSlot.dataset.slotIndex, 10);
+        if (!Number.isNaN(rawIndex) && rawIndex >= 0) {
+            // Prevent duplicates defensively
+            const existingIdx = tempSelectedPlayers.indexOf(player.id);
+            if (existingIdx !== -1) tempSelectedPlayers.splice(existingIdx, 1);
+            if (rawIndex <= tempSelectedPlayers.length) {
+                tempSelectedPlayers.splice(rawIndex, 0, player.id);
+                inserted = true;
+            }
+        }
+    }
+    if (!inserted) {
+        tempSelectedPlayers.push(player.id);
+    }
     tempBudget -= player.price;
 
     console.log(`Added ${player.name} to ${pageContext} for £${player.price}m`);
@@ -163,7 +179,6 @@ function sellPlayer(playerId) {
         tempBudget += player.price; // Add money back to budget
 
         if (pageContext === 'transfers') {
-            tempTransfersMade++;
             const teamIndex = currentTeamPlayerIds.indexOf(playerId);
             if (teamIndex > -1) {
                 currentTeamPlayerIds.splice(teamIndex, 1);
@@ -252,12 +267,41 @@ function buyPlayer(player, emptySlot) {
     console.log('Buying player:', player.name, 'for slot:', emptySlot, 'Context:', pageContext);
 
     // Allow over-budget for both contexts (validation happens on submit)
-    tempSelectedPlayers.push(player.id);
+    // Maintain slot ordering by inserting at the empty slot's original slotIndex when available
+    let inserted = false;
+    if (emptySlot && emptySlot.dataset && emptySlot.dataset.slotIndex !== undefined) {
+        const rawIndex = parseInt(emptySlot.dataset.slotIndex, 10);
+        if (!Number.isNaN(rawIndex) && rawIndex >= 0) {
+            const existingIdx = tempSelectedPlayers.indexOf(player.id);
+            if (existingIdx !== -1) tempSelectedPlayers.splice(existingIdx, 1); // de-dupe just in case
+            if (rawIndex <= tempSelectedPlayers.length) {
+                tempSelectedPlayers.splice(rawIndex, 0, player.id);
+                inserted = true;
+            }
+        }
+    }
+    if (!inserted) {
+        tempSelectedPlayers.push(player.id);
+    }
     tempBudget -= player.price;
 
     if (pageContext === 'transfers') {
-        tempTransfersMade++;
-        currentTeamPlayerIds.push(player.id);
+        // Mirror ordering in currentTeamPlayerIds as well
+        let teamInserted = false;
+        if (emptySlot && emptySlot.dataset && emptySlot.dataset.slotIndex !== undefined) {
+            const rawIndex = parseInt(emptySlot.dataset.slotIndex, 10);
+            if (!Number.isNaN(rawIndex) && rawIndex >= 0) {
+                const existingIdx = currentTeamPlayerIds.indexOf(player.id);
+                if (existingIdx !== -1) currentTeamPlayerIds.splice(existingIdx, 1);
+                if (rawIndex <= currentTeamPlayerIds.length) {
+                    currentTeamPlayerIds.splice(rawIndex, 0, player.id);
+                    teamInserted = true;
+                }
+            }
+        }
+        if (!teamInserted) {
+            currentTeamPlayerIds.push(player.id);
+        }
     }
 
     // Convert empty slot to player card using shared function
@@ -314,7 +358,12 @@ function updateDisplay() {
             // Update confirm transfers button state
             const confirmTransfersBtn = document.getElementById('confirmTransfersBtn');
             if (confirmTransfersBtn) {
-                confirmTransfersBtn.disabled = tempTransfersMade === 0;
+                const originalSet = new Set(window.originalTeamPlayerIds || []);
+                const currentSet = new Set(tempSelectedPlayers);
+                const added = [...currentSet].filter(id => !originalSet.has(id));
+                const removed = [...originalSet].filter(id => !currentSet.has(id));
+                const effectiveTransfers = Math.max(added.length, removed.length);
+                confirmTransfersBtn.disabled = effectiveTransfers === 0;
             }
         }
     }
@@ -479,21 +528,23 @@ function saveDraftTeam() {
 }
 
 function saveTransfers() {
-    console.log('Saving transfers:', { selectedPlayers: tempSelectedPlayers, transfersMade: tempTransfersMade });
-    // Determine free transfers after this confirmation
-    const initialFree = typeof window.initialFreeTransfers === 'number' ? window.initialFreeTransfers : 1;
-    const freeUsed = Math.min(tempTransfersMade, initialFree);
-    let remainingFreeTransfers = initialFree - freeUsed;
-    // Paid transfers not stored here yet (points deduction handled elsewhere)
+    // Compute effective transfers via net difference
+    const originalSet = new Set(window.originalTeamPlayerIds || []);
+    const currentSet = new Set(tempSelectedPlayers);
+    const added = [...currentSet].filter(id => !originalSet.has(id));
+    const removed = [...originalSet].filter(id => !currentSet.has(id));
+    const effectiveTransfers = Math.max(added.length, removed.length);
+    console.log('Saving transfers (net):', { selectedPlayers: tempSelectedPlayers, added, removed, effectiveTransfers });
 
-    // Cap remaining at 2 (though it should already be <= initial)
+    const initialFree = typeof window.initialFreeTransfers === 'number' ? window.initialFreeTransfers : 1;
+    const freeUsed = Math.min(effectiveTransfers, initialFree);
+    let remainingFreeTransfers = initialFree - freeUsed;
     if (remainingFreeTransfers > 2) remainingFreeTransfers = 2;
     if (remainingFreeTransfers < 0) remainingFreeTransfers = 0;
 
     const updateData = {
         selectedPlayers: JSON.stringify(tempSelectedPlayers),
         freeTransfers: remainingFreeTransfers.toString()
-        // Do NOT modify currentPlayerTransfersWeek here; rollover handled on load
     };
 
     PlayFab.ClientApi.UpdateUserData({ Data: updateData }, function(result, error) {
@@ -503,13 +554,25 @@ function saveTransfers() {
             return;
         }
 
-        console.log("Transfers & freeTransfers updated:", { remainingFreeTransfers });
-        alert("Transfers completed successfully!");
+    console.log("Transfers & freeTransfers updated:", { remainingFreeTransfers, effectiveTransfers });
 
-        // Update in-memory free transfers reference for current session
+        // Compute points cost for toast (paid transfers * 4)
+        const paidTransfers = Math.max(0, effectiveTransfers - freeUsed);
+        const pointsCost = paidTransfers * 4;
+        if (typeof showTransientToast === 'function') {
+            const msg = effectiveTransfers === 0
+                ? 'No changes saved.'
+                : `Transfers saved: ${effectiveTransfers} (${freeUsed} free, ${paidTransfers} paid)  Cost: ${pointsCost} pts`;
+            showTransientToast(msg, { type: pointsCost > 0 ? 'warning' : 'success' });
+        }
+
         window.initialFreeTransfers = remainingFreeTransfers;
-        tempTransfersMade = 0;
+        window.originalTeamPlayerIds = [...tempSelectedPlayers];
+        tempTransfersMade = 0; // legacy variable kept
         updateDisplay();
+        if (typeof window.syncFreeTransfers === 'function') {
+            window.syncFreeTransfers();
+        }
     });
 }
 
@@ -836,8 +899,8 @@ function renderPlayersOnPitch(players, selectedPlayerIds = [], context = 'select
                 playerCard.classList.add('substitute-player');
             }
 
-            // Add captain styling if this is the captain
-            if (captainId && player.id && String(player.id) === String(captainId)) {
+            // Add captain styling if this is the captain (exclude selection context: draft/transfers pages)
+            if (captainId && context !== 'selection' && player.id && String(player.id) === String(captainId)) {
                 playerCard.classList.add('captain-player');
                 if (context === 'points') {
                     console.log(`Captain badge added to player: ${player.name} (ID: ${player.id})`);
@@ -1417,7 +1480,7 @@ function setupEmptySlotClickHandler(emptySlot) {
         const now = Date.now();
         const timeSinceSell = now - (window.lastSellOperation || 0);
         
-        if (timeSinceSell < 1000) {
+        if (timeSinceSell < 100) {
             console.log('Blocking click - too soon after sell operation');
             event.preventDefault();
             event.stopPropagation();
@@ -1644,3 +1707,35 @@ function updateAutoPickButtons() {
 }
 
 window.updateAutoPickButtons = updateAutoPickButtons;
+
+// ========================================
+// TOAST NOTIFICATIONS (shared)
+// ========================================
+function showTransientToast(message, { type = 'success', duration = 4000 } = {}) {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.style.setProperty('--toast-duration', `${duration}ms`);
+    toast.textContent = message;
+
+    container.appendChild(toast);
+
+    // Remove after animation completes (duration + out animation buffer)
+    setTimeout(() => {
+        if (toast && toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+        if (container && container.children.length === 0) {
+            container.parentNode.removeChild(container);
+        }
+    }, duration + 1000);
+}
+window.showTransientToast = showTransientToast;

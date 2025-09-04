@@ -9,3 +9,4 @@ when the user loads the transfers page the currentPlayerTransfersWeek is compare
 for each week currentPlayerTransfersWeek is behind gameWeek, the player data field freeTransfers is increased by one. 
 
 then currentPlayerTransfersWeek set and saved to the value of gameWeek when the user presses the confirm transfers button.
+
