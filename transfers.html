@@ -30,12 +30,25 @@
             <h4 id="teamName" class="teamName">Loading Team Name...</h4>
         </header>
 
-        <!-- Team Budget Info -->
-        <section class="team-info">
-            <div class="budget-info">
-                <p><strong>Remaining Budget:</strong> £<span id="teamBudget">100.0</span>m</p>
-                <p><strong>Transfers Made:</strong> <span id="transfersMade">0</span>/5</p>
-                <p><strong>Free Transfers:</strong> <span id="freeTransfers">1</span></p>
+        <!-- Transfer Status Info -->
+        <section class="transfer-status">
+            <div class="status-info">
+                <div class="status-item players-selected">
+                    <span class="status-count" id="playersSelected">15</span>/<span class="status-total">15</span>
+                    <span class="status-label">Players Selected</span>
+                </div>
+                <div class="status-item budget-remaining">
+                    <span class="status-amount">£<span id="teamBudget">100.0</span>m</span>
+                    <span class="status-label">Budget</span>
+                </div>
+                <div class="status-item free-transfers">
+                    <span class="status-count" id="freeTransfers">1</span>
+                    <span class="status-label">Free Transfers</span>
+                </div>
+                <div class="status-item transfer-cost">
+                    <span class="status-count" id="transferCost">0</span> <span class="status-unit">pts</span>
+                    <span class="status-label">Cost</span>
+                </div>
             </div>
         </section>
 

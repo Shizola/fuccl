@@ -3,28 +3,104 @@
    Specific styles for the transfers page
    ======================================== */
 
-/* Team Info Section - Transfers specific */
-.team-info {
-    background: var(--pico-card-background-color);
-    border: var(--pico-border-width) solid var(--pico-card-border-color);
-    border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
+/* Transfer Status Section - Transfers specific */
+.transfer-status {
     margin-bottom: var(--pico-spacing);
 }
 
-.budget-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--pico-spacing);
-    margin: 0;
+.status-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.budget-info p {
-    margin: 0;
+.status-item {
+    flex: 1;
     text-align: center;
-    padding: var(--pico-spacing);
-    background: var(--pico-secondary-background);
-    border-radius: var(--pico-border-radius);
+    padding: 12px 8px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    min-width: 0; /* Allow flex items to shrink */
+}
+
+.status-item .status-count,
+.status-item .status-amount {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.status-item .status-total,
+.status-item .status-unit {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.status-item .status-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: normal;
+    opacity: 0.9;
+}
+
+/* Specific colors for each status item */
+.players-selected {
+    background-color: #28a745; /* Green */
+}
+
+.budget-remaining {
+    background-color: #17a2b8; /* Teal/Cyan */
+}
+
+.free-transfers {
+    background-color: #6f42c1; /* Purple */
+}
+
+.transfer-cost {
+    background-color: #dc3545; /* Red */
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .status-info {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .status-item {
+        padding: 10px;
+    }
+    
+    .status-item .status-count,
+    .status-item .status-amount {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .status-info {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .status-item {
+        flex: 1 1 45%;
+        min-width: 120px;
+        padding: 8px 4px;
+    }
+    
+    .status-item .status-count,
+    .status-item .status-amount {
+        font-size: 1rem;
+    }
+    
+    .status-item .status-label {
+        font-size: 0.75rem;
+    }
 }
 
 /* Player card styling for selling state */

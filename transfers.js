@@ -111,6 +111,29 @@ document.addEventListener('DOMContentLoaded', function() {
             budgetElement.textContent = tempBudget.toFixed(1);
         }
 
+        // Update players selected count
+        const playersSelectedElement = document.getElementById('playersSelected');
+        if (playersSelectedElement) {
+            playersSelectedElement.textContent = tempSelectedPlayers.length;
+        }
+
+        // Update free transfers count (starts at 1, decreases with transfers made)
+        const freeTransfersElement = document.getElementById('freeTransfers');
+        const initialFreeTransfers = 1; // Each user gets 1 free transfer per week
+        const remainingFreeTransfers = Math.max(0, initialFreeTransfers - tempTransfersMade);
+        if (freeTransfersElement) {
+            freeTransfersElement.textContent = remainingFreeTransfers;
+        }
+
+        // Calculate and update transfer cost (4 points per paid transfer)
+        const transferCostElement = document.getElementById('transferCost');
+        const pointsPerPaidTransfer = 4;
+        const paidTransfers = Math.max(0, tempTransfersMade - initialFreeTransfers);
+        const totalCost = paidTransfers * pointsPerPaidTransfer;
+        if (transferCostElement) {
+            transferCostElement.textContent = totalCost;
+        }
+
         // Update budget section styling based on budget status
         const budgetSection = document.querySelector('.budget-section');
         if (budgetSection) {
@@ -138,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
             resetBtn.disabled = isUnchanged;
         }
 
-        console.log(`Updated transfers display - Budget: £${tempBudget.toFixed(1)}m, Players: ${tempSelectedPlayers.length}/${11}, Transfers: ${tempTransfersMade}`);
+        console.log(`Updated transfers display - Budget: £${tempBudget.toFixed(1)}m, Players: ${tempSelectedPlayers.length}/15, Transfers: ${tempTransfersMade}, Cost: ${totalCost}pts`);
     }
 
     // Add reset transfers function (adapted from resetDraft in create-team.js)
