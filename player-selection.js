@@ -480,25 +480,34 @@ function saveDraftTeam() {
 
 function saveTransfers() {
     console.log('Saving transfers:', { selectedPlayers: tempSelectedPlayers, transfersMade: tempTransfersMade });
+    // Determine free transfers after this confirmation
+    const initialFree = typeof window.initialFreeTransfers === 'number' ? window.initialFreeTransfers : 1;
+    const freeUsed = Math.min(tempTransfersMade, initialFree);
+    let remainingFreeTransfers = initialFree - freeUsed;
+    // Paid transfers not stored here yet (points deduction handled elsewhere)
 
-    // Update selected players
-    const selectedPlayersData = {
-        selectedPlayers: JSON.stringify(tempSelectedPlayers)
+    // Cap remaining at 2 (though it should already be <= initial)
+    if (remainingFreeTransfers > 2) remainingFreeTransfers = 2;
+    if (remainingFreeTransfers < 0) remainingFreeTransfers = 0;
+
+    const updateData = {
+        selectedPlayers: JSON.stringify(tempSelectedPlayers),
+        freeTransfers: remainingFreeTransfers.toString()
+        // Do NOT modify currentPlayerTransfersWeek here; rollover handled on load
     };
 
-    PlayFab.ClientApi.UpdateUserData({
-        Data: selectedPlayersData
-    }, function(result, error) {
+    PlayFab.ClientApi.UpdateUserData({ Data: updateData }, function(result, error) {
         if (error) {
             console.error("Error saving transfers:", error);
             alert("Failed to save transfers. Please try again.");
             return;
         }
 
-        console.log("Transfers saved successfully");
+        console.log("Transfers & freeTransfers updated:", { remainingFreeTransfers });
         alert("Transfers completed successfully!");
-        
-        // Reset temp state to match saved state
+
+        // Update in-memory free transfers reference for current session
+        window.initialFreeTransfers = remainingFreeTransfers;
         tempTransfersMade = 0;
         updateDisplay();
     });
@@ -1313,11 +1322,11 @@ function displayPlayerSelection(players, container) {
     });
 }
 
-// Placeholder function - should be overridden by page-specific logic
-function selectPlayerFromTeam(player) {
-    console.log('Player selected:', player.name);
-    // This should be overridden by page-specific implementations
-}
+// NOTE: Removed placeholder selectPlayerFromTeam definition that previously
+// overwrote the fully featured version declared earlier in this file.
+// Page-specific overrides (e.g. in transfers.js) can still redefine the
+// function after this script loads. The base implementation now remains
+// active for draft/create-team, ensuring the modal closes and state updates.
 
 // Function to close player selection modal
 function closePlayerSelectionModal() {
@@ -1611,3 +1620,27 @@ function convertEmptySlotToPlayerCard(emptySlot, player) {
 
     return emptySlot;
 }
+
+// ========================================
+// SHARED AUTO PICK BUTTON MANAGEMENT
+// ========================================
+function updateAutoPickButtons() {
+    const buttons = [];
+    const draftBtn = document.getElementById('autoCompleteBtn');
+    if (draftBtn) buttons.push(draftBtn);
+    const transfersBtn = document.getElementById('autoCompleteTransfersBtn');
+    if (transfersBtn) buttons.push(transfersBtn);
+
+    if (buttons.length === 0) return;
+
+    const emptySlotCount = document.querySelectorAll('.empty-slot').length;
+    const hasEmpty = emptySlotCount > 0;
+
+    buttons.forEach(btn => {
+        btn.disabled = !hasEmpty;
+        btn.textContent = 'Auto Pick';
+        btn.classList.toggle('disabled', !hasEmpty);
+    });
+}
+
+window.updateAutoPickButtons = updateAutoPickButtons;

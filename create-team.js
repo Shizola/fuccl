@@ -45,13 +45,9 @@ function updateDraftDisplay() {
         saveBtn.textContent = 'Submit Squad';
     }
 
-    // Update Auto Pick button state - enable when there are empty slots
-    const autoCompleteBtn = document.getElementById('autoCompleteBtn');
-    if (autoCompleteBtn) {
-        const emptySlots = document.querySelectorAll('.empty-slot');
-        const hasEmptySlots = emptySlots.length > 0;
-        autoCompleteBtn.disabled = !hasEmptySlots; // Disabled when NO empty slots (all filled)
-        autoCompleteBtn.textContent = 'Auto Pick';
+    // Shared auto pick button update
+    if (typeof updateAutoPickButtons === 'function') {
+        updateAutoPickButtons();
     }
 
     // Update Reset button state - grey out if all slots are empty

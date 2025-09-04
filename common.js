@@ -172,7 +172,7 @@ function loadSharedPlayersFromPlayFab(callback) {
     
     // Fetch user data to get the selectedPlayers key and captain
     PlayFab.ClientApi.GetUserData({
-        Keys: ["selectedPlayers", "captainId", "teamName", "managerName"]
+        Keys: ["selectedPlayers", "captainId", "teamName", "managerName", "freeTransfers", "currentPlayerTransfersWeek"]
     }, function (result, error) {
         if (error) {
             console.error("Error retrieving user data from PlayFab:", error);
@@ -188,6 +188,18 @@ function loadSharedPlayersFromPlayFab(callback) {
 
             // Get captain ID if it exists
             const captainId = result.data.Data.captainId ? result.data.Data.captainId.Value : null;
+            // Get free transfers (default 1 if missing or invalid)
+            const freeTransfersRaw = result.data.Data.freeTransfers ? result.data.Data.freeTransfers.Value : null;
+            let freeTransfers = parseInt(freeTransfersRaw, 10);
+            if (isNaN(freeTransfers) || freeTransfers < 0) {
+                freeTransfers = 1;
+            }
+            // Get currentPlayerTransfersWeek (default to gameWeek later if missing)
+            const currentTransfersWeekRaw = result.data.Data.currentPlayerTransfersWeek ? result.data.Data.currentPlayerTransfersWeek.Value : null;
+            let currentPlayerTransfersWeek = parseInt(currentTransfersWeekRaw, 10);
+            if (isNaN(currentPlayerTransfersWeek) || currentPlayerTransfersWeek < 1) {
+                currentPlayerTransfersWeek = null; // will initialize after fetching title data
+            }
 
             let selectedPlayerIds;
             try {
@@ -214,6 +226,30 @@ function loadSharedPlayersFromPlayFab(callback) {
                         // Get the current gameweek
                         const gameWeek = parseInt(titleDataResult.data.Data.gameWeek);
                         console.log("Current Gameweek:", gameWeek);
+
+                        // Rollover logic for free transfers based on week difference
+                        let rolloverApplied = false;
+                        if (!isNaN(gameWeek)) {
+                            if (currentPlayerTransfersWeek === null) {
+                                // First-time initialization: set to current gameWeek and ensure at least 1 free transfer
+                                const before = freeTransfers;
+                                if (freeTransfers < 1) {
+                                    freeTransfers = 1; // baseline free transfer on first initialization
+                                }
+                                currentPlayerTransfersWeek = gameWeek;
+                                rolloverApplied = true; // we will persist initialization (week and maybe free transfer adjustment)
+                                console.log(`Initial transfers week setup: week=${gameWeek}, freeTransfers ${before}->${freeTransfers}`);
+                            } else if (gameWeek > currentPlayerTransfersWeek) {
+                                const weeksBehind = gameWeek - currentPlayerTransfersWeek;
+                                if (weeksBehind > 0) {
+                                    const before = freeTransfers;
+                                    freeTransfers = Math.min(2, freeTransfers + weeksBehind); // cap at 2
+                                    currentPlayerTransfersWeek = gameWeek; // advance tracked week
+                                    rolloverApplied = true;
+                                    console.log(`Rollover applied: weeksBehind=${weeksBehind}, freeTransfers ${before}->${freeTransfers}`);
+                                }
+                            }
+                        }
 
                         // Parse the players and calculate points
                         let weeklyPointsTotal = 0;         // For displaying current week's points
@@ -259,7 +295,9 @@ function loadSharedPlayersFromPlayFab(callback) {
                             cumulativePointsTotal,     // Total points across all weeks
                             gameWeek,                  // Current gameweek
                             selectedPlayerIds,
-                            captainId                  // Store captain separately
+                            captainId,                 // Store captain separately
+                            freeTransfers,             // Current free transfers available (after rollover)
+                            currentPlayerTransfersWeek // Week marker for transfers logic
                         };
 
                         // Cache the successful response
@@ -268,8 +306,25 @@ function loadSharedPlayersFromPlayFab(callback) {
                         sharedDataCache.lastFetch = Date.now();
                         console.log("Shared data cached successfully");
 
-                        // Pass all data to the callback
-                        callback(null, responseData);
+                        // If rollover changed data, persist updated freeTransfers & currentPlayerTransfersWeek immediately to prevent refresh abuse
+                        if (rolloverApplied) {
+                            PlayFab.ClientApi.UpdateUserData({
+                                Data: {
+                                    freeTransfers: freeTransfers.toString(),
+                                    currentPlayerTransfersWeek: currentPlayerTransfersWeek.toString()
+                                }
+                            }, function(uResult, uError) {
+                                if (uError) {
+                                    console.warn('Failed to persist rollover update:', uError);
+                                } else {
+                                    console.log('Rollover state persisted successfully');
+                                }
+                                callback(null, responseData);
+                            });
+                        } else {
+                            // Pass all data to the callback
+                            callback(null, responseData);
+                        }
                     } else {
                         console.error("No title data returned.");
                         callback("No title data returned", null);
@@ -1072,7 +1127,10 @@ function initializeMobileDropdown() {
             
             // Close dropdown when clicking outside
             document.addEventListener('click', function(event) {
-                if (!newButton.contains(event.target) && !mobileDropdown.contains(event.target)) {
+                // Don't close dropdown if clicking inside any modal
+                const clickedInsideModal = event.target.closest('dialog');
+                
+                if (!clickedInsideModal && !newButton.contains(event.target) && !mobileDropdown.contains(event.target)) {
                     mobileDropdown.classList.remove('show');
                     newButton.classList.remove('open');
                     console.log('Dropdown closed by outside click');

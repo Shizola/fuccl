@@ -52,18 +52,19 @@
         <!-- Transfer Status Info -->
         <section class="transfer-status">
             <div class="status-info">
+                <!-- players selected status box -->
                 <div class="status-item players-selected">
                     <div class="status-count-total">
-                        <span class="status-count" id="playersSelected">15</span>/<span class="status-total">15</span>
+                        <span id="playersSelectedCount">Loading</span><span id="playersSelectedTotal" data-format="slash"></span>
                     </div>
-                    <span class="status-label">Players Selected</span>
+                    <span class="status-label">Players</span>
                 </div>
                 <div class="status-item budget-remaining">
-                    <span class="status-amount">£<span id="teamBudget">100.0</span>m</span>
+                    <span class="status-amount"><span id="teamBudget">Loading</span></span>
                     <span class="status-label">Budget</span>
                 </div>
                 <div class="status-item free-transfers">
-                    <span class="status-count" id="freeTransfers">1</span>
+                    <span class="status-count" id="freeTransfers">Loading</span>
                     <span class="status-label">Free Transfers</span>
                 </div>
                 <div class="status-item cost-status">

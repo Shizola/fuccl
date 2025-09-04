@@ -77,11 +77,32 @@
 }
 
 .free-transfers {
-    background-color: #6f42c1; /* Purple */
+    background-color: #6c757d; /* Neutral gray base; dynamic classes will override */
 }
 
 .cost-status {
     background-color: #dc3545; /* Red */
+}
+
+/* Dynamic state modifiers for status items */
+.status-item.status-success {
+    background-color: #28a745 !important; /* Green */
+    color: #fff;
+}
+
+.status-item.status-warning {
+    background-color: #ffc107 !important; /* Yellow */
+    color: #000;
+}
+
+.status-item.status-neutral {
+    background-color: #6c757d !important; /* Neutral gray */
+    color: #fff;
+}
+
+/* (Optional) If you want cost box not to appear red by default, you can soften the base: */
+.cost-status {
+    background-color: #6c757d; /* Neutral base; dynamic classes will override */
 }
 
 /* Responsive design for smaller screens */
