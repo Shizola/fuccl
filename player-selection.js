@@ -184,9 +184,11 @@ function sellPlayer(playerId) {
                 console.log('Removed old click handler');
             }
 
-            // Store reference for delayed conversion
+            // Immediately convert the player card to an empty slot
+            const emptySlot = createEmptySlot(playerCard, playerId, false);
+            
+            // Store reference for delayed click handler setup
             window.pendingEmptySlotConversion = {
-                playerCard: playerCard,
                 playerId: playerId
             };
         } else {
@@ -226,63 +228,19 @@ function sellPlayer(playerId) {
         
         // Now handle the pending empty slot conversion
         if (window.pendingEmptySlotConversion) {
-            const { playerCard, playerId } = window.pendingEmptySlotConversion;
-            console.log('Converting player card to empty slot after modal close');
+            const { playerId } = window.pendingEmptySlotConversion;
             
-            // Create empty slot without click handler - this returns a new element
-            const newEmptySlot = createEmptySlot(playerCard, playerId, false);
+            // Find the empty slot that was created from this player
+            const emptySlot = document.querySelector(`[data-converted-from-player="${playerId}"]`);
             
-            // Set up click handler manually after another delay
-            setTimeout(() => {
-                // Determine position based on card location
-                let position = 'DF'; // Default
-                const cardTop = newEmptySlot.style.top;
-                if (cardTop === '10%') position = 'GK';
-                else if (cardTop === '30%') position = 'DF';
-                else if (cardTop === '50%') position = 'MD';
-                else if (cardTop === '70%') position = 'AT';
-                else if (cardTop === '90%') position = 'SUB';
-
-                console.log('Setting up delayed click handler for position:', position);
+            if (emptySlot) {
+                console.log('Setting up click handler for empty slot after modal close');
                 
-                // Add a flag to prevent immediate clicks
-                let justSetUp = true;
-                setTimeout(() => { justSetUp = false; }, 50);
-                
-                newEmptySlot.clickHandler = (event) => {
-                    // Check if this is a real user-initiated event
-                    if (!event.isTrusted) {
-                        console.log('Blocking programmatic click event');
-                        event.preventDefault();
-                        event.stopPropagation();
-                        return false;
-                    }
-                    
-                    if (justSetUp) {
-                        console.log('Blocking click - handler was just set up');
-                        event.preventDefault();
-                        event.stopPropagation();
-                        return false;
-                    }
-                    
-                    // Check if there was a sell operation recently (more specific than general user action)
-                    const now = Date.now();
-                    const timeSinceSell = now - (window.lastSellOperation || 0);
-                    
-                    if (timeSinceSell < 1000) {
-                        console.log('Blocking click - too soon after sell operation');
-                        event.preventDefault();
-                        event.stopPropagation();
-                        return false;
-                    }
-                    
-                    console.log('Empty slot clicked by user for position:', position);
-                    currentTransferSlot = newEmptySlot;
-                    openTeamSelectionModal(position);
-                };
-                newEmptySlot.addEventListener('click', newEmptySlot.clickHandler);
-                console.log('Delayed click handler set up successfully');
-            }, 200);
+                // Set up click handler for the empty slot
+                setupEmptySlotClickHandler(emptySlot);
+            } else {
+                console.warn('Could not find the empty slot that was created for player:', playerId);
+            }
             
             window.pendingEmptySlotConversion = null; // Clear the pending conversion
         }
@@ -332,20 +290,32 @@ function updateDisplay() {
 
     // Update budget section styling based on budget status
     const budgetSection = document.querySelector('.budget-section') || document.querySelector('.budget-info');
+    const budgetRemaining = document.querySelector('.budget-remaining');
+    
     if (budgetSection) {
         budgetSection.classList.toggle('over-budget', tempBudget < 0);
     }
+    
+    if (budgetRemaining) {
+        budgetRemaining.classList.toggle('over-budget', tempBudget < 0);
+    }
 
     if (pageContext === 'transfers') {
-        const transfersMadeElement = document.getElementById('transfersMade');
-        if (transfersMadeElement) {
-            transfersMadeElement.textContent = tempTransfersMade;
-        }
-        
-        // Update confirm transfers button state
-        const confirmTransfersBtn = document.getElementById('confirmTransfersBtn');
-        if (confirmTransfersBtn) {
-            confirmTransfersBtn.disabled = tempTransfersMade === 0;
+        // Call the page-specific update function for transfers
+        if (typeof window.updateTransfersDisplay === 'function') {
+            window.updateTransfersDisplay();
+        } else {
+            // Fallback to basic transfers updates
+            const transfersMadeElement = document.getElementById('transfersMade');
+            if (transfersMadeElement) {
+                transfersMadeElement.textContent = tempTransfersMade;
+            }
+            
+            // Update confirm transfers button state
+            const confirmTransfersBtn = document.getElementById('confirmTransfersBtn');
+            if (confirmTransfersBtn) {
+                confirmTransfersBtn.disabled = tempTransfersMade === 0;
+            }
         }
     }
 
@@ -1396,9 +1366,62 @@ function addPlayerToSlot(cardElement, player) {
     // (it should already be set from when the card was created)
 }
 
-// ========================================
-// MODAL EVENT LISTENERS
-// ========================================
+// Function to set up click handler for empty slots
+function setupEmptySlotClickHandler(emptySlot) {
+    // Determine position based on card location
+    let position = 'DF'; // Default
+    const cardTop = emptySlot.style.top;
+    if (cardTop === '10%') position = 'GK';
+    else if (cardTop === '30%') position = 'DF';
+    else if (cardTop === '50%') position = 'MD';
+    else if (cardTop === '70%') position = 'AT';
+    else if (cardTop === '90%') position = 'SUB';
+
+    console.log('Setting up click handler for empty slot position:', position);
+    
+    // Remove any existing click handler
+    if (emptySlot.clickHandler) {
+        emptySlot.removeEventListener('click', emptySlot.clickHandler);
+    }
+    
+    // Add a flag to prevent immediate clicks
+    let justSetUp = true;
+    setTimeout(() => { justSetUp = false; }, 50);
+    
+    emptySlot.clickHandler = (event) => {
+        // Check if this is a real user-initiated event
+        if (!event.isTrusted) {
+            console.log('Blocking programmatic click event');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+        
+        if (justSetUp) {
+            console.log('Blocking click - handler was just set up');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+        
+        // Check if there was a sell operation recently
+        const now = Date.now();
+        const timeSinceSell = now - (window.lastSellOperation || 0);
+        
+        if (timeSinceSell < 1000) {
+            console.log('Blocking click - too soon after sell operation');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+        
+        console.log('Empty slot clicked by user for position:', position);
+        currentTransferSlot = emptySlot;
+        openTeamSelectionModal(position);
+    };
+    emptySlot.addEventListener('click', emptySlot.clickHandler);
+    console.log('Click handler set up successfully for empty slot');
+}
 
 // Function to setup shared modal event listeners
 function setupSharedModalListeners() {
@@ -1494,6 +1517,11 @@ function createEmptySlot(cardElement, originalPlayerId, setupClickHandler = true
     
     // Clear all classes and add empty slot class
     newCard.className = 'player-card empty-slot';
+
+    // Add marker to identify this slot was created from a specific player
+    if (originalPlayerId) {
+        newCard.dataset.convertedFromPlayer = originalPlayerId;
+    }
 
     // Create + symbol
     const plusSymbol = document.createElement('div');

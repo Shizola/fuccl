@@ -35,15 +35,8 @@ function updateDraftDisplay() {
         budgetElement.textContent = tempBudget.toFixed(1);
     }
 
-    // Update budget section styling based on budget status
-    const budgetSection = document.querySelector('.budget-section');
-    if (budgetSection) {
-        if (tempBudget < 0) {
-            budgetSection.classList.add('over-budget');
-        } else {
-            budgetSection.classList.remove('over-budget');
-        }
-    }
+    // Update budget display with color coding
+    updateBudgetDisplay(tempBudget, 'teamBudget', '.budget-section');
 
     // Update save button state
     const saveBtn = document.getElementById('saveDraftBtn');

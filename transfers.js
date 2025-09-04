@@ -47,8 +47,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // Store current team player IDs for filtering
             currentTeamPlayerIds = data.selectedPlayerIds || [];
             
-            // Initialize shared context for transfers with current team data
-            initializePageContext('transfers', 100.0, data.selectedPlayerIds || []);
+            // Calculate the actual remaining budget based on current team
+            let initialBudget = 100.0;
+            let currentTeamCost = 0;
+            
+            // Calculate cost of current team players
+            if (data.players && data.selectedPlayerIds) {
+                data.selectedPlayerIds.forEach(playerId => {
+                    const player = data.players.find(p => p.id === playerId);
+                    if (player && player.price) {
+                        currentTeamCost += player.price;
+                    }
+                });
+            }
+            
+            const actualRemainingBudget = initialBudget - currentTeamCost;
+            console.log(`Current team cost: £${currentTeamCost.toFixed(1)}m, Remaining budget: £${actualRemainingBudget.toFixed(1)}m`);
+            
+            // Initialize shared context for transfers with correct remaining budget
+            initializePageContext('transfers', actualRemainingBudget, data.selectedPlayerIds || []);
             
             // Render the current team on the pitch
             renderPlayersOnPitch(data.players, data.selectedPlayerIds, 'selection', data.captainId);
@@ -134,11 +151,8 @@ document.addEventListener('DOMContentLoaded', function() {
             transferCostElement.textContent = totalCost;
         }
 
-        // Update budget section styling based on budget status
-        const budgetSection = document.querySelector('.budget-section');
-        if (budgetSection) {
-            budgetSection.classList.toggle('over-budget', tempBudget < 0);
-        }
+        // Update budget display with color coding
+        updateBudgetDisplay(tempBudget, 'teamBudget', '.budget-remaining');
 
         // Update confirm transfers button state
         const confirmTransfersBtn = document.getElementById('confirmTransfersBtn');
@@ -146,23 +160,27 @@ document.addEventListener('DOMContentLoaded', function() {
             confirmTransfersBtn.disabled = tempTransfersMade === 0;
         }
 
-    // Update Auto Fill button state - enable when there are empty slots
-    const autoCompleteBtn = document.getElementById('autoCompleteTransfersBtn');
-    if (autoCompleteBtn) {
-        const emptySlots = document.querySelectorAll('.empty-slot');
-        const hasEmptySlots = emptySlots.length > 0;
-        autoCompleteBtn.disabled = !hasEmptySlots; // Disabled when NO empty slots (all filled)
-        autoCompleteBtn.textContent = 'Auto Fill';
-    }        // Update Reset button state - grey out if slots are the same as original selectedPlayers
-        const resetBtn = document.getElementById('resetTransfersBtn'); // Assuming ID matches create-team
+        // Update Auto Fill button state - enable when there are empty slots
+        const autoCompleteBtn = document.getElementById('autoCompleteTransfersBtn');
+        if (autoCompleteBtn) {
+            const emptySlots = document.querySelectorAll('.empty-slot');
+            const hasEmptySlots = emptySlots.length > 0;
+            autoCompleteBtn.disabled = !hasEmptySlots;
+            autoCompleteBtn.textContent = hasEmptySlots ? 'Auto Fill' : 'All Filled';
+        }
+
+        // Update Reset button state - enable when transfers have been made
+        const resetBtn = document.getElementById('resetTransfersBtn');
         if (resetBtn) {
-            // Check if tempSelectedPlayers matches the original currentTeamPlayerIds
-            const isUnchanged = JSON.stringify(tempSelectedPlayers.sort()) === JSON.stringify(currentTeamPlayerIds.sort());
-            resetBtn.disabled = isUnchanged;
+            resetBtn.disabled = tempTransfersMade === 0;
+            resetBtn.textContent = tempTransfersMade === 0 ? 'No Changes' : 'Reset All';
         }
 
         console.log(`Updated transfers display - Budget: £${tempBudget.toFixed(1)}m, Players: ${tempSelectedPlayers.length}/15, Transfers: ${tempTransfersMade}, Cost: ${totalCost}pts`);
     }
+
+    // Make updateTransfersDisplay globally accessible
+    window.updateTransfersDisplay = updateTransfersDisplay;
 
     // Add reset transfers function (adapted from resetDraft in create-team.js)
     function resetTransfers() {

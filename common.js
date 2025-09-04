@@ -999,6 +999,30 @@ window.addEventListener('load', function() {
     }
 });
 
+// ========================================
+// BUDGET DISPLAY MANAGEMENT
+// Shared functionality for budget display and styling
+// ========================================
+
+// Function to update budget display with color coding
+function updateBudgetDisplay(budgetValue, budgetElementId, targetSelector) {
+    // Update budget text
+    const budgetElement = document.getElementById(budgetElementId);
+    if (budgetElement) {
+        budgetElement.textContent = budgetValue.toFixed(1);
+    }
+
+    // Update target element styling based on budget status
+    const targetElement = document.querySelector(targetSelector);
+    if (targetElement) {
+        if (budgetValue < 0) {
+            targetElement.classList.add('over-budget');
+        } else {
+            targetElement.classList.remove('over-budget');
+        }
+    }
+}
+
 /* ========================================
    MOBILE NAVIGATION DROPDOWN
    Custom dropdown functionality for mobile menu
