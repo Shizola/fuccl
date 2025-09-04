@@ -3,43 +3,7 @@
    Specific styles for the points visualization page
    ======================================== */
 
-/* Points overlay - Points page specific */
-.player-points {
-    background-color: #087cc4;
-    color: white;
-    font-size: 8px;
-    padding: 0px 0;
-    font-weight: bold;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    height: 12px;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Substitute player styling with yellow background - Points page specific */
-.substitute-player .player-points {
-    background-color: #ffc107;
-    color: #000;
-}
-
-/* Debug display element (can be enabled for testing) */
-body::after {
-    content: "Default size: 70px";
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 5px;
-    font-size: 12px;
-    z-index: 9999;
-}
+/* Overlay styling now unified in common.css (.player-points shares with .player-price) */
 
 /* ========================================
    POINTS PAGE RESPONSIVE OVERRIDES
@@ -47,19 +11,10 @@ body::after {
 
 /* Mobile specific overrides for points page */
 @media (max-width: 610px) {
-    .player-card .player-points {
-        font-size: 6px;
-        height: 10px;
-    }
-
-    body::after {
-        content: "Mobile size: 45px";
-    }
+    /* Responsive adjustments handled by common.css */
 }
 
 /* Tablet specific overrides for points page */
 @media (min-width: 611px) and (max-width: 900px) {
-    .player-card .player-points {
-        font-size: 7px;
-    }
+    /* Tablet overrides handled by common.css */
 }
