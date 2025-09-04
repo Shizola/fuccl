@@ -1,14 +1,24 @@
 // PAGINATION AND TEST DATA CONFIGURATION
 const LEADERBOARD_CONFIG = {
     itemsPerPage: 15,
-    enableTestData: true, // Set to false when you have real data
-    testDataCount: 149   // Number of fake entries to generate (149 + 1 real user = 150 total)
+    enableTestData: false, // Set to false when you have real data
+    testDataCount: 149,  // Number of fake entries to generate (149 + 1 real user = 150 total)
+    progressivePaging: true, // Enable progressive paging for large leaderboards
+    apiBatchSize: 100, // PlayFab typical max per call (adjust if title allows larger)
+    maxTotalEntriesHint: 1000 // Soft cap hint; actual end discovered when batch < apiBatchSize
 };
 
 let currentPage = 1;
-let totalPages = 1;
-let allLeaderboardData = [];
+let totalPages = 1; // Will finalize once end encountered
+let allLeaderboardData = []; // For test mode (full data) OR accumulated real entries (flattened)
 let currentPlayerId = null;
+// Progressive paging caches
+const segmentCache = {}; // key: segmentStart -> array of entries
+const segmentInFlight = {}; // key: segmentStart -> promise
+let discoveredEnd = false; // true once a segment returns < batch size
+let highestFetchedRankExclusive = 0; // track highest position+1 fetched
+// Cache for per-player extra data (managerName, teamName)
+const playerExtraCache = {}; // key: PlayFabId -> { managerName, teamName, fetched: true }
 
 // Function to generate test leaderboard data for development
 function generateTestLeaderboardData() {
@@ -119,36 +129,41 @@ function getLeaderboard() {
         return;
     }
 
-    // Real PlayFab data (original implementation)
-    PlayFab.ClientApi.GetLeaderboard({
-        StatisticName: "PlayerTotalPoints",
-        StartPosition: 0,
-        MaxResultsCount: 100
-    }, function(result, error) {
-        if (error) {
-            console.error("Error getting leaderboard:", error);
-            document.getElementById('leaderboard-wrapper').innerHTML = 
-                '<div class="error-message">Failed to load leaderboard data. Please try again later.</div>';
-        } else {
-            console.log("Leaderboard data:", result.data);
-            
-            allLeaderboardData = result.data.Leaderboard;
-            totalPages = Math.ceil(allLeaderboardData.length / LEADERBOARD_CONFIG.itemsPerPage);
-            
-            // Get the current player's ID to highlight their row using optimized helper
-            getPlayFabId(function(idError, playFabId) {
-                if (idError) {
-                    console.error("Error getting PlayFab ID:", idError);
-                    currentPlayerId = null;
-                } else {
-                    currentPlayerId = playFabId;
-                    console.log("Current player ID:", currentPlayerId);
-                }
-                
-                // Render the leaderboard
-                renderPaginatedLeaderboard();
-            });
-        }
+    if (!LEADERBOARD_CONFIG.progressivePaging) {
+        // Legacy single-call mode
+        PlayFab.ClientApi.GetLeaderboard({
+            StatisticName: "PlayerTotalPoints",
+            StartPosition: 0,
+            MaxResultsCount: LEADERBOARD_CONFIG.apiBatchSize
+        }, function(result, error) {
+            if (error) {
+                console.error("Error getting leaderboard:", error);
+                document.getElementById('leaderboard-wrapper').innerHTML = 
+                    '<div class="error-message">Failed to load leaderboard data. Please try again later.</div>';
+            } else {
+                allLeaderboardData = result.data.Leaderboard;
+                totalPages = Math.ceil(allLeaderboardData.length / LEADERBOARD_CONFIG.itemsPerPage);
+                getPlayFabId(function(idError, playFabId) {
+                    currentPlayerId = idError ? null : playFabId;
+                    renderPaginatedLeaderboard();
+                });
+            }
+        });
+        return;
+    }
+
+    // Progressive mode: fetch first segment only
+    fetchSegment(0).then(() => {
+        // After first segment loaded, set initial totalPages estimate (may grow)
+        recomputeTotalPages();
+        getPlayFabId(function(idError, playFabId) {
+            currentPlayerId = idError ? null : playFabId;
+            renderPaginatedLeaderboard();
+        });
+    }).catch(err => {
+        console.error('Failed initial leaderboard segment:', err);
+        const wrapper = document.getElementById('leaderboard-wrapper');
+        if (wrapper) wrapper.innerHTML = '<div class="error-message">Failed to load leaderboard data. Please try again later.</div>';
     });
 }
 
@@ -266,14 +281,15 @@ function renderPaginatedLeaderboard() {
         return;
     }
     
-    // Validate input data
+    // In progressive mode, data may be in segmentCache before merged; treat presence of any segment entries as data
     if (!allLeaderboardData || !Array.isArray(allLeaderboardData)) {
         leaderboardElement.innerHTML = '<div class="error-message">Invalid leaderboard data received.</div>';
         return;
     }
-    
-    // Check if we have data to display
-    if (allLeaderboardData.length === 0) {
+    const hasAnyData = LEADERBOARD_CONFIG.progressivePaging
+        ? Object.keys(segmentCache).some(k => (segmentCache[k] && segmentCache[k].length > 0)) || allLeaderboardData.length > 0
+        : allLeaderboardData.length > 0;
+    if (!hasAnyData) {
         leaderboardElement.innerHTML = '<div class="error-message">No leaderboard data available yet.</div>';
         return;
     }
@@ -293,10 +309,32 @@ function renderPaginatedLeaderboard() {
     `;
     leaderboardElement.appendChild(headerDiv);
     
-    // Calculate which entries to show on current page
+    // Ensure needed data present (progressive)
     const startIndex = (currentPage - 1) * LEADERBOARD_CONFIG.itemsPerPage;
-    const endIndex = Math.min(startIndex + LEADERBOARD_CONFIG.itemsPerPage, allLeaderboardData.length);
-    const pageData = allLeaderboardData.slice(startIndex, endIndex);
+    const endIndex = startIndex + LEADERBOARD_CONFIG.itemsPerPage;
+
+    if (LEADERBOARD_CONFIG.progressivePaging) {
+        // Determine which segments are required
+        const batchSize = LEADERBOARD_CONFIG.apiBatchSize;
+        const neededSegmentStarts = new Set();
+        for (let idx = startIndex; idx < endIndex; idx += batchSize) {
+            const segStart = Math.floor(idx / batchSize) * batchSize;
+            if (!segmentCache[segStart] && !discoveredEnd) neededSegmentStarts.add(segStart);
+        }
+        if (neededSegmentStarts.size > 0) {
+            // Show placeholder while loading
+            renderLoadingPlaceholder();
+            // Fetch all needed segments sequentially (could parallelize)
+            const fetches = Array.from(neededSegmentStarts).sort((a,b)=>a-b).reduce((p, seg) => p.then(()=>fetchSegment(seg)), Promise.resolve());
+            fetches.then(() => {
+                recomputeTotalPages();
+                renderPaginatedLeaderboard(); // re-render with data
+            });
+            return; // exit until data loaded
+        }
+    }
+
+    const pageData = getPageDataSlice(startIndex, endIndex);
     
     // Create table
     const table = document.createElement('table');
@@ -315,8 +353,11 @@ function renderPaginatedLeaderboard() {
     
     // Add data rows
     const tbody = table.createTBody();
+    const pagePlayerIdsNeedingFetch = [];
     pageData.forEach(entry => {
+        if (!entry) return; // skip empty placeholder (shouldn't occur now)
         const row = tbody.insertRow();
+        row.setAttribute('data-playfab-id', entry.PlayFabId);
         
         // Highlight current user's row
         if (currentPlayerId && entry.PlayFabId === currentPlayerId) {
@@ -332,13 +373,22 @@ function renderPaginatedLeaderboard() {
             rankCell.className = `rank-${rank}`;
         }
         
-        // Team name
+        // Team name (DisplayName from leaderboard or cached extra)
         const nameCell = row.insertCell();
-        nameCell.textContent = entry.DisplayName || 'Unknown Team';
+        const cachedExtra = playerExtraCache[entry.PlayFabId];
+        const teamName = (cachedExtra && cachedExtra.teamName) || entry.DisplayName || 'Unknown Team';
+        nameCell.textContent = teamName;
         
-        // Manager name
+        // Manager name (prefer cache -> entry.managerName -> fallback)
         const managerCell = row.insertCell();
-        managerCell.textContent = entry.managerName || 'Unknown Manager';
+        const managerName = (cachedExtra && cachedExtra.managerName) || entry.managerName;
+        if (managerName) {
+            managerCell.textContent = managerName;
+        } else {
+            managerCell.textContent = 'Loading…';
+            pagePlayerIdsNeedingFetch.push(entry.PlayFabId);
+            managerCell.setAttribute('data-pending-manager', 'true');
+        }
         
         // Points
         const pointsCell = row.insertCell();
@@ -352,6 +402,11 @@ function renderPaginatedLeaderboard() {
     
     // Add quick jump to current user if they're not on this page
     addUserLocationHelper(leaderboardElement);
+    
+    // Lazy fetch manager names & extra data for entries missing cache (real data mode only)
+    if (!LEADERBOARD_CONFIG.enableTestData && pagePlayerIdsNeedingFetch.length > 0) {
+        fetchManagerDataForPage(pagePlayerIdsNeedingFetch);
+    }
 }
 
 // Create pagination controls
@@ -510,4 +565,182 @@ function getPlayersAdditionalData(playerIds, callback) {
 function renderEnhancedLeaderboard(leaderboardData, currentPlayerId, playerDataMap) {
     // This function is kept for reference but renderPaginatedLeaderboard() is now used instead
     console.log("Legacy renderEnhancedLeaderboard called - consider using renderPaginatedLeaderboard instead");
+}
+
+// Fetch manager/team names for visible page players (batched sequentially to avoid rate issues)
+function fetchManagerDataForPage(playerIds) {
+    // Filter out ids already cached (defensive)
+    const ids = playerIds.filter(id => !playerExtraCache[id]);
+    if (ids.length === 0) return;
+    console.log('Fetching manager data for page players:', ids);
+
+    // We'll process sequentially to be gentle on API; could batch with Promise.all if needed
+    let index = 0;
+    function next() {
+        if (index >= ids.length) {
+            // Re-render rows to update placeholders
+            updatePendingManagerCells();
+            return;
+        }
+        const id = ids[index++];
+        PlayFab.ClientApi.GetUserData({
+            PlayFabId: id,
+            Keys: ["managerName", "teamName", "leaderboardInfo"]
+        }, function(res, err) {
+            if (err) {
+                console.warn('GetUserData failed for', id, err);
+            } else if (res && res.data && res.data.Data) {
+                const dataObj = res.data.Data;
+                let managerName = dataObj.managerName ? dataObj.managerName.Value : null;
+                let teamName = dataObj.teamName ? dataObj.teamName.Value : null;
+                // Try leaderboardInfo JSON for fallback detail
+                if ((!managerName || !teamName) && dataObj.leaderboardInfo) {
+                    try {
+                        const info = JSON.parse(dataObj.leaderboardInfo.Value);
+                        managerName = managerName || info.managerName;
+                        teamName = teamName || info.teamName;
+                    } catch(parseErr) {
+                        console.warn('Failed parsing leaderboardInfo for', id, parseErr);
+                    }
+                }
+                playerExtraCache[id] = {
+                    managerName: managerName || 'Unknown Manager',
+                    teamName: teamName || null,
+                    fetched: true
+                };
+            }
+            // Update cells incrementally for responsiveness
+            updatePendingManagerCells();
+            setTimeout(next, 60); // slight delay to avoid hammering
+        });
+    }
+    next();
+}
+
+// Update any cells still marked pending with fetched cache values
+function updatePendingManagerCells() {
+    const table = document.querySelector('.leaderboard-table');
+    if (!table) return;
+    const rows = table.tBodies[0] ? table.tBodies[0].rows : [];
+    Array.from(rows).forEach(row => {
+        const cells = row.cells;
+        if (cells.length < 4) return; // Rank, Team, Manager, Points
+        const managerCell = cells[2];
+        if (managerCell && managerCell.dataset.pendingManager === 'true') {
+            // Identify player via team cell + points? Instead store mapping: we can't easily map back without id.
+            // Enhancement: store PlayFabId on row.
+        }
+    });
+    // Improved approach: add data-playfab-id to each row on render, revisit that.
+    const pending = table.querySelectorAll('tr[data-playfab-id] td[data-pending-manager="true"]');
+    pending.forEach(cell => {
+        const row = cell.closest('tr');
+        const pid = row ? row.getAttribute('data-playfab-id') : null;
+        if (pid && playerExtraCache[pid]) {
+            cell.textContent = playerExtraCache[pid].managerName || 'Unknown Manager';
+            cell.removeAttribute('data-pending-manager');
+            // Update team cell if we have a better teamName
+            const teamCell = row.cells[1];
+            if (teamCell && playerExtraCache[pid].teamName) {
+                teamCell.textContent = playerExtraCache[pid].teamName;
+            }
+        }
+    });
+}
+
+// Render a lightweight loading placeholder while segments fetch
+function renderLoadingPlaceholder() {
+    const wrapper = document.getElementById('leaderboard-wrapper');
+    if (!wrapper) return;
+    wrapper.innerHTML = `
+      <div class="leaderboard-header">
+        <h2>🏆 League Standings</h2>
+        <div class="leaderboard-stats"><span>Loading page...</span></div>
+      </div>
+      <div class="loading-message">Fetching leaderboard data...</div>`;
+}
+
+// Fetch a leaderboard segment starting at startPosition
+function fetchSegment(startPosition) {
+    if (segmentCache[startPosition]) {
+        return Promise.resolve(segmentCache[startPosition]);
+    }
+    if (segmentInFlight[startPosition]) {
+        return segmentInFlight[startPosition];
+    }
+    const batchSize = LEADERBOARD_CONFIG.apiBatchSize;
+    const promise = new Promise((resolve, reject) => {
+        PlayFab.ClientApi.GetLeaderboard({
+            StatisticName: "PlayerTotalPoints",
+            StartPosition: startPosition,
+            MaxResultsCount: batchSize
+        }, function(result, error) {
+            if (error) {
+                delete segmentInFlight[startPosition];
+                reject(error);
+                return;
+            }
+            const entries = result.data.Leaderboard || [];
+            segmentCache[startPosition] = entries;
+            // Integrate into flattened array (sparse fill) for functions relying on it
+            integrateSegmentIntoAll(entries, startPosition);
+            highestFetchedRankExclusive = Math.max(highestFetchedRankExclusive, startPosition + entries.length);
+            if (entries.length < batchSize) {
+                discoveredEnd = true;
+            }
+            delete segmentInFlight[startPosition];
+            resolve(entries);
+        });
+    });
+    segmentInFlight[startPosition] = promise;
+    return promise;
+}
+
+// Place segment entries into allLeaderboardData at correct positions
+function integrateSegmentIntoAll(entries, startPosition) {
+    if (!entries || entries.length === 0) return;
+    // Ensure array large enough
+    const neededLength = startPosition + entries.length;
+    if (allLeaderboardData.length < neededLength) {
+        allLeaderboardData.length = neededLength; // expands with undefineds
+    }
+    for (let i = 0; i < entries.length; i++) {
+        allLeaderboardData[startPosition + i] = entries[i];
+    }
+}
+
+// Recompute total pages when new data fetched
+function recomputeTotalPages() {
+    if (!LEADERBOARD_CONFIG.progressivePaging) return;
+    if (discoveredEnd) {
+        totalPages = Math.ceil(highestFetchedRankExclusive / LEADERBOARD_CONFIG.itemsPerPage) || 1;
+    } else {
+        // Estimate upper bound using hint
+        totalPages = Math.ceil(Math.min(LEADERBOARD_CONFIG.maxTotalEntriesHint, highestFetchedRankExclusive + LEADERBOARD_CONFIG.apiBatchSize) / LEADERBOARD_CONFIG.itemsPerPage);
+    }
+}
+
+// Build page slice from cached segments
+function getPageDataSlice(startIndex, endIndex) {
+    if (!LEADERBOARD_CONFIG.progressivePaging) {
+        return allLeaderboardData.slice(startIndex, Math.min(endIndex, allLeaderboardData.length));
+    }
+    const batchSize = LEADERBOARD_CONFIG.apiBatchSize;
+    const result = [];
+    for (let i = startIndex; i < endIndex; i++) {
+        // If already integrated, use flattened array directly
+        if (allLeaderboardData[i]) {
+            result.push(allLeaderboardData[i]);
+            continue;
+        }
+        const segStart = Math.floor(i / batchSize) * batchSize;
+        const seg = segmentCache[segStart];
+        if (!seg) continue;
+        const localIndex = i - segStart;
+        const entry = seg[localIndex];
+        if (entry) {
+            result.push(entry);
+        }
+    }
+    return result;
 }

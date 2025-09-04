@@ -158,6 +158,111 @@ function parsePlayerData(playerDataString) {
     };
 }
 
+// ========================================
+// FORMATION VALIDATION & AUTO-HEALING (Multiple legal formations)
+// Supported formations (starting XI, GK always 1):
+// 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-2-3, 5-3-2, 5-4-1
+// Bench (squad size 15): remaining 4 players; preference: 2nd GK (if any) + highest price remaining.
+// We NEVER drop players; only reorder when starting XI invalid.
+// Returned: { healedIds, healedPlayers, healed, formation }
+function enforceLegalFormation(players) {
+    if (!Array.isArray(players) || players.length === 0) {
+        return { healedIds: [], healedPlayers: [], healed: false, formation: null };
+    }
+
+    const legalPatterns = [
+        { df:3, md:4, at:3, key:'3-4-3' },
+        { df:3, md:5, at:2, key:'3-5-2' },
+        { df:4, md:3, at:3, key:'4-3-3' },
+        { df:4, md:4, at:2, key:'4-4-2' },
+        { df:4, md:5, at:1, key:'4-5-1' },
+        { df:5, md:2, at:3, key:'5-2-3' },
+        { df:5, md:3, at:2, key:'5-3-2' },
+        { df:5, md:4, at:1, key:'5-4-1' }
+    ];
+
+    // Helpers
+    const posGroups = {
+        gk: players.filter(p => p.position === 'goalkeeper'),
+        df: players.filter(p => p.position === 'defender'),
+        md: players.filter(p => p.position === 'midfielder'),
+        at: players.filter(p => p.position === 'attacker')
+    };
+
+    // Fast path: if we have at least 11, check existing first XI for validity.
+    if (players.length >= 11) {
+        const xi = players.slice(0,11);
+        const counts = { gk:0, df:0, md:0, at:0 };
+        xi.forEach(p => {
+            switch(p.position){
+                case 'goalkeeper': counts.gk++; break;
+                case 'defender': counts.df++; break;
+                case 'midfielder': counts.md++; break;
+                case 'attacker': counts.at++; break;
+            }
+        });
+        if (counts.gk === 1) {
+            const pattern = legalPatterns.find(f => f.df === counts.df && f.md === counts.md && f.at === counts.at);
+            if (pattern) {
+                return {
+                    healedIds: players.map(p => p.id),
+                    healedPlayers: players,
+                    healed: false,
+                    formation: pattern.key
+                };
+            }
+        }
+    }
+
+    // Need to build a valid starting XI. Choose a legal formation we can satisfy with available pool.
+    // Preference: pattern closest to available distribution (min sum of deficits) then higher attackers (more exciting) then fewer changes.
+    const availableCounts = { gk: posGroups.gk.length, df: posGroups.df.length, md: posGroups.md.length, at: posGroups.at.length };
+    if (availableCounts.gk < 1) {
+        // Can't build anything
+        return { healedIds: players.map(p=>p.id), healedPlayers: players, healed:false, formation:null };
+    }
+
+    const feasible = legalPatterns.filter(p => availableCounts.df >= p.df && availableCounts.md >= p.md && availableCounts.at >= p.at);
+    if (feasible.length === 0) {
+        return { healedIds: players.map(p=>p.id), healedPlayers: players, healed:false, formation:null };
+    }
+
+    // Scoring function: more attackers prioritized, then midfielders, then defenders (entertainment bias)
+    feasible.sort((a,b) => (b.at - a.at) || (b.md - a.md) || (a.df - b.df));
+    const chosen = feasible[0];
+
+    // Sort each positional group by price desc to field strongest XI
+    const sortByPriceDesc = arr => arr.slice().sort((a,b)=>(b.price||0)-(a.price||0));
+    const gkSorted = sortByPriceDesc(posGroups.gk);
+    const dfSorted = sortByPriceDesc(posGroups.df);
+    const mdSorted = sortByPriceDesc(posGroups.md);
+    const atSorted = sortByPriceDesc(posGroups.at);
+
+    const startingXI = [
+        gkSorted[0],
+        ...dfSorted.slice(0, chosen.df),
+        ...mdSorted.slice(0, chosen.md),
+        ...atSorted.slice(0, chosen.at)
+    ];
+
+    // Bench: add second GK if exists, then highest priced remaining irrespective of position until 4 bench spots filled.
+    const usedIds = new Set(startingXI.map(p=>p.id));
+    const bench = [];
+    if (gkSorted.length > 1) bench.push(gkSorted[1]);
+    // Pool of remaining candidates sorted by price
+    const remaining = players.filter(p => !usedIds.has(p.id)).sort((a,b)=>(b.price||0)-(a.price||0));
+    for (const p of remaining) {
+        if (bench.length >= 4) break;
+        if (!bench.includes(p)) bench.push(p);
+    }
+
+    const ordered = [...startingXI, ...bench, ...remaining.filter(p => !bench.includes(p))];
+    const healedIds = ordered.map(p=>p.id);
+    const originalIds = players.map(p=>p.id);
+    const healed = healedIds.length === originalIds.length && healedIds.every((id,i)=> id===originalIds[i]) ? false : true;
+    return { healedIds, healedPlayers: ordered, healed, formation: chosen.key };
+}
+
 // Shared function to load player data and gameweek from PlayFab (optimized with caching)
 function loadSharedPlayersFromPlayFab(callback) {
     // Check cache first
@@ -288,16 +393,37 @@ function loadSharedPlayersFromPlayFab(callback) {
                             }
                         }).filter(player => player !== null); // Filter out any null values
 
+                        // Auto-heal formation if needed before caching / returning
+                        let formationHealed = false;
+                        let healedIds = selectedPlayerIds;
+                        let healedPlayers = players;
+                        let detectedFormation = null;
+                        try {
+                            const { healedIds: hIds, healedPlayers: hPlayers, healed, formation } = enforceLegalFormation(players);
+                            formationHealed = healed;
+                            detectedFormation = formation;
+                            if (formationHealed) {
+                                console.log('Formation auto-healed to legal pattern:', formation);
+                                healedIds = hIds;
+                                healedPlayers = hPlayers;
+                            } else if (formation) {
+                                console.log('Existing formation is legal:', formation);
+                            }
+                        } catch (e) {
+                            console.warn('Formation normalization failed:', e);
+                        }
+
                         // Prepare data for response
                         const responseData = {
-                            players,
+                            players: healedPlayers,
                             weeklyPointsTotal,         // Current week points
                             cumulativePointsTotal,     // Total points across all weeks
                             gameWeek,                  // Current gameweek
-                            selectedPlayerIds,
+                            selectedPlayerIds: healedIds,
                             captainId,                 // Store captain separately
                             freeTransfers,             // Current free transfers available (after rollover)
-                            currentPlayerTransfersWeek // Week marker for transfers logic
+                            currentPlayerTransfersWeek, // Week marker for transfers logic
+                            formation: detectedFormation
                         };
 
                         // Cache the successful response
@@ -307,22 +433,24 @@ function loadSharedPlayersFromPlayFab(callback) {
                         console.log("Shared data cached successfully");
 
                         // If rollover changed data, persist updated freeTransfers & currentPlayerTransfersWeek immediately to prevent refresh abuse
-                        if (rolloverApplied) {
-                            PlayFab.ClientApi.UpdateUserData({
-                                Data: {
-                                    freeTransfers: freeTransfers.toString(),
-                                    currentPlayerTransfersWeek: currentPlayerTransfersWeek.toString()
-                                }
-                            }, function(uResult, uError) {
+                        if (rolloverApplied || formationHealed) {
+                            const dataUpdate = {};
+                            if (rolloverApplied) {
+                                dataUpdate.freeTransfers = freeTransfers.toString();
+                                dataUpdate.currentPlayerTransfersWeek = currentPlayerTransfersWeek.toString();
+                            }
+                            if (formationHealed) {
+                                dataUpdate.selectedPlayers = JSON.stringify(healedIds);
+                            }
+                            PlayFab.ClientApi.UpdateUserData({ Data: dataUpdate }, function(uResult, uError) {
                                 if (uError) {
-                                    console.warn('Failed to persist rollover update:', uError);
+                                    console.warn('Failed to persist auto-heal / rollover update:', uError);
                                 } else {
-                                    console.log('Rollover state persisted successfully');
+                                    console.log('Persisted auto-heal / rollover update');
                                 }
                                 callback(null, responseData);
                             });
                         } else {
-                            // Pass all data to the callback
                             callback(null, responseData);
                         }
                     } else {

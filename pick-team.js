@@ -266,10 +266,18 @@ function saveTeamToPlayFab() {
         
         if (error) {
             console.error("Error saving team to PlayFab:", error);
-            alert("Error saving team. Please try again.");
+            if (typeof showTransientToast === 'function') {
+                showTransientToast('Team save failed. Try again.', { type: 'error' });
+            } else {
+                alert("Error saving team. Please try again.");
+            }
         } else {
             console.log("Team saved successfully to PlayFab:", result);
-            alert("Team saved successfully!");
+            if (typeof showTransientToast === 'function') {
+                showTransientToast('Team saved successfully!', { type: 'success' });
+            } else {
+                alert("Team saved successfully!");
+            }
         }
     });
 }

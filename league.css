@@ -122,26 +122,45 @@
 }
 
 .pagination-btn {
-    padding: 8px 16px;
+    padding: 10px 18px;
     border: 1px solid #087cc4;
-    background-color: #ffffff;
-    color: #087cc4;
-    border-radius: 5px;
+    background: linear-gradient(180deg,#0a8edf,#087cc4);
+    color: #fff;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.3s ease;
+    font-weight: 600;
+    letter-spacing: .25px;
+    transition: background .25s ease, transform .15s ease, box-shadow .25s ease, color .3s ease;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,.15);
 }
 
 .pagination-btn:hover:not(.disabled) {
-    background-color: #087cc4;
-    color: white;
+    background: linear-gradient(180deg,#0c9ff9,#0a7ebd);
+    box-shadow: 0 4px 10px rgba(0,0,0,.25);
+    transform: translateY(-2px);
 }
 
 .pagination-btn.disabled {
-    opacity: 0.5;
+    opacity: .45;
     cursor: not-allowed;
-    border-color: #ccc;
-    color: #ccc;
+    background: #e4e8ec;
+    color: #71808d;
+    border-color: #d1d9e0;
+    box-shadow: none;
+}
+
+.pagination-btn:active:not(.disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+
+.pagination-btn:focus-visible:not(.disabled),
+.page-btn:focus-visible,
+.goto-user-btn:focus-visible {
+    outline: 3px solid #ffcc33;
+    outline-offset: 2px;
 }
 
 /* Page Numbers */
@@ -153,27 +172,31 @@
 
 .page-btn {
     padding: 8px 12px;
-    border: 1px solid #ddd;
-    background-color: #ffffff;
-    color: #333;
-    border-radius: 5px;
+    border: 1px solid #b7c4cc;
+    background: #fff;
+    color: #234;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     min-width: 40px;
     text-align: center;
-    transition: all 0.3s ease;
+    font-weight: 500;
+    transition: background .25s ease, color .25s ease, border-color .25s ease, transform .15s ease;
 }
 
 .page-btn:hover {
-    background-color: #f0f0f0;
+    background: #087cc4;
+    color: #fff;
     border-color: #087cc4;
+    transform: translateY(-2px);
 }
 
 .page-btn.active {
-    background-color: #087cc4;
-    color: white;
+    background: linear-gradient(180deg,#0a8edf,#087cc4);
+    color: #fff;
     border-color: #087cc4;
-    font-weight: bold;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(0,0,0,.25);
 }
 
 .pagination-ellipsis {
@@ -201,19 +224,66 @@
 }
 
 .goto-user-btn {
-    padding: 6px 12px;
-    background-color: #087cc4;
-    color: white;
-    border: none;
-    border-radius: 5px;
+    padding: 8px 16px;
+    background: linear-gradient(180deg,#32c15b,#28a745);
+    color: #fff;
+    border: 1px solid #23943f;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.3s ease;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: .25px;
+    transition: background .25s ease, box-shadow .25s ease, transform .15s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,.18);
 }
 
 .goto-user-btn:hover {
-    background-color: #065a8c;
+    background: linear-gradient(180deg,#3cd368,#239d46);
+    box-shadow: 0 4px 10px rgba(0,0,0,.25);
+    transform: translateY(-2px);
 }
+
+.goto-user-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+
+/* Loading manager cell placeholder */
+td[data-pending-manager="true"] {
+    font-style: italic;
+    color: #6c757d;
+    position: relative;
+}
+td[data-pending-manager="true"]:after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid #b6c2c9;
+    border-top-color: #087cc4;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 6px;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Rank cell flair */
+td.rank-1, td.rank-2, td.rank-3 { position: relative; }
+td.rank-1:before, td.rank-2:before, td.rank-3:before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translate(-100%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+td.rank-1:before { background: gold; }
+td.rank-2:before { background: silver; }
+td.rank-3:before { background: #cd7f32; }
 
 /* Mobile Responsive Pagination */
 @media (max-width: 768px) {

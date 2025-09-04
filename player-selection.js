@@ -485,14 +485,10 @@ function saveDraftTeam() {
 
             console.log("Team data saved successfully");
 
-            // Organize players into proper 4-4-2 formation before saving
-            const organizedPlayers = organizePlayersInto442Formation(tempSelectedPlayers);
-            console.log('Original draft order:', tempSelectedPlayers);
-            console.log('4-4-2 organized order:', organizedPlayers);
-
-            // Finally save selected players in 4-4-2 formation
+            // Save players in current selected order (formation normalization happens on load)
+            console.log('Saving draft order (no client reordering):', tempSelectedPlayers);
             const selectedPlayersData = {
-                selectedPlayers: JSON.stringify(organizedPlayers)
+                selectedPlayers: JSON.stringify(tempSelectedPlayers)
             };
 
             PlayFab.ClientApi.UpdateUserData({
@@ -577,55 +573,7 @@ function saveTransfers() {
 }
 
 // Helper function to organize players into 4-4-2 formation
-function organizePlayersInto442Formation(selectedPlayerIds) {
-    // Get player objects from cache
-    const players = selectedPlayerIds.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
-    
-    // Group players by position
-    const goalkeepers = players.filter(p => p.position === 'goalkeeper');
-    const defenders = players.filter(p => p.position === 'defender');
-    const midfielders = players.filter(p => p.position === 'midfielder');
-    const attackers = players.filter(p => p.position === 'attacker');
-    
-    console.log('Formation organization:', {
-        goalkeepers: goalkeepers.length,
-        defenders: defenders.length,
-        midfielders: midfielders.length,
-        attackers: attackers.length
-    });
-    
-    // Validate we have enough players for 4-4-2 formation
-    if (goalkeepers.length < 1 || defenders.length < 4 || midfielders.length < 4 || attackers.length < 2) {
-        console.error('Invalid formation - not enough players for 4-4-2');
-        return selectedPlayerIds; // Return original if validation fails
-    }
-    
-    // Create 4-4-2 formation: 1 GK, 4 DF, 4 MD, 2 AT (starting XI)
-    const startingXI = [
-        goalkeepers[0].id,
-        ...defenders.slice(0, 4).map(p => p.id),
-        ...midfielders.slice(0, 4).map(p => p.id),
-        ...attackers.slice(0, 2).map(p => p.id)
-    ];
-    
-    // Create substitutes: remaining players (1 GK, 1 DF, 1 MD, 1 AT)
-    const substitutes = [
-        ...(goalkeepers.length > 1 ? [goalkeepers[1].id] : []),
-        ...(defenders.length > 4 ? [defenders[4].id] : []),
-        ...(midfielders.length > 4 ? [midfielders[4].id] : []),
-        ...(attackers.length > 2 ? [attackers[2].id] : [])
-    ];
-    
-    const organizedFormation = [...startingXI, ...substitutes];
-    
-    console.log('4-4-2 Formation organized:', {
-        startingXI: startingXI.length,
-        substitutes: substitutes.length,
-        total: organizedFormation.length
-    });
-    
-    return organizedFormation;
-}
+// Removed organizePlayersInto442Formation; server-side load normalization now handles formation legality.
 
 // Error modal functions
 function showErrorModal(errors) {
