@@ -3,28 +3,151 @@
    Specific styles for the transfers page
    ======================================== */
 
-/* Team Info Section - Transfers specific */
-.team-info {
-    background: var(--pico-card-background-color);
-    border: var(--pico-border-width) solid var(--pico-card-border-color);
-    border-radius: var(--pico-border-radius);
-    padding: var(--pico-spacing);
+/* Transfer Status Section - Transfers specific */
+.transfer-status {
     margin-bottom: var(--pico-spacing);
 }
 
-.budget-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--pico-spacing);
-    margin: 0;
+.status-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.budget-info p {
-    margin: 0;
+.status-item {
+    flex: 1;
     text-align: center;
-    padding: var(--pico-spacing);
-    background: var(--pico-secondary-background);
-    border-radius: var(--pico-border-radius);
+    padding: 6px 4px; /* Further reduced padding */
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    min-width: 0; /* Allow flex items to shrink */
+    min-height: 60px; /* Fixed minimum height for uniformity */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.status-item .status-count,
+.status-item .status-amount,
+.status-item .status-total,
+.status-item .status-unit {
+    display: block;
+    font-size: 1rem; /* Uniform size */
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.status-item .status-label {
+    display: block;
+    font-size: 0.75rem; /* Reduced label size */
+    font-weight: normal;
+    opacity: 0.9;
+}
+
+/* Special styling for players selected to keep count/total on same line */
+.status-count-total {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    margin-bottom: 2px;
+}
+
+.status-count-total .status-count,
+.status-count-total .status-total {
+    display: inline;
+    margin-bottom: 0;
+}
+
+/* Specific colors for each status item */
+.players-selected {
+    background-color: #28a745; /* Green */
+}
+
+.budget-remaining {
+    background-color: #4CAF50; /* Green - default positive budget color */
+}
+
+.budget-remaining.over-budget {
+    background-color: #dc3545; /* Red - negative budget color */
+}
+
+.free-transfers {
+    background-color: #6c757d; /* Neutral gray base; dynamic classes will override */
+}
+
+.cost-status {
+    background-color: #dc3545; /* Red */
+}
+
+/* Dynamic state modifiers for status items */
+.status-item.status-success {
+    background-color: #28a745 !important; /* Green */
+    color: #fff;
+}
+
+.status-item.status-warning {
+    background-color: #ffc107 !important; /* Yellow */
+    color: #000;
+}
+
+.status-item.status-neutral {
+    background-color: #6c757d !important; /* Neutral gray */
+    color: #fff;
+}
+
+/* (Optional) If you want cost box not to appear red by default, you can soften the base: */
+.cost-status {
+    background-color: #6c757d; /* Neutral base; dynamic classes will override */
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .status-info {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .status-item {
+        padding: 8px 4px;
+        min-height: 50px; /* Smaller height for mobile */
+    }
+    
+    .status-item .status-count,
+    .status-item .status-amount,
+    .status-item .status-total,
+    .status-item .status-unit {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .status-info {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .status-item {
+        flex: 1 1 45%;
+        min-width: 120px;
+        padding: 6px 4px;
+        min-height: 50px;
+    }
+    
+    .status-item .status-count,
+    .status-item .status-amount,
+    .status-item .status-total,
+    .status-item .status-unit {
+        font-size: 0.9rem;
+    }
+    
+    .status-item .status-label {
+        font-size: 0.7rem;
+    }
 }
 
 /* Player card styling for selling state */
@@ -113,60 +236,3 @@
 /* ========================================
    TRANSFERS MODAL STYLES (transfers specific)
    ======================================== */
-
-/* Transfer Details Modal - Transfers specific */
-#transferDetails {
-    max-width: 500px;
-}
-
-.transfer-summary {
-    background: var(--pico-secondary-background);
-    padding: 1rem;
-    border-radius: var(--pico-border-radius);
-    margin: 1rem 0;
-}
-
-.transfer-cost {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: var(--pico-primary);
-    text-align: center;
-    margin: 1rem 0;
-}
-
-/* Loading States - Transfers specific */
-.loading {
-    position: relative;
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid var(--pico-primary);
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 1s infinite linear;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Empty States - Transfers specific */
-.empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: var(--pico-muted-color);
-}
-
-.empty-state h3 {
-    margin: 0 0 1rem 0;
-    color: var(--pico-color);
-}

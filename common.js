@@ -172,7 +172,7 @@ function loadSharedPlayersFromPlayFab(callback) {
     
     // Fetch user data to get the selectedPlayers key and captain
     PlayFab.ClientApi.GetUserData({
-        Keys: ["selectedPlayers", "captainId", "teamName", "managerName"]
+        Keys: ["selectedPlayers", "captainId", "teamName", "managerName", "freeTransfers", "currentPlayerTransfersWeek"]
     }, function (result, error) {
         if (error) {
             console.error("Error retrieving user data from PlayFab:", error);
@@ -188,6 +188,18 @@ function loadSharedPlayersFromPlayFab(callback) {
 
             // Get captain ID if it exists
             const captainId = result.data.Data.captainId ? result.data.Data.captainId.Value : null;
+            // Get free transfers (default 1 if missing or invalid)
+            const freeTransfersRaw = result.data.Data.freeTransfers ? result.data.Data.freeTransfers.Value : null;
+            let freeTransfers = parseInt(freeTransfersRaw, 10);
+            if (isNaN(freeTransfers) || freeTransfers < 0) {
+                freeTransfers = 1;
+            }
+            // Get currentPlayerTransfersWeek (default to gameWeek later if missing)
+            const currentTransfersWeekRaw = result.data.Data.currentPlayerTransfersWeek ? result.data.Data.currentPlayerTransfersWeek.Value : null;
+            let currentPlayerTransfersWeek = parseInt(currentTransfersWeekRaw, 10);
+            if (isNaN(currentPlayerTransfersWeek) || currentPlayerTransfersWeek < 1) {
+                currentPlayerTransfersWeek = null; // will initialize after fetching title data
+            }
 
             let selectedPlayerIds;
             try {
@@ -214,6 +226,30 @@ function loadSharedPlayersFromPlayFab(callback) {
                         // Get the current gameweek
                         const gameWeek = parseInt(titleDataResult.data.Data.gameWeek);
                         console.log("Current Gameweek:", gameWeek);
+
+                        // Rollover logic for free transfers based on week difference
+                        let rolloverApplied = false;
+                        if (!isNaN(gameWeek)) {
+                            if (currentPlayerTransfersWeek === null) {
+                                // First-time initialization: set to current gameWeek and ensure at least 1 free transfer
+                                const before = freeTransfers;
+                                if (freeTransfers < 1) {
+                                    freeTransfers = 1; // baseline free transfer on first initialization
+                                }
+                                currentPlayerTransfersWeek = gameWeek;
+                                rolloverApplied = true; // we will persist initialization (week and maybe free transfer adjustment)
+                                console.log(`Initial transfers week setup: week=${gameWeek}, freeTransfers ${before}->${freeTransfers}`);
+                            } else if (gameWeek > currentPlayerTransfersWeek) {
+                                const weeksBehind = gameWeek - currentPlayerTransfersWeek;
+                                if (weeksBehind > 0) {
+                                    const before = freeTransfers;
+                                    freeTransfers = Math.min(2, freeTransfers + weeksBehind); // cap at 2
+                                    currentPlayerTransfersWeek = gameWeek; // advance tracked week
+                                    rolloverApplied = true;
+                                    console.log(`Rollover applied: weeksBehind=${weeksBehind}, freeTransfers ${before}->${freeTransfers}`);
+                                }
+                            }
+                        }
 
                         // Parse the players and calculate points
                         let weeklyPointsTotal = 0;         // For displaying current week's points
@@ -259,7 +295,9 @@ function loadSharedPlayersFromPlayFab(callback) {
                             cumulativePointsTotal,     // Total points across all weeks
                             gameWeek,                  // Current gameweek
                             selectedPlayerIds,
-                            captainId                  // Store captain separately
+                            captainId,                 // Store captain separately
+                            freeTransfers,             // Current free transfers available (after rollover)
+                            currentPlayerTransfersWeek // Week marker for transfers logic
                         };
 
                         // Cache the successful response
@@ -268,8 +306,25 @@ function loadSharedPlayersFromPlayFab(callback) {
                         sharedDataCache.lastFetch = Date.now();
                         console.log("Shared data cached successfully");
 
-                        // Pass all data to the callback
-                        callback(null, responseData);
+                        // If rollover changed data, persist updated freeTransfers & currentPlayerTransfersWeek immediately to prevent refresh abuse
+                        if (rolloverApplied) {
+                            PlayFab.ClientApi.UpdateUserData({
+                                Data: {
+                                    freeTransfers: freeTransfers.toString(),
+                                    currentPlayerTransfersWeek: currentPlayerTransfersWeek.toString()
+                                }
+                            }, function(uResult, uError) {
+                                if (uError) {
+                                    console.warn('Failed to persist rollover update:', uError);
+                                } else {
+                                    console.log('Rollover state persisted successfully');
+                                }
+                                callback(null, responseData);
+                            });
+                        } else {
+                            // Pass all data to the callback
+                            callback(null, responseData);
+                        }
                     } else {
                         console.error("No title data returned.");
                         callback("No title data returned", null);
@@ -903,6 +958,9 @@ function initializePage(currentPage) {
             checkTeamName();
             loadTeamNameOnly();
             
+            // Initialize mobile dropdown for pick-team page
+            initializeMobileDropdown();
+            
             // Load players for pick team page
             if (typeof loadPlayersFromPlayFab === 'function') {
                 loadPlayersFromPlayFab(function (error, data) {
@@ -946,6 +1004,11 @@ function initializePage(currentPage) {
             });
             break;
     }
+    
+    // Initialize mobile dropdown for all pages (with a delay to ensure DOM is ready)
+    setTimeout(() => {
+        initializeMobileDropdown();
+    }, 200);
 }
 
 // Page load handling
@@ -990,3 +1053,100 @@ window.addEventListener('load', function() {
         }
     }
 });
+
+// ========================================
+// BUDGET DISPLAY MANAGEMENT
+// Shared functionality for budget display and styling
+// ========================================
+
+// Function to update budget display with color coding
+function updateBudgetDisplay(budgetValue, budgetElementId, targetSelector) {
+    // Update budget text
+    const budgetElement = document.getElementById(budgetElementId);
+    if (budgetElement) {
+        budgetElement.textContent = budgetValue.toFixed(1);
+    }
+
+    // Update target element styling based on budget status
+    const targetElement = document.querySelector(targetSelector);
+    if (targetElement) {
+        if (budgetValue < 0) {
+            targetElement.classList.add('over-budget');
+        } else {
+            targetElement.classList.remove('over-budget');
+        }
+    }
+}
+
+/* ========================================
+   MOBILE NAVIGATION DROPDOWN
+   Custom dropdown functionality for mobile menu
+   ======================================== */
+
+// Initialize mobile dropdown functionality
+function initializeMobileDropdown() {
+    console.log('Attempting to initialize mobile dropdown...');
+    
+    // Wait a bit to ensure DOM is fully loaded
+    setTimeout(() => {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileDropdown = document.getElementById('mobile-menu-dropdown');
+        
+        console.log('Mobile menu button found:', !!mobileMenuBtn);
+        console.log('Mobile dropdown found:', !!mobileDropdown);
+        
+        if (mobileMenuBtn && mobileDropdown) {
+            console.log('Both elements found, setting up event listeners...');
+            
+            // Remove any existing event listeners
+            const newButton = mobileMenuBtn.cloneNode(true);
+            mobileMenuBtn.parentNode.replaceChild(newButton, mobileMenuBtn);
+            
+            newButton.addEventListener('click', function(e) {
+                console.log('Mobile menu button clicked!');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const isOpen = mobileDropdown.classList.contains('show');
+                console.log('Current dropdown state:', isOpen ? 'open' : 'closed');
+                
+                if (isOpen) {
+                    // Close dropdown
+                    mobileDropdown.classList.remove('show');
+                    mobileDropdown.removeAttribute('data-open');
+                    newButton.classList.remove('open');
+                    console.log('Dropdown closed');
+                } else {
+                    // Open dropdown
+                    mobileDropdown.classList.add('show');
+                    mobileDropdown.setAttribute('data-open', 'true');
+                    newButton.classList.add('open');
+                    console.log('Dropdown opened');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                // Don't close dropdown if clicking inside any modal
+                const clickedInsideModal = event.target.closest('dialog');
+                
+                if (!clickedInsideModal && !newButton.contains(event.target) && !mobileDropdown.contains(event.target)) {
+                    mobileDropdown.classList.remove('show');
+                    newButton.classList.remove('open');
+                    console.log('Dropdown closed by outside click');
+                }
+            });
+            
+            console.log('Mobile dropdown initialized successfully!');
+        } else {
+            console.error('Mobile dropdown elements not found:', {
+                button: !!mobileMenuBtn,
+                dropdown: !!mobileDropdown
+            });
+        }
+    }, 100);
+}
+
+// Initialize dropdown when DOM is ready and also when window loads
+document.addEventListener('DOMContentLoaded', initializeMobileDropdown);
+window.addEventListener('load', initializeMobileDropdown);

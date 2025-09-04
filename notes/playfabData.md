@@ -1,0 +1,8 @@
+teamName
+managerName
+selectedPlayers
+currentPlayerGameWeek
+leaderboardInfo
+captainId
+freeTransfers
+currentPlayerTransfersWeek

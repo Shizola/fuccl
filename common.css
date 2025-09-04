@@ -3,13 +3,175 @@
    Shared styles used across multiple pages
    ======================================== */
 
-/* Grid layout for button navigation */
+/* Navigation Styles - Using Pico.css with proper positioning */
 nav {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    padding: 0px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+nav ul {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+nav ul:first-child {
+    /* Logo container */
+}
+
+.nav-logo {
+    height: 62px; /* 48px * 1.3 = 62.4px, rounded to 62px */
+    width: auto;
+}
+
+nav ul:last-child {
+    /* Navigation items container */
+    justify-content: flex-end;
+}
+
+/* Make navigation buttons uniform width */
+nav ul:last-child li a[role="button"] {
+    min-width: 120px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Desktop navigation - show nav links, hide mobile dropdown */
+@media (min-width: 769px) {
+    .nav-mobile-menu {
+        display: none;
+    }
+}
+
+/* Mobile navigation - custom button dropdown */
+@media (max-width: 768px) {
+    nav {
+        flex-direction: row; /* Keep logo and menu on the same line */
+        justify-content: space-between; /* Space them out */
+        align-items: center; /* Vertically align them */
+    }
+
+    nav ul:first-child {
+        margin-bottom: 0; /* Remove bottom margin */
+    }
+
+    nav ul:last-child {
+        width: auto; /* Allow the menu to size itself */
+        justify-content: flex-end;
+    }
+
+    .nav-logo {
+        height: 52px; /* 40px * 1.3 = 52px */
+    }
+
+    /* Hide desktop nav items on mobile, but not dropdown items */
+    nav ul:last-child > li:not(.nav-mobile-menu) {
+        display: none;
+    }
+
+    /* Show mobile menu */
+    .nav-mobile-menu {
+        display: block !important;
+        width: 100%;
+    }
+
+    /* Custom dropdown button */
+    .nav-mobile-menu {
+        position: relative;
+        width: 100%;
+    }
+
+    .mobile-menu-button {
+        width: 100%;
+        text-align: center;
+        padding: 12px 16px;
+        background: var(--pico-primary-background);
+        color: var(--pico-primary-inverse);
+        border: var(--pico-border-width) solid var(--pico-primary-border);
+        border-radius: var(--pico-border-radius);
+        cursor: pointer;
+        font-weight: 600;
+        font-size: inherit;
+    }
+
+    .mobile-menu-button:hover {
+        background: var(--pico-primary-hover-background);
+    }
+
+    .mobile-menu-button .arrow {
+        font-size: 12px;
+        margin-left: 8px;
+        transition: transform 0.2s ease;
+    }
+
+    .mobile-menu-button.open .arrow {
+        transform: rotate(180deg);
+    }
+
+    /* Dropdown content - default hidden state with high specificity */
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--pico-background-color);
+        border: var(--pico-border-width) solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+        box-shadow: var(--pico-box-shadow);
+        z-index: 1050; /* Ensure it's above other content */
+        padding: 8px;
+        margin-top: 4px;
+    }
+
+    /* Show dropdown when open with highest specificity */
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content.show,
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content[data-open="true"] {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content li {
+        display: block;
+        width: 100%;
+        margin-bottom: 0; /* Remove margin as gap is used */
+    }
+
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content li a {
+        display: block;
+        width: 100%;
+        text-align: center;
+        padding: 8px 12px;
+        border-radius: var(--pico-border-radius);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    /* Style the dropdown buttons like the desktop nav buttons */
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content li a[role="button"] {
+        background: var(--pico-secondary-background);
+        color: var(--pico-secondary-inverse);
+        border: var(--pico-border-width) solid var(--pico-secondary-border);
+    }
+
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content li a[role="button"]:not(.secondary) {
+        background: var(--pico-primary-background);
+        color: var(--pico-primary-inverse);
+        border: var(--pico-border-width) solid var(--pico-primary-border);
+    }
+
+    nav ul:last-child .nav-mobile-menu .mobile-dropdown-content li a[role="button"]:hover {
+        background: var(--pico-secondary-hover-background);
+        color: var(--pico-secondary-hover);
+    }
 }
 
 /* Ensure the buttons take up the full width of their grid cells */
@@ -127,7 +289,7 @@ nav button {
 .player-card {
     width: 70px;
     aspect-ratio: 1 / 1;
-    background-color: #008000;
+    background-color: #008000 !important; /* Green background - force override */
     border-radius: 10px;
     text-align: center;
     overflow: hidden;
@@ -151,9 +313,28 @@ nav button {
     box-shadow: 0 0 10px rgba(8, 124, 196, 0.5);
 }
 
+/* Player Position overlay - Shared across all pages */
+.player-position {
+    background-color: #087cc4; /* Blue background to match player-price */
+    color: white;
+    font-size: 8px;
+    padding: 0px 0;
+    font-weight: bold;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    height: 12px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Player Price overlay - Shared across all pages */
 .player-price {
-    background-color: #087cc4; /* Blue background to match player-points */
+    background-color: #087cc4; /* Blue background to match player-position */
     color: white;
     font-size: 8px;
     padding: 0px 0;
@@ -194,7 +375,7 @@ nav button {
     text-overflow: ellipsis;
     white-space: nowrap;
     position: absolute;
-    bottom: 18%;
+    bottom: 12px; /* Position directly above the price/position overlay */
     left: 0;
     width: 100%;
     padding: 0;
@@ -385,6 +566,7 @@ nav button {
     .player-card .player-name {
         font-size: 6px;
         height: 10px;
+        bottom: 10px; /* Position directly above the 10px overlay */
     }
 
     .player-shirt {
@@ -418,6 +600,11 @@ nav button {
     }
 
     .player-price {
+        font-size: 6px;
+        height: 10px;
+    }
+
+    .player-position {
         font-size: 6px;
         height: 10px;
     }
@@ -456,6 +643,10 @@ nav button {
     .player-price {
         font-size: 7px;
     }
+
+    .player-position {
+        font-size: 7px;
+    }
 }
 
 /* Desktop screens (901px and above) */
@@ -492,6 +683,11 @@ nav button {
         font-size: 10px;
         height: 14px;
     }
+
+    .player-position {
+        font-size: 10px;
+        height: 14px;
+    }
 }
 
 /* Tablet screens (611px to 900px) */
@@ -518,6 +714,7 @@ nav button {
     .player-card .player-name {
         font-size: 10px;
         height: 14px;
+        bottom: 14px; /* Position directly above the 14px overlay */
     }
 
     .player-shirt {
@@ -532,7 +729,7 @@ nav button {
 
 /* Empty slot styling for positions that need to be filled */
 .player-card.empty-slot {
-    background-color: #f8f9fa;
+    background-color: white !important; /* Override the green background from base player-card */
     border: 2px dashed #ccc;
     opacity: 0.7;
     cursor: pointer;

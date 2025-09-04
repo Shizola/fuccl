@@ -60,7 +60,7 @@
 
 /* Empty slot styling for positions that need to be filled */
 .player-card.empty-slot {
-    background-color: #f8f9fa;
+    background-color: #f8f9fa !important; /* Override the green background from base player-card */
     border: 2px dashed #ccc;
     opacity: 0.7;
 }

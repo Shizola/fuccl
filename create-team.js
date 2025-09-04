@@ -3,25 +3,14 @@
 // Uses shared player-selection.js for common functionality
 // ========================================
 
-// Track user actions to distinguish real clicks from programmatic ones
-window.lastUserAction = Date.now();
-document.addEventListener('mousedown', () => { window.lastUserAction = Date.now(); });
-document.addEventListener('keydown', () => { window.lastUserAction = Date.now(); });
-document.addEventListener('touchstart', () => { window.lastUserAction = Date.now(); });
-
-// Draft Team specific state
-let teamBudget = 100.0; // Starting budget in millions
-let selectedPlayerCount = 0;
+// Required number of players for a complete squad
 const requiredPlayers = 15;
-
-// Temporary array to track team during drafting
-let draftSelectedPlayers = [];
 
 // Store original selectedPlayers for debugging
 window.selectedPlayers = [];
 
 // Make draftSelectedPlayers globally accessible for player-selection.js
-window.draftSelectedPlayers = draftSelectedPlayers;
+window.draftSelectedPlayers = tempSelectedPlayers;
 
 // ========================================
 // DRAFT-SPECIFIC FUNCTIONS
@@ -43,18 +32,11 @@ function updateDraftDisplay() {
     // Update budget display
     const budgetElement = document.getElementById('teamBudget');
     if (budgetElement) {
-        budgetElement.textContent = teamBudget.toFixed(1);
+        budgetElement.textContent = tempBudget.toFixed(1);
     }
 
-    // Update budget section styling based on budget status
-    const budgetSection = document.querySelector('.budget-section');
-    if (budgetSection) {
-        if (teamBudget < 0) {
-            budgetSection.classList.add('over-budget');
-        } else {
-            budgetSection.classList.remove('over-budget');
-        }
-    }
+    // Update budget display with color coding
+    updateBudgetDisplay(tempBudget, 'teamBudget', '.budget-section');
 
     // Update save button state
     const saveBtn = document.getElementById('saveDraftBtn');
@@ -63,23 +45,19 @@ function updateDraftDisplay() {
         saveBtn.textContent = 'Submit Squad';
     }
 
-    // Update Auto Pick button state - enable when there are empty slots
-    const autoCompleteBtn = document.getElementById('autoCompleteBtn');
-    if (autoCompleteBtn) {
-        const emptySlots = document.querySelectorAll('.empty-slot');
-        const hasEmptySlots = emptySlots.length > 0;
-        autoCompleteBtn.disabled = !hasEmptySlots; // Disabled when NO empty slots (all filled)
-        autoCompleteBtn.textContent = 'Auto Pick';
+    // Shared auto pick button update
+    if (typeof updateAutoPickButtons === 'function') {
+        updateAutoPickButtons();
     }
 
     // Update Reset button state - grey out if all slots are empty
     const resetBtn = document.getElementById('resetDraftBtn');
     if (resetBtn) {
-        const allSlotsEmpty = selectedPlayerCount === 0;
+        const allSlotsEmpty = tempSelectedPlayers.length === 0;
         resetBtn.disabled = allSlotsEmpty;
     }
 
-    console.log(`Updated draft display - Budget: £${teamBudget.toFixed(1)}m, Players: ${selectedPlayerCount}/${requiredPlayers}`);
+    console.log(`Updated draft display - Budget: £${tempBudget.toFixed(1)}m, Players: ${tempSelectedPlayers.length}/${requiredPlayers}`);
 
     // Prevent any accidental modal openings during display updates
     // This ensures that updating the display doesn't trigger unwanted modals
@@ -99,12 +77,12 @@ function validateSquadRules() {
     const errors = [];
 
     // Check budget
-    if (teamBudget < 0) {
-        errors.push(`Your squad budget has been exceeded by £${Math.abs(teamBudget).toFixed(1)}m. Please remove some players or select cheaper alternatives.`);
+    if (tempBudget < 0) {
+        errors.push(`Your squad budget has been exceeded by £${Math.abs(tempBudget).toFixed(1)}m. Please remove some players or select cheaper alternatives.`);
     }
 
     // Check formation requirements for 4-4-2
-    const players = draftSelectedPlayers.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
+    const players = tempSelectedPlayers.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
     const positionCounts = {
         goalkeeper: players.filter(p => p.position === 'goalkeeper').length,
         defender: players.filter(p => p.position === 'defender').length,
@@ -144,7 +122,7 @@ function validateSquadRules() {
 
     // Check club limits (max 3 players per club)
     const clubCounts = {};
-    draftSelectedPlayers.forEach(playerId => {
+    tempSelectedPlayers.forEach(playerId => {
         const player = allPlayersCache.find(p => p.id === playerId);
         if (player) {
             clubCounts[player.team] = (clubCounts[player.team] || 0) + 1;
@@ -161,78 +139,6 @@ function validateSquadRules() {
     }
 
     return errors;
-}
-
-// Function to organize players into 4-4-2 formation
-function organizePlayersInto442Formation(selectedPlayerIds) {
-    // Get player objects from cache
-    const players = selectedPlayerIds.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
-    
-    // Group players by position
-    const goalkeepers = players.filter(p => p.position === 'goalkeeper');
-    const defenders = players.filter(p => p.position === 'defender');
-    const midfielders = players.filter(p => p.position === 'midfielder');
-    const attackers = players.filter(p => p.position === 'attacker');
-    
-    console.log('Formation organization:', {
-        goalkeepers: goalkeepers.length,
-        defenders: defenders.length,
-        midfielders: midfielders.length,
-        attackers: attackers.length
-    });
-    
-    // Validate we have enough players for 4-4-2 formation
-    if (goalkeepers.length < 1 || defenders.length < 4 || midfielders.length < 4 || attackers.length < 2) {
-        console.error('Invalid formation - not enough players for 4-4-2');
-        return selectedPlayerIds; // Return original if validation fails
-    }
-    
-    // Create 4-4-2 formation: 1 GK, 4 DF, 4 MD, 2 AT (starting XI)
-    const startingXI = [
-        goalkeepers[0].id,           // 1 GK
-        ...defenders.slice(0, 4).map(p => p.id),     // 4 DF
-        ...midfielders.slice(0, 4).map(p => p.id),   // 4 MD
-        ...attackers.slice(0, 2).map(p => p.id)      // 2 AT
-    ];
-    
-    // Create substitutes: remaining players (1 GK, 1 DF, 1 MD, 1 AT)
-    const substitutes = [
-        ...(goalkeepers.length > 1 ? [goalkeepers[1].id] : []),         // Sub GK
-        ...(defenders.length > 4 ? [defenders[4].id] : []),             // Sub DF
-        ...(midfielders.length > 4 ? [midfielders[4].id] : []),         // Sub MD
-        ...(attackers.length > 2 ? [attackers[2].id] : [])              // Sub AT
-    ];
-    
-    const organizedFormation = [...startingXI, ...substitutes];
-    
-    console.log('4-4-2 Formation organized:', {
-        startingXI: startingXI.length,
-        substitutes: substitutes.length,
-        total: organizedFormation.length
-    });
-    
-    return organizedFormation;
-}
-
-// Function to show error modal with validation messages
-function showErrorModal(errors) {
-    const errorMessagesDiv = document.getElementById('errorMessages');
-    if (errorMessagesDiv) {
-        errorMessagesDiv.innerHTML = errors.map(error => `<p>${error}</p>`).join('');
-    }
-
-    const errorModal = document.getElementById('errorModal');
-    if (errorModal) {
-        errorModal.showModal();
-    }
-}
-
-// Function to close error modal
-function closeErrorModal() {
-    const errorModal = document.getElementById('errorModal');
-    if (errorModal) {
-        errorModal.close();
-    }
 }
 
 // Function to show confirmation modal
@@ -274,6 +180,31 @@ function confirmSquad() {
     saveDraftTeam();
 }
 
+// Function to show reset confirmation modal
+function showResetConfirmationModal() {
+    const resetConfirmationModal = document.getElementById('resetConfirmationModal');
+    if (resetConfirmationModal) {
+        resetConfirmationModal.showModal();
+    }
+}
+
+// Function to close reset confirmation modal
+function closeResetConfirmationModal() {
+    const resetConfirmationModal = document.getElementById('resetConfirmationModal');
+    if (resetConfirmationModal) {
+        resetConfirmationModal.close();
+    }
+}
+
+// Function to handle reset confirmation
+function confirmReset() {
+    // Close reset confirmation modal
+    closeResetConfirmationModal();
+    
+    // Execute the actual reset
+    resetDraft();
+}
+
 // Function to handle draft team submission
 function handleCreateTeamSubmit(event) {
     event.preventDefault();
@@ -292,8 +223,8 @@ function handleCreateTeamSubmit(event) {
         errors.push('Please enter a valid manager name (minimum 2 characters).');
     }
     
-    if (selectedPlayerCount < requiredPlayers) {
-        errors.push(`Please select ${requiredPlayers - selectedPlayerCount} more players to complete your team.`);
+    if (tempSelectedPlayers.length < requiredPlayers) {
+        errors.push(`Please select ${requiredPlayers - tempSelectedPlayers.length} more players to complete your team.`);
     }
     
     // Validate squad rules (budget and club limits)
@@ -307,99 +238,6 @@ function handleCreateTeamSubmit(event) {
     
     // If all validation passes, show confirmation modal
     showConfirmationModal();
-}// Function to save the draft team
-function saveDraftTeam() {
-    const teamName = document.getElementById('teamName').value.trim();
-    const managerName = document.getElementById('managerName').value.trim();
-
-    console.log('Saving draft team:', { teamName, managerName, selectedPlayers: draftSelectedPlayers });
-
-    // First update the PlayFab display name to the team name
-    PlayFab.ClientApi.UpdateUserTitleDisplayName({
-        DisplayName: teamName
-    }, function(result, error) {
-        if (error) {
-            console.error("Error updating display name:", error);
-            alert("Failed to set team name as display name. Please try again.");
-            return;
-        }
-
-        console.log("Display name updated to:", teamName);
-
-        // Find the most expensive player to set as captain
-        const selectedPlayers = draftSelectedPlayers.map(id => allPlayersCache.find(p => p.id === id)).filter(p => p);
-        const mostExpensivePlayer = selectedPlayers.reduce((max, player) => 
-            (player.price > max.price) ? player : max, selectedPlayers[0]);
-        const captainId = mostExpensivePlayer ? mostExpensivePlayer.id : null;
-        
-        console.log("Auto-selected captain:", mostExpensivePlayer ? mostExpensivePlayer.name : "None", "Price:", mostExpensivePlayer ? mostExpensivePlayer.price : "N/A");
-
-        // Then save team info to user data
-        const teamData = {
-            teamName: teamName,
-            managerName: managerName,
-            captainId: captainId, // Auto-set to most expensive player
-            currentPlayerGameWeek: 1, // Starting at gameweek 1
-            leaderboardInfo: JSON.stringify({
-                teamName: teamName,
-                managerName: managerName
-            }),
-            freeTransfers: 1 // Starting with 1 free transfer
-        };
-
-        PlayFab.ClientApi.UpdateUserData({
-            Data: teamData
-        }, function(result, error) {
-            if (error) {
-                console.error("Error saving team data:", error);
-                alert("Failed to save team information. Please try again.");
-                return;
-            }
-
-            console.log("Team data saved successfully");
-
-            // Organize players into proper 4-4-2 formation before saving
-            const organizedPlayers = organizePlayersInto442Formation(draftSelectedPlayers);
-            console.log('Original draft order:', draftSelectedPlayers);
-            console.log('4-4-2 organized order:', organizedPlayers);
-
-            // Finally save selected players in 4-4-2 formation
-            const selectedPlayersData = {
-                selectedPlayers: JSON.stringify(organizedPlayers)
-            };
-
-            PlayFab.ClientApi.UpdateUserData({
-                Data: selectedPlayersData
-            }, function(result, error) {
-                if (error) {
-                    console.error("Error saving selected players:", error);
-                    alert("Failed to save selected players. Please try again.");
-                    return;
-                }
-
-                console.log("Selected players saved successfully");
-
-                // NEW: Initialize PlayerTotalPoints statistic for leaderboards
-                PlayFab.ClientApi.UpdatePlayerStatistics({
-                    Statistics: [{
-                        StatisticName: "PlayerTotalPoints",
-                        Value: 0
-                    }]
-                }, function(statResult, statError) {
-                    if (statError) {
-                        console.error("Error initializing PlayerTotalPoints:", statError);
-                        // Non-critical: Continue with success message
-                    } else {
-                        console.log("PlayerTotalPoints initialized to 0");
-                    }
-
-                    // Proceed with success
-                    alert("Team created successfully! Redirecting to team selection.");
-                    window.location.href = "pick-team.html";
-                });
-            });
-        });
-    });
 }
 
 // Function to reset the draft
@@ -409,9 +247,8 @@ function resetDraft() {
     document.getElementById('managerName').value = '';
 
     // Reset budget and player count
-    teamBudget = 100.0;
-    selectedPlayerCount = 0;
-    draftSelectedPlayers = [];
+    tempBudget = 100.0;
+    tempSelectedPlayers = [];
 
     // Re-render empty slots
     displayEmptyTeamForDraft();
@@ -442,7 +279,7 @@ function autoPickTeam() {
     // Helper function to get current club counts
     function getClubCounts() {
         const clubCounts = {};
-        draftSelectedPlayers.forEach(playerId => {
+        tempSelectedPlayers.forEach(playerId => {
             const player = allPlayersCache.find(p => p.id === playerId);
             if (player) {
                 clubCounts[player.teamName] = (clubCounts[player.teamName] || 0) + 1;
@@ -507,9 +344,9 @@ function autoPickTeam() {
         // Calculate how much budget we can safely spend on this slot
         const minBudgetForOtherSlots = calculateMinimumBudgetNeeded(position);
         const spareBudget = 0.5; // Leave 0.5m spare for safety
-        const maxSpendForThisSlot = teamBudget - minBudgetForOtherSlots - spareBudget;
+        const maxSpendForThisSlot = tempBudget - minBudgetForOtherSlots - spareBudget;
 
-        console.log(`Position ${position}: Budget=${teamBudget.toFixed(1)}m, MinForOthers=${minBudgetForOtherSlots.toFixed(1)}m, Spare=${spareBudget}m, MaxSpend=${maxSpendForThisSlot.toFixed(1)}m`);
+        console.log(`Position ${position}: Budget=${tempBudget.toFixed(1)}m, MinForOthers=${minBudgetForOtherSlots.toFixed(1)}m, Spare=${spareBudget}m, MaxSpend=${maxSpendForThisSlot.toFixed(1)}m`);
 
         // Get current club counts
         const currentClubCounts = getClubCounts();
@@ -527,7 +364,7 @@ function autoPickTeam() {
             const positionMatch = player.position === targetPosition;
 
             // Check if player is not already selected
-            const notSelected = !draftSelectedPlayers.includes(player.id);
+            const notSelected = !tempSelectedPlayers.includes(player.id);
 
             // Check if player is affordable AND leaves enough budget for other slots
             const affordable = player.price <= maxSpendForThisSlot;
@@ -547,9 +384,8 @@ function autoPickTeam() {
             const selectedPlayer = availablePlayers[0];
 
             // Add to draft
-            draftSelectedPlayers.push(selectedPlayer.id);
-            selectedPlayerCount++;
-            teamBudget -= selectedPlayer.price;
+            tempSelectedPlayers.push(selectedPlayer.id);
+            tempBudget -= selectedPlayer.price;
             budgetUsed += selectedPlayer.price;
 
             // Update remaining slots count
@@ -562,7 +398,7 @@ function autoPickTeam() {
             addPlayerToSlot(slot, selectedPlayer);
             slotsFilled++;
 
-            console.log(`Auto-selected ${selectedPlayer.name} (${position}) for £${selectedPlayer.price}m. Remaining budget: £${teamBudget.toFixed(1)}m`);
+            console.log(`Auto-selected ${selectedPlayer.name} (${position}) for £${selectedPlayer.price}m. Remaining budget: £${tempBudget.toFixed(1)}m`);
         } else {
             console.log(`No suitable players found for position ${position} within budget constraints (max spend: £${maxSpendForThisSlot.toFixed(1)}m)`);
         }
@@ -571,7 +407,7 @@ function autoPickTeam() {
     // Update display
     updateDraftDisplay();
 
-    console.log(`Auto-pick finished: ${slotsFilled} slots filled, £${budgetUsed.toFixed(1)}m spent, £${teamBudget.toFixed(1)}m remaining`);
+    console.log(`Auto-pick finished: ${slotsFilled} slots filled, £${budgetUsed.toFixed(1)}m spent, £${tempBudget.toFixed(1)}m remaining`);
 
     if (slotsFilled > 0) {
         updateDraftDisplay();
@@ -583,66 +419,6 @@ function autoPickTeam() {
 // ========================================
 // OVERRIDE SHARED FUNCTIONS
 // ========================================
-
-// Override the shared selectPlayerFromTeam function for draft-specific logic
-function selectPlayerFromTeam(player) {
-    // Check if player is already selected
-    if (draftSelectedPlayers.includes(player.id)) {
-        console.log('Player already selected, ignoring');
-        closePlayerSelectionModal();
-        return;
-    }
-
-    // Add player to draft state
-    draftSelectedPlayers.push(player.id);
-    selectedPlayerCount++;
-    teamBudget -= player.price;
-
-    // Update the slot visually
-    if (currentTransferSlot) {
-        addPlayerToSlot(currentTransferSlot, player);
-    }
-
-    // Update budget display and button states
-    updateDraftDisplay();
-
-    // Close the selection modal
-    closePlayerSelectionModal();
-}
-
-// Function to handle selling a player from the draft team
-function sellPlayer(playerId) {
-    // Immediately close the modal
-    closePlayerModal();
-
-    const player = allPlayersCache.find(p => p.id === playerId);
-    if (!player) {
-        console.error('Player not found in cache:', playerId);
-        return;
-    }
-
-    const playerIndex = window.draftSelectedPlayers.indexOf(playerId);
-    if (playerIndex > -1) {
-        // Update state
-        window.draftSelectedPlayers.splice(playerIndex, 1);
-        selectedPlayerCount--;
-        teamBudget += player.price;
-
-        // Find the card in the DOM
-        const playerCard = document.querySelector(`[data-player-id="${playerId}"]`);
-        if (playerCard) {
-            // Replace the player card with a new, functional empty slot
-            createEmptySlot(playerCard, playerId, true);
-        } else {
-            console.error('Player card not found for playerId:', playerId);
-        }
-
-        // Update the UI
-        updateDraftDisplay();
-    } else {
-        console.error('Player not found in draftSelectedPlayers:', playerId);
-    }
-}
 
 // Override openPlayerSelectionModal to exclude already selected players
 function openPlayerSelectionModal(teamName, position) {
@@ -671,11 +447,11 @@ function openPlayerSelectionModal(teamName, position) {
         modal.dataset.selectedPosition = position;
 
         // Load players, excluding those already in the draft
-        loadPlayersFromTeam(teamName, position, playerList, draftSelectedPlayers);
+        loadPlayersFromTeam(teamName, position, playerList, tempSelectedPlayers);
 
         // Show the modal
         modal.showModal();
-        console.log(`Opened player selection modal for ${teamName} ${position}, excluding ${draftSelectedPlayers.length} players`);
+        console.log(`Opened player selection modal for ${teamName} ${position}, excluding ${tempSelectedPlayers.length} players`);
     } else {
         console.error('Player selection modal elements not found');
     }
@@ -722,6 +498,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // Initialize shared context for draft
+    initializePageContext('draft', 100.0, []);
+
     // Set up form validation and character counters
     setupFormValidation();
 
@@ -748,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (resetBtn) {
-        resetBtn.addEventListener('click', resetDraft);
+        resetBtn.addEventListener('click', showResetConfirmationModal);
     }
 
     if (autoCompleteBtn) {
@@ -759,7 +538,34 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSharedModalListeners();
 
     // Setup draft-specific modal listeners
-    setupDraftModalListeners();
+    const selectBtn = document.getElementById('selectPlayerBtn');
+    if (selectBtn) {
+        selectBtn.addEventListener('click', function(event) {
+            // Prevent event propagation to avoid any interference
+            event.preventDefault();
+            event.stopPropagation();
+
+            const modal = document.getElementById('playerModal');
+            const playerId = modal.dataset.playerId;
+            if (playerId) {
+                console.log('Button clicked, playerId:', playerId, 'button text:', selectBtn.textContent);
+                // Check button text to determine action
+                if (selectBtn.textContent === 'Sell Player') {
+                    console.log('Sell Player button clicked for playerId:', playerId);
+                    sellPlayer(playerId); // Use shared function
+                    // Prevent any further event handling
+                    return false;
+                } else if (selectBtn.textContent === 'Select Player') {
+                    console.log('Select Player button clicked for playerId:', playerId);
+                    // For selecting a player from the player info modal
+                    const player = allPlayersCache.find(p => p.id === playerId);
+                    if (player) {
+                        selectPlayerFromTeam(player); // Use shared function
+                    }
+                }
+            }
+        });
+    }
 
     // Setup error modal listeners
     const closeErrorBtn = document.getElementById('closeErrorBtn');
@@ -806,6 +612,33 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmationModal.addEventListener('click', function(event) {
             if (event.target === confirmationModal) {
                 closeConfirmationModal();
+            }
+        });
+    }
+
+    // Setup reset confirmation modal listeners
+    const closeResetConfirmationModalBtn = document.getElementById('closeResetConfirmationModal');
+    const cancelResetBtn = document.getElementById('cancelResetBtn');
+    const confirmResetBtn = document.getElementById('confirmResetBtn');
+    
+    if (closeResetConfirmationModalBtn) {
+        closeResetConfirmationModalBtn.addEventListener('click', closeResetConfirmationModal);
+    }
+    
+    if (cancelResetBtn) {
+        cancelResetBtn.addEventListener('click', closeResetConfirmationModal);
+    }
+    
+    if (confirmResetBtn) {
+        confirmResetBtn.addEventListener('click', confirmReset);
+    }
+
+    // Close reset confirmation modal when clicking outside
+    const resetConfirmationModal = document.getElementById('resetConfirmationModal');
+    if (resetConfirmationModal) {
+        resetConfirmationModal.addEventListener('click', function(event) {
+            if (event.target === resetConfirmationModal) {
+                closeResetConfirmationModal();
             }
         });
     }
