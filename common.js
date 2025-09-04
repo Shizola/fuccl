@@ -903,6 +903,9 @@ function initializePage(currentPage) {
             checkTeamName();
             loadTeamNameOnly();
             
+            // Initialize mobile dropdown for pick-team page
+            initializeMobileDropdown();
+            
             // Load players for pick team page
             if (typeof loadPlayersFromPlayFab === 'function') {
                 loadPlayersFromPlayFab(function (error, data) {
@@ -946,6 +949,11 @@ function initializePage(currentPage) {
             });
             break;
     }
+    
+    // Initialize mobile dropdown for all pages (with a delay to ensure DOM is ready)
+    setTimeout(() => {
+        initializeMobileDropdown();
+    }, 200);
 }
 
 // Page load handling
@@ -990,3 +998,73 @@ window.addEventListener('load', function() {
         }
     }
 });
+
+/* ========================================
+   MOBILE NAVIGATION DROPDOWN
+   Custom dropdown functionality for mobile menu
+   ======================================== */
+
+// Initialize mobile dropdown functionality
+function initializeMobileDropdown() {
+    console.log('Attempting to initialize mobile dropdown...');
+    
+    // Wait a bit to ensure DOM is fully loaded
+    setTimeout(() => {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileDropdown = document.getElementById('mobile-menu-dropdown');
+        
+        console.log('Mobile menu button found:', !!mobileMenuBtn);
+        console.log('Mobile dropdown found:', !!mobileDropdown);
+        
+        if (mobileMenuBtn && mobileDropdown) {
+            console.log('Both elements found, setting up event listeners...');
+            
+            // Remove any existing event listeners
+            const newButton = mobileMenuBtn.cloneNode(true);
+            mobileMenuBtn.parentNode.replaceChild(newButton, mobileMenuBtn);
+            
+            newButton.addEventListener('click', function(e) {
+                console.log('Mobile menu button clicked!');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const isOpen = mobileDropdown.classList.contains('show');
+                console.log('Current dropdown state:', isOpen ? 'open' : 'closed');
+                
+                if (isOpen) {
+                    // Close dropdown
+                    mobileDropdown.classList.remove('show');
+                    mobileDropdown.removeAttribute('data-open');
+                    newButton.classList.remove('open');
+                    console.log('Dropdown closed');
+                } else {
+                    // Open dropdown
+                    mobileDropdown.classList.add('show');
+                    mobileDropdown.setAttribute('data-open', 'true');
+                    newButton.classList.add('open');
+                    console.log('Dropdown opened');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!newButton.contains(event.target) && !mobileDropdown.contains(event.target)) {
+                    mobileDropdown.classList.remove('show');
+                    newButton.classList.remove('open');
+                    console.log('Dropdown closed by outside click');
+                }
+            });
+            
+            console.log('Mobile dropdown initialized successfully!');
+        } else {
+            console.error('Mobile dropdown elements not found:', {
+                button: !!mobileMenuBtn,
+                dropdown: !!mobileDropdown
+            });
+        }
+    }, 100);
+}
+
+// Initialize dropdown when DOM is ready and also when window loads
+document.addEventListener('DOMContentLoaded', initializeMobileDropdown);
+window.addEventListener('load', initializeMobileDropdown);

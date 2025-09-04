@@ -19,14 +19,33 @@
     <main class="container">
         <!-- Navigation bar -->
         <nav>
-            <button onclick="window.location.href='points.html'" class="secondary">Points</button>
-            <button onclick="window.location.href='pick-team.html'" class="secondary">Pick Team</button>
-            <button onclick="window.location.href='transfers.html'">Transfers</button>
-            <button onclick="window.location.href='league.html'" class="secondary">League</button>
-            <button onclick="window.location.href='profile.html'" class="secondary">Profile</button>
+            <ul>
+                <li><img src="images/logo.jpeg" alt="Fantasy UCCL Football" class="nav-logo"></li>
+            </ul>
+            <ul>
+                <li><a href="points.html" class="secondary" role="button">📊 Points</a></li>
+                <li><a href="pick-team.html" class="secondary" role="button">⚽ Pick Team</a></li>
+                <li><a href="transfers.html" role="button">🔄 Transfers</a></li>
+                <li><a href="league.html" class="secondary" role="button">🏆 League</a></li>
+                <li><a href="profile.html" class="secondary" role="button">👤 Profile</a></li>
+                <li class="nav-mobile-menu">
+                    <button id="mobile-menu-btn" class="mobile-menu-button">📱 Menu <span class="arrow">▼</span></button>
+                    <ul id="mobile-menu-dropdown" class="mobile-dropdown-content">
+                        <li><a href="points.html" class="secondary" role="button">📊 Points</a></li>
+                        <li><a href="pick-team.html" class="secondary" role="button">⚽ Pick Team</a></li>
+                        <li><a href="transfers.html" role="button">🔄 Transfers</a></li>
+                        <li><a href="league.html" class="secondary" role="button">🏆 League</a></li>
+                        <li><a href="profile.html" class="secondary" role="button">👤 Profile</a></li>
+                    </ul>
+                </li>
+            </ul>
         </nav>
         <header>
             <h1>Transfers</h1>
+            <!-- Transfer guidance: directly under the page title and above the team name -->
+            <p class="transfer-instruction" aria-live="polite">
+                Select a maximum of 3 players from a single team or <strong>'Auto Pick'</strong> if you are short of time.
+            </p>
             <h4 id="teamName" class="teamName">Loading Team Name...</h4>
         </header>
 

@@ -3,7 +3,8 @@
 // Uses shared player-selection.js for common functionality
 // ========================================
 
-// Track user actions to distinguish real clicks from programmatic ones
+// Required number of players for a complete squad
+const requiredPlayers = 15;
 
 // Store original selectedPlayers for debugging
 window.selectedPlayers = [];
