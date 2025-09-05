@@ -46,19 +46,26 @@
 
         <header>
             <h1>Points</h1>
-            <h4 id="teamName" class="teamName">Loading Team Name...</h4> <!-- Apply teamName class here -->
-            <div class="points-container">
-                <div class="points-section gameweek-number">
-                    Gameweek: <span id="gameweek">Loading...</span>
+            <h4 id="teamName" class="teamName">Loading Team Name...</h4>
+        </header>
+
+        <!-- Points Status Info -->
+        <section class="points-status">
+            <div class="status-info">
+                <div class="status-item gameweek-status">
+                    <span class="status-count" id="gameweek">Loading...</span>
+                    <span class="status-label">Gameweek</span>
                 </div>
-                <div class="points-section weekly-points">
-                    Weekly Points: <span class="red-text" id="weeklyPoints">Loading...</span>
+                <div class="status-item weekly-points-status">
+                    <span class="status-count" id="weeklyPoints">Loading...</span>
+                    <span class="status-label">Weekly Points</span>
                 </div>
-                <div class="points-section total-points">
-                    Total Points: <span id="totalPoints">Loading...</span>
+                <div class="status-item total-points-status">
+                    <span class="status-count" id="totalPoints">Loading...</span>
+                    <span class="status-label">Total Points</span>
                 </div>
             </div>
-        </header>
+        </section>
 
         <!-- Add the football pitch SVG here -->
         <section class="pitch-container">
