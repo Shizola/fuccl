@@ -22,6 +22,23 @@ let tempSelectedPlayers = [];
 let tempTransfersMade = 0;
 let currentTeamPlayerIds = []; // For transfers page
 
+// Live alias to keep backward compatibility with legacy code referencing
+// window.draftSelectedPlayers. Provides a getter to always return the current
+// tempSelectedPlayers array and a setter that updates the canonical array.
+// Prevents stale references after reassignments (e.g. spreading / resetting).
+if (!Object.getOwnPropertyDescriptor(window, 'draftSelectedPlayers')) {
+    Object.defineProperty(window, 'draftSelectedPlayers', {
+        configurable: true,
+        enumerable: false,
+        get() { return tempSelectedPlayers; },
+        set(v) {
+            if (Array.isArray(v)) {
+                tempSelectedPlayers = v;
+            }
+        }
+    });
+}
+
 // Function to initialize page context
 function initializePageContext(context, initialBudget = 100.0, initialPlayers = []) {
     pageContext = context;
@@ -1022,17 +1039,18 @@ function openPlayerModal(player) {
 
         // Determine context and update button text
         if (selectPlayerBtn) {
-            // Check if this player is already selected in the draft team
-            const isPlayerSelected = window.draftSelectedPlayers && window.draftSelectedPlayers.includes(player.id);
+            // Use the authoritative tempSelectedPlayers array for current squad membership.
+            // Previous implementation relied on window.draftSelectedPlayers which became stale
+            // after array reassignments (spread copies) causing the Sell button to not appear.
+            const currentSelected = Array.isArray(tempSelectedPlayers) ? tempSelectedPlayers : [];
+            const isPlayerSelected = currentSelected.includes(player.id);
 
             if (isPlayerSelected) {
-                // Player is already in the team - show sell option
                 selectPlayerBtn.textContent = 'Sell Player';
-                selectPlayerBtn.className = 'sell-player-btn'; // Add class for styling if needed
+                selectPlayerBtn.className = 'sell-player-btn';
             } else {
-                // Player is not in the team - show select option
                 selectPlayerBtn.textContent = 'Select Player';
-                selectPlayerBtn.className = 'select-player-btn'; // Add class for styling if needed
+                selectPlayerBtn.className = 'select-player-btn';
             }
         }
 
