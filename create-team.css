@@ -66,42 +66,88 @@ nav button {
     color: #666;
 }
 
-/* Budget Section Styles - Draft Team specific */
-.budget-section {
+/* Team Status Section - Create Team specific */
+.transfer-status {
+    margin-bottom: var(--pico-spacing);
+}
+
+.status-info {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.status-item {
+    flex: 1;
     text-align: center;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    padding: 8px 6px;
     border-radius: 8px;
     color: white;
-}
-
-.budget-display h3 {
-    margin: 0 0 0.25rem 0;
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-.budget-amount {
-    font-size: 1.8rem;
     font-weight: bold;
-    margin: 0;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    min-width: 0;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
-.budget-note {
-    margin: 0.25rem 0 0 0;
+.status-item .status-count,
+.status-item .status-amount,
+.status-item .status-total,
+.status-item .status-unit {
+    display: block;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.status-item .status-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: normal;
     opacity: 0.9;
-    font-size: 0.85rem;
 }
 
-/* Over Budget Styles - Draft Team specific */
-.budget-section.over-budget {
-    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+/* Special styling for players selected to keep count/total on same line */
+.status-count-total {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    margin-bottom: 2px;
 }
 
-.budget-section.over-budget .budget-amount {
-    color: #ffebee;
+.status-count-total .status-count,
+.status-count-total .status-total {
+    display: inline;
+    margin-bottom: 0;
+}
+
+/* Specific colors for each status item */
+.players-selected {
+    background-color: #28a745; /* Green */
+}
+
+.budget-remaining {
+    background-color: #4CAF50; /* Green - default positive budget color */
+}
+
+.budget-remaining.over-budget {
+    background-color: #dc3545; /* Red - negative budget color */
+}
+
+/* Dynamic state modifiers for status items */
+.status-item.status-success {
+    background-color: #28a745 !important; /* Green */
+    color: #fff;
+}
+
+.status-item.status-error {
+    background-color: #dc3545 !important; /* Red */
+    color: #fff;
 }
 
 /* Draft Actions Styles - Draft Team specific */

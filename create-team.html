@@ -50,11 +50,20 @@
             </form>
         </section>
 
-        <!-- Budget Display - Centralized -->
-        <section class="budget-section">
-            <div class="budget-display">
-                <h3>Remaining Budget</h3>
-                <div class="budget-amount">£<span id="teamBudget">100.0</span>m</div>
+        <!-- Team Status Info -->
+        <section class="transfer-status">
+            <div class="status-info">
+                <!-- players selected status box -->
+                <div class="status-item players-selected">
+                    <div class="status-count-total">
+                        <span id="playersSelectedCount">0</span><span id="playersSelectedTotal" data-format="slash">/15</span>
+                    </div>
+                    <span class="status-label">Players</span>
+                </div>
+                <div class="status-item budget-remaining">
+                    <span class="status-amount">£<span id="teamBudget">100.0</span>m</span>
+                    <span class="status-label">Budget</span>
+                </div>
             </div>
         </section>
 

@@ -29,14 +29,41 @@ function displayEmptyTeamForDraft() {
 
 // Function to update the draft display elements
 function updateDraftDisplay() {
+    const TOTAL_PLAYERS = 15;
+    
     // Update budget display
     const budgetElement = document.getElementById('teamBudget');
     if (budgetElement) {
         budgetElement.textContent = tempBudget.toFixed(1);
+        const budgetWrapper = budgetElement.closest('.budget-remaining');
+        if (budgetWrapper) {
+            budgetWrapper.classList.toggle('over-budget', tempBudget < 0);
+        }
     }
 
-    // Update budget display with color coding
-    updateBudgetDisplay(tempBudget, 'teamBudget', '.budget-section');
+    // Update players selected display - similar to transfers page
+    const playersCountEl = document.getElementById('playersSelectedCount');
+    const playersTotalEl = document.getElementById('playersSelectedTotal');
+    if (playersCountEl && playersTotalEl) {
+        playersCountEl.textContent = tempSelectedPlayers.length;
+        const format = playersTotalEl.getAttribute('data-format');
+        if (format === 'slash') {
+            playersTotalEl.textContent = `/${TOTAL_PLAYERS}`;
+        } else {
+            playersTotalEl.textContent = TOTAL_PLAYERS;
+        }
+
+        // Apply success (green) when full squad, error (red) otherwise
+        const playersBox = playersCountEl.closest('.players-selected');
+        if (playersBox) {
+            playersBox.classList.remove('status-success', 'status-error');
+            if (tempSelectedPlayers.length === TOTAL_PLAYERS) {
+                playersBox.classList.add('status-success');
+            } else {
+                playersBox.classList.add('status-error');
+            }
+        }
+    }
 
     // Update save button state
     const saveBtn = document.getElementById('saveDraftBtn');
@@ -57,7 +84,7 @@ function updateDraftDisplay() {
         resetBtn.disabled = allSlotsEmpty;
     }
 
-    console.log(`Updated draft display - Budget: £${tempBudget.toFixed(1)}m, Players: ${tempSelectedPlayers.length}/${requiredPlayers}`);
+    console.log(`Updated draft display - Budget: £${tempBudget.toFixed(1)}m, Players: ${tempSelectedPlayers.length}/${TOTAL_PLAYERS}`);
 
     // Prevent any accidental modal openings during display updates
     // This ensures that updating the display doesn't trigger unwanted modals
