@@ -3,6 +3,81 @@
    Specific styles for the points visualization page
    ======================================== */
 
+/* Points Status Section - Similar to transfers status */
+.points-status {
+    margin-bottom: var(--pico-spacing);
+}
+
+.points-status .status-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.points-status .status-item {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    min-width: 0;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.points-status .status-item .status-count {
+    display: block;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.points-status .status-item .status-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: normal;
+    opacity: 0.9;
+}
+
+/* Specific colors for points status items */
+.gameweek-status {
+    background-color: #17a2b8; /* Info blue */
+}
+
+.weekly-points-status {
+    background-color: #28a745; /* Success green */
+}
+
+.total-points-status {
+    background-color: #6f42c1; /* Purple */
+}
+
+/* Responsive adjustments for points status */
+@media (max-width: 610px) {
+    .points-status .status-info {
+        gap: 5px;
+    }
+    
+    .points-status .status-item {
+        padding: 4px 2px;
+        min-height: 50px;
+    }
+    
+    .points-status .status-item .status-count {
+        font-size: 0.9rem;
+    }
+    
+    .points-status .status-item .status-label {
+        font-size: 0.7rem;
+    }
+}
+
 /* Overlay styling now unified in common.css (.player-points shares with .player-price) */
 
 /* ========================================

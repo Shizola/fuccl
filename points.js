@@ -110,7 +110,14 @@ function getTestPlayerData() {
 // Function to load player data and gameweek from PlayFab (optimized with caching)
 function loadPlayersFromPlayFab(callback) {
     // Use shared function from common.js
-    loadSharedPlayersFromPlayFab(callback, updatePointsDisplay);
+    loadSharedPlayersFromPlayFab(function(error, data) {
+        if (!error && data) {
+            // Call updatePointsDisplay with the data from the shared function
+            updatePointsDisplay(data.gameWeek, data.weeklyPointsTotal, data.cumulativePointsTotal);
+        }
+        // Call the original callback
+        callback(error, data);
+    });
 }
 
 // Helper function to update the points display elements
