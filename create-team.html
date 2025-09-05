@@ -18,11 +18,16 @@
     <main class="container">
         <!-- Navigation bar -->
         <nav>
-            <button onclick="logOut()">Logout</button>
+            <ul>
+                <li><img src="images/logo.jpeg" alt="Fantasy UCCL Football" class="nav-logo"></li>
+            </ul>
+            <ul>
+                <li><button id="logoutBtn" class="secondary" onclick="logOut()" role="button">Logout</button></li>
+            </ul>
         </nav>
         <header>
             <h1>Create Your Team</h1>
-            <p class="subtitle">Name your team and select your squad.</p>
+            <p class="transfer-instruction" aria-live="polite">Name your team and build a 15-player squad (max 3 from any club). You can use <strong>Auto Pick</strong> if you want a quick start.</p>
         </header>
 
         <!-- Team Creation Form -->

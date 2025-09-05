@@ -1,38 +1,502 @@
+<!-- filepath: c:\FUCCL\fuccl-website\fuccl\index.html -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
+    <meta name="description" content="Fantasy UCCL (FUCCL) - Build your ultimate fantasy football squad and compete in the premier university league.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://download.playfab.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data:; connect-src 'self' https://*.playfabapi.com https://playfabapi.com;">
+    <title>FUCCL | Fantasy UCCL - The Ultimate University Football Fantasy Experience</title>
 
-    <!-- Link to Pico.css CDN -->
+    <!-- Pico.css -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="icon" type="image/jpeg" href="images/logo.jpeg">
 
-    <title>FUCCL</title>
+    <style>
+        /* Modern Homepage Styling */
+        :root {
+            --gradient-primary: linear-gradient(135deg, #087cc4 0%, #0d6efd 100%);
+            --gradient-accent: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --shadow-medium: 0 12px 40px rgba(0, 0, 0, 0.15);
+            --border-radius-lg: 20px;
+            --border-radius-xl: 24px;
+        }
+
+        body {
+            background: var(--pico-background-color);
+            min-height: 100vh;
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            min-height: 500px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+            overflow: hidden;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+        }
+
+        .hero-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hero-background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(3px);
+        }
+
+        .hero-background::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 2;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 3;
+            text-align: left;
+            color: white;
+            padding: 2rem;
+            grid-column: 1;
+        }
+
+        .hero-content h1 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-tagline {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);   
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .hero-actions a {
+            padding: 1rem 2rem;
+            border-radius: var(--border-radius-lg);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .hero-logo-badge {
+            margin-bottom: 0.1rem; /* Reduce gap - currently 1rem */
+            margin-top: 1rem;
+        }
+
+        .hero-logo-badge img {
+            width: 180px;
+            height: 180px;
+            object-fit: contain;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 4rem 0;
+            background: var(--pico-card-background-color);
+            margin: 2rem 0;
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .features-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .features-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--pico-primary);
+        }
+
+        .features-header p {
+            font-size: 1.1rem;
+            color: var(--pico-muted-color);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--border-radius-lg);
+            padding: 0;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card-content {
+            padding: 1.5rem;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+            border-color: var(--pico-primary);
+        }
+
+        .feature-icon {
+            width: 100%;
+            height: 150px;
+            margin: 0 0 1.5rem 0;
+            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            color: var(--pico-primary);
+        }
+
+        .feature-card p {
+            color: var(--pico-muted-color);
+            line-height: 1.6;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 3rem 0;
+            margin: 2rem 0;
+            border-radius: var(--border-radius-xl);
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .stat-item h3 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        .stat-item p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: var(--pico-card-background-color);
+            padding: 4rem 0;
+            margin: 2rem 0;
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(8, 124, 196, 0.05) 0%, transparent 70%);
+            z-index: -1;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--pico-primary);
+        }
+
+        .cta-section p {
+            font-size: 1.1rem;
+            color: var(--pico-muted-color);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-section .hero-actions {
+            justify-content: center;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--pico-muted-color);
+            font-size: 0.9rem;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .hero {
+                min-height: 400px;
+                grid-template-columns: 1fr;
+                padding: 1.5rem 0;
+            }
+
+            .hero-content {
+                padding: 1.5rem;
+                grid-column: 1;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-tagline {
+                font-size: 1.1rem;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .hero-actions a[role="button"] {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            .features-section,
+            .cta-section {
+                padding: 2rem 0;
+            }
+        }
+
+        /* Navigation Enhancement */
+        nav {
+            background: var(--pico-background-color);
+            border-bottom: 1px solid var(--pico-muted-border-color);
+        }
+
+        .nav-logo {
+            height: 62px;
+            width: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-logo:hover {
+            transform: scale(1.05);
+        }
+    </style>
 </head>
-
 <body>
-    <main class="container">
-        <header>
-            <h1>Welcome to FUCCL</h1>
-            <p>This is the home of Fantasy UCCL!</p>
-        </header>
+    <main id="main" class="container">
 
-        <section>
-            <h2>Player Access</h2>
-            <p class="grid">
-                <button onclick="window.location.href='login.html'">Log In</button>
-                <button onclick="window.location.href='register.html'" class="secondary">New User</button>
-            </p>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-background">
+                <img src="images/hero.jpg" alt="Team celebrating a trophy win on the pitch">
+            </div>
+            <div class="hero-content">
+                <div class="hero-logo-badge">
+                    <img src="images/logo.jpeg" alt="FUCCL Logo" loading="lazy">
+                </div>
+                <h1>Build. Compete. Win.</h1>
+                <p class="hero-tagline">
+                    Welcome to FUCCL – your fantasy competition built around the United Christian Churches League (South Wales).
+                    Sign in, build your squad and chase the glory.
+                </p>
+                <div class="hero-actions">
+                    <a href="login.html" role="button">Log In</a>
+                    <a href="register.html" role="button" class="secondary">Create Account</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="container">
+                <h1>Join the Action</h1>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <h3>13</h3>
+                        <p>Teams</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>300+</h3>
+                        <p>Players</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>24</h3>
+                        <p>Gameweeks</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>Weekly</h3>
+                        <p>Scoring</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="container">
+                <div class="features-header">
+                    <h2>Why Join FUCCL?</h2>
+                    <p>Experience the most comprehensive and engaging fantasy football platform designed specifically for the UCCL.</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <img src="images//features/1.jpg" alt="Real Player Data">
+                        </div>
+                        <div class="feature-card-content">
+                            <h3>Real Player Data</h3>
+                            <p>Select from actual UCCL players with live performance tracking and detailed statistics from every match.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <img src="images/features/2.jpg" alt="Weekly Scoring">
+                        </div>
+                        <div class="feature-card-content">
+                            <h3>Weekly Scoring</h3>
+                            <p>Get updated points every week based on player performance, with transparent scoring that reflects real match results.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <img src="images/features/3.jpg" alt="Smart Transfers">
+                        </div>
+                        <div class="feature-card-content">
+                            <h3>Smart Transfers</h3>
+                            <p>Make strategic squad changes with our intuitive transfer system and stay ahead of the competition.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <img src="images/features/4.jpg" alt="Captain Strategy">
+                        </div>
+                        <div class="feature-card-content">
+                            <h3>Captain Strategy</h3>
+                            <p>Triple your captain's points and make tactical decisions that can win you the gameweek.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <img src="images/features/5.jpg" alt="Leaderboards">
+                        </div>
+                        <div class="feature-card-content">
+                            <h3>Leaderboards</h3>
+                            <p>Compete against friends and rivals with detailed rankings and season-long championship battles.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <img src="images/features/6.jpg" alt="Ultimate UCCL Experience">
+                        </div>
+                        <div class="feature-card-content">
+                            <h3>Ultimate UCCL Fan Experience</h3>
+                            <p>Immerse yourself in the complete UCCL ecosystem.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section class="cta-section">
+            <div class="container">
+                <h2>Ready to Build Your Squad?</h2>
+                <p>Join dozens of UCCL fans already competing in the ultimate Christian fantasy football experience. Create your account and start building your championship team today.</p>
+                <div class="hero-actions">
+                    <a href="register.html" role="button">Create Your Team</a>
+                    <a href="login.html" role="button" class="secondary">I Already Have an Account</a>
+                </div>
+            </div>
         </section>
     </main>
 
-    <!-- Load the PlayFab SDK from the CDN -->
-    <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+    <footer>
+        <div class="container">
+            <p>&copy; <span id="year"></span> FUCCL - Fantasy United Christian Churches League. All rights reserved.</p>
+        </div>
+    </footer>
 
-    <!-- Link to your custom script -->
-    <script src="common.js"></script>
+    <!-- PlayFab SDK -->
+    <!-- <script src="https://download.playfab.com/PlayFabClientApi.js"></script> -->
+    <!-- Shared site script -->
+    <!-- <script src="common.js"></script> -->
+    <script>
+        // Dynamic year
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 </body>
-
 </html>

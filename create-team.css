@@ -11,16 +11,24 @@
     text-align: center;
 }
 
-/* Navigation Styles - Draft Team specific (logout only) */
+/* Navigation Styles - align with global nav (logo left, actions right) */
 nav {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between; /* space between logo UL and actions UL */
+    align-items: center;
     margin-bottom: 1rem;
 }
 
 nav button {
     width: auto;
     min-width: 80px;
+}
+
+/* Ensure logout button matches standard nav button sizing from shared nav */
+#logoutBtn, #logoutBtnMobile {
+    min-width: 120px; /* Align with common.css nav button width */
+    text-align: center;
+    white-space: nowrap;
 }
 
 /* Team Creation Form Styles - Draft Team specific */
