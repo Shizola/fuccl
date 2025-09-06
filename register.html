@@ -8,38 +8,92 @@
 
     <!-- Link to Pico.css CDN -->
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+    <link rel="stylesheet" href="common.css"> <!-- Shared styles -->
+    <link rel="icon" href="favicon.ico">
+    <link rel="icon" type="image/jpeg" href="images/logo.jpeg">
 
-    <title>Register - FUCCL</title>
+    <title>Sign Up - FUCCL</title>
+
+    <style>
+        .auth-container {
+            max-width: 500px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: var(--pico-card-background-color);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .logo-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-header img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 1rem;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .auth-footer a {
+            text-decoration: none;
+        }
+    </style>
 </head>
 
 <body>
     <main class="container">
-    <header>
-      <h1>New User Registration</h1>
-    </header>
+        <!-- Navigation bar -->
+        <nav>
+            <ul>
+                <li><img src="images/logo.jpeg" alt="Fantasy UCCL Football" class="nav-logo"></li>
+            </ul>
+            <ul>
+                <li><a href="index.html" class="secondary" role="button">🏠 Home</a></li>
+                <li><a href="login.html" class="secondary" role="button">Log In</a></li>
+            </ul>
+        </nav>
 
-    <section>
-      <form id="registration-form" onsubmit="registerUser(event)">
-        <label for="email">Email:</label>
-        <input type="email" id="email" required>
+        <div class="auth-container">
+            <div class="logo-header">
+                <img src="images/logo.jpeg" alt="FUCCL Logo">
+                <h1>Create Account</h1>
+                <p>Join the ultimate UCCL fan experience</p>
+            </div>
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" required>
+            <section>
+                <form id="registration-form" onsubmit="registerUser(event)">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" required>
 
-        <button type="submit">Register</button>
-      </form>
-    </section>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" required>
 
-    <footer>
-      <a href="index.html" class="button">Back to Home</a>
-    </footer>
+                    <button type="submit">Register</button>
+                </form>
+            </section>
 
-    <!-- Load the PlayFab SDK from the CDN -->
-    <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
-    <!-- Link to your custom script -->
-    <script src="common.js"></script>
+            <div class="auth-footer">
+                <a href="index.html" role="button" class="secondary">Back to Home</a>
+                <a href="login.html" role="button" class="outline">Already have an account?</a>
+            </div>
+        </div>
 
-  </main>
+        <!-- Load the PlayFab SDK from the CDN -->
+        <script type="text/javascript" src="https://download.playfab.com/PlayFabClientApi.js"></script>
+        <!-- Link to your custom script -->
+        <script src="common.js"></script>
+    </main>
 </body>
 
 </html>
