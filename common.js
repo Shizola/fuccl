@@ -379,12 +379,32 @@ function loadSharedPlayersFromPlayFab(callback) {
                                 // Calculate points for current week only (for display)
                                 const weeklyPoints = calculateWeeklyPoints(playerDataString, gameWeek);
                                 player.weeklyPoints = weeklyPoints;
-                                weeklyPointsTotal += weeklyPoints;
                                 
                                 // Calculate cumulative points for all weeks up to current
                                 const cumulativePoints = calculateTotalPointsUpToCurrentWeek(playerDataString, gameWeek);
                                 player.cumulativePoints = cumulativePoints;
-                                cumulativePointsTotal += cumulativePoints;
+                                
+                                // Check if this player is the captain and triple their points
+                                const isCaptain = captainId && String(captainId) === String(id);
+                                if (isCaptain) {
+                                    // Triple captain's points for both weekly and cumulative totals
+                                    const tripledWeeklyPoints = weeklyPoints * 3;
+                                    const tripledCumulativePoints = cumulativePoints * 3;
+                                    
+                                    // Store tripled points on player object for display
+                                    player.weeklyPoints = tripledWeeklyPoints;
+                                    player.cumulativePoints = tripledCumulativePoints;
+                                    
+                                    // Add tripled points to totals
+                                    weeklyPointsTotal += tripledWeeklyPoints;
+                                    cumulativePointsTotal += tripledCumulativePoints;
+                                    
+                                    console.log(`Captain ${player.name}: Weekly ${weeklyPoints} -> ${tripledWeeklyPoints}, Cumulative ${cumulativePoints} -> ${tripledCumulativePoints}`);
+                                } else {
+                                    // Add regular points to totals for non-captain players
+                                    weeklyPointsTotal += weeklyPoints;
+                                    cumulativePointsTotal += cumulativePoints;
+                                }
                                 
                                 return player;
                             } else {
